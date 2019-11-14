@@ -762,3 +762,89 @@ class FeedbackStatsHandlerTests(test_utils.GenericTestBase):
             self.assertEqual(response['num_open_threads'], 2)
 
             self.logout()
+
+
+class FeedbackThreadSummaryListHandler(test_utils.GenericTestBase):
+
+    EXP_ID = 'eid1'
+
+    EXPECTED_THREAD_DICT = {
+        'status': u'open',
+        'summary': None,
+        'original_author_username': None,
+        'subject': u'a subject'
+    }
+
+    USER_EMAIL = 'user@example.com'
+    USER_USERNAME = 'user'
+
+    def setUp(self):
+        super(FeedbackThreadSummaryListHandler, self).setUp()
+
+        self.signup(self.USER_EMAIL, self.USER_USERNAME)
+        self.user_id = self.get_user_id_from_email(self.USER_EMAIL)
+        self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
+        self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
+
+        self.exp = self.save_new_valid_exploration(
+            self.EXP_ID, self.owner_id, title='Bridges in England',
+            category='Architecture', language_code='en')
+        self.publish_exploration(self.owner_id, self.EXP_ID)
+
+        self.feedback_thread_id = feedback_services.create_thread(
+            feconf.ENTITY_TYPE_EXPLORATION, self.EXP_ID, self.user_id,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here',
+            has_suggestion=False)
+        feedback_services.create_message(
+            self.feedback_thread_id, self.user_id, None, None,
+            'more feedback')
+
+        self.suggestion_thread_id = feedback_services.create_thread(
+            feconf.ENTITY_TYPE_EXPLORATION, self.EXP_ID, self.user_id,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here',
+            has_suggestion=True)
+        feedback_services.create_message(
+            self.suggestion_thread_id, self.user_id, None, None,
+            'more suggestions')
+
+    def test_get_thread_summaries(self):
+        response = self.get_json(
+            '%s/%s' % (feconf.FEEDBACK_SUMMARIES_URL_PREFIX, self.EXP_ID))
+
+        feedback_thread_summaries = response['feedback_thread_summaries']
+        self.assertEqual(len(feedback_thread_summaries), 1)
+        self.assertDictContainsSubset({
+            'status': 'open',
+            'thread_id': self.feedback_thread_id,
+            'last_message_text': 'more feedback',
+            'exploration_title': self.exp.title,
+            'total_message_count': 2,
+        }, feedback_thread_summaries[0])
+
+        suggestion_thread_summaries = response['suggestion_thread_summaries']
+        self.assertEqual(len(suggestion_thread_summaries), 1)
+        self.assertDictContainsSubset({
+            'status': 'open',
+            'thread_id': self.suggestion_thread_id,
+            'last_message_text': 'more suggestions',
+            'exploration_title': self.exp.title,
+            'total_message_count': 2,
+        }, suggestion_thread_summaries[0])
+
+    def test_unread_messages_are_zero_for_creator(self):
+        self.login(self.OWNER_EMAIL)
+        response = self.get_json(
+            '%s/%s' % (feconf.FEEDBACK_SUMMARIES_URL_PREFIX, self.EXP_ID))
+
+        # Creator hasn't seen the messages yet, so they should appear unread.
+        self.assertEqual(response['unread_feedback_threads'], 1)
+        self.assertEqual(response['unread_suggestion_threads'], 1)
+
+    def test_unread_messages_are_zero_for_message_author(self):
+        self.login(self.USER_EMAIL)
+        response = self.get_json(
+            '%s/%s' % (feconf.FEEDBACK_SUMMARIES_URL_PREFIX, self.EXP_ID))
+
+        # User is author of messages, so all messages should be read.
+        self.assertEqual(response['unread_feedback_threads'], 0)
+        self.assertEqual(response['unread_suggestion_threads'], 0)

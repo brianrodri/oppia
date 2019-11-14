@@ -183,6 +183,37 @@ class FeedbackStatsHandler(base.BaseHandler):
         self.render_json(self.values)
 
 
+class FeedbackThreadSummaryListHandler(base.BaseHandler):
+    """Returns summaries of all threads associated to an exploration."""
+
+    GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
+
+    @acl_decorators.can_play_exploration
+    def get(self, exploration_id):
+        feedback_thread_ids = [
+            thread.id for thread in feedback_services.get_all_threads(
+                feconf.ENTITY_TYPE_EXPLORATION, exploration_id, False)
+        ]
+        feedback_thread_summaries, unread_feedback_threads = (
+            feedback_services.get_thread_summaries(
+                self.user_id, feedback_thread_ids))
+
+        suggestion_thread_ids = [
+            thread.id for thread in feedback_services.get_all_threads(
+                feconf.ENTITY_TYPE_EXPLORATION, exploration_id, True)
+        ]
+        suggestion_thread_summaries, unread_suggestion_threads = (
+            feedback_services.get_thread_summaries(
+                self.user_id, suggestion_thread_ids))
+
+        self.values = {
+            'feedback_thread_summaries': feedback_thread_summaries,
+            'suggestion_thread_summaries': suggestion_thread_summaries,
+            'unread_feedback_threads': unread_feedback_threads,
+            'unread_suggestion_threads': unread_suggestion_threads,
+        }
+        self.render_json(self.values)
+
 class FeedbackThreadViewEventHandler(base.BaseHandler):
     """Records when the given user views a feedback thread, in order to clear
     viewed feedback messages from emails that might be sent in future to this

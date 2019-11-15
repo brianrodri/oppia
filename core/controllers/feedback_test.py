@@ -764,7 +764,7 @@ class FeedbackStatsHandlerTests(test_utils.GenericTestBase):
             self.logout()
 
 
-class FeedbackThreadSummaryListHandler(test_utils.GenericTestBase):
+class FeedbackThreadSummaryListHandlerTests(test_utils.GenericTestBase):
 
     EXP_ID = 'eid1'
 

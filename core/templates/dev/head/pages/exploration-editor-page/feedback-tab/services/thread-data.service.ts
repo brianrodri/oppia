@@ -37,6 +37,7 @@ angular.module('oppia').factory('ThreadDataService', [
     var _expId = ExplorationDataService.explorationId;
     var _FEEDBACK_STATS_HANDLER_URL = '/feedbackstatshandler/' + _expId;
     var _THREAD_LIST_HANDLER_URL = '/threadlisthandler/' + _expId;
+    var _THREAD_SUMMARY_HANDLER_URL = '/feedbacksummaries/' + _expId;
     var _SUGGESTION_ACTION_HANDLER_URL = '/suggestionactionhandler/' +
         'exploration/' + _expId + '/';
     var _THREAD_HANDLER_PREFIX = '/threadhandler/';
@@ -98,6 +99,11 @@ angular.module('oppia').factory('ThreadDataService', [
       },
       fetchThreads: function(onSuccess) {
         return _fetchThreads().then(onSuccess).then(this.getData);
+      },
+      fetchThreadSummaries: function() {
+        return $http.get(_THREAD_SUMMARY_HANDLER_URL).then(
+          response => response.data
+        );
       },
       fetchMessages: function(threadId) {
         return _fetchMessages(threadId);

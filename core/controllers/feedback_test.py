@@ -779,7 +779,7 @@ class FeedbackThreadSummaryListHandlerTests(test_utils.GenericTestBase):
     USER_USERNAME = 'user'
 
     def setUp(self):
-        super(FeedbackThreadSummaryListHandler, self).setUp()
+        super(FeedbackThreadSummaryListHandlerTests, self).setUp()
 
         self.signup(self.USER_EMAIL, self.USER_USERNAME)
         self.user_id = self.get_user_id_from_email(self.USER_EMAIL)

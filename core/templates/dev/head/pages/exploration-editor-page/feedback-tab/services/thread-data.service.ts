@@ -83,6 +83,8 @@ angular.module('oppia').factory('ThreadDataService', [
           }
           return thread;
         });
+
+        return _data;
       });
     };
 
@@ -94,8 +96,8 @@ angular.module('oppia').factory('ThreadDataService', [
 
     return {
       data: _data,
-      fetchThreads: function(onSuccess) {
-        return _fetchThreads().then(onSuccess).then(() => _data);
+      fetchThreads: function() {
+        return _fetchThreads();
       },
       fetchThreadSummaries: function() {
         return $http.get(_THREAD_SUMMARY_HANDLER_URL).then(

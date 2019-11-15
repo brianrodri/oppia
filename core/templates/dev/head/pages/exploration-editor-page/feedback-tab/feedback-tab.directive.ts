@@ -147,10 +147,11 @@ angular.module('oppia').directive('feedbackTab', [
               }]
             }).result.then(function(result) {
               ThreadDataService.createNewThread(
-                result.newThreadSubject, result.newThreadText, function() {
-                  ctrl.clearActiveThread();
-                  AlertsService.addSuccessMessage('Feedback thread created.');
-                });
+                result.newThreadSubject, result.newThreadText
+              ).then(() => {
+                ctrl.clearActiveThread();
+                AlertsService.addSuccessMessage('Feedback thread created.');
+              });
             });
           };
 
@@ -202,11 +203,11 @@ angular.module('oppia').directive('feedbackTab', [
             }
             ctrl.threadIsUpdated = true;
             ctrl.messageSendingInProgress = true;
-            ThreadDataService.addNewMessage(
-              threadId, tmpText, tmpStatus, function() {
+            ThreadDataService.addNewMessage(threadId, tmpText, tmpStatus).then(
+              () => {
                 _resetTmpMessageFields();
                 ctrl.messageSendingInProgress = false;
-              }, function() {
+              }, () => {
                 ctrl.messageSendingInProgress = false;
               });
           };

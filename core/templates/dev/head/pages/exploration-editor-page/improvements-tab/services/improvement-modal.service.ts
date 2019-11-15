@@ -167,11 +167,11 @@ angular.module('oppia').factory('ImprovementModalService', [
                   return;
                 }
                 $scope.messageSendingInProgress = true;
-                ThreadDataService.addNewMessage(
-                  threadId, tmpText, tmpStatus, function() {
+                ThreadDataService.addNewMessage(threadId, tmpText, tmpStatus)
+                  .then(() => {
                     $scope.tmpMessage.status = $scope.activeThread.status;
                     $scope.messageSendingInProgress = false;
-                  }, function() {
+                  }, () => {
                     $scope.messageSendingInProgress = false;
                   })
                   .then(() => ThreadDataService.fetchMessages(threadId))
@@ -238,11 +238,11 @@ angular.module('oppia').factory('ImprovementModalService', [
                   return;
                 }
                 $scope.messageSendingInProgress = true;
-                ThreadDataService.addNewMessage(
-                  threadId, tmpText, tmpStatus, function() {
+                ThreadDataService.addNewMessage(threadId, tmpText, tmpStatus)
+                  .then(() => {
                     $scope.tmpMessage.status = $scope.activeThread.status;
                     $scope.messageSendingInProgress = false;
-                  }, function() {
+                  }, () => {
                     $scope.messageSendingInProgress = false;
                   })
                   .then(() => ThreadDataService.fetchMessages(threadId))

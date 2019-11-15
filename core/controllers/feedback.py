@@ -214,6 +214,7 @@ class FeedbackThreadSummaryListHandler(base.BaseHandler):
         }
         self.render_json(self.values)
 
+
 class FeedbackThreadViewEventHandler(base.BaseHandler):
     """Records when the given user views a feedback thread, in order to clear
     viewed feedback messages from emails that might be sent in future to this

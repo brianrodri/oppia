@@ -37,7 +37,7 @@ export class FeedbackThread {
   constructor(
       status: string, subject: string, summary: string,
       originalAuthorName: string, lastUpdated: number, messageCount: number,
-      stateName: string, threadId: string, messages: any[] = []) {
+      stateName: string, threadId: string) {
     this.status = status;
     this.subject = subject;
     this.summary = summary;
@@ -46,7 +46,6 @@ export class FeedbackThread {
     this.messageCount = messageCount;
     this.stateName = stateName;
     this.threadId = threadId;
-    this.messages = messages;
   }
 
   copyFromBackendDict(feedbackThreadBackendDict: any): void {
@@ -60,7 +59,6 @@ export class FeedbackThread {
     this.messageCount = source.messageCount;
     this.stateName = source.stateName;
     this.threadId = source.threadId;
-    this.messages = source.messages;
   }
 
   // TODO(#7176): Replace 'any' with the exact type. This has been kept as

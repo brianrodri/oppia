@@ -186,8 +186,8 @@ class FeedbackThreadSummaryListHandler(base.BaseHandler):
 
         self.values = {
             'feedback_thread_summaries': feedback_thread_summaries,
-            'suggestion_thread_summaries': suggestion_thread_summaries,
             'unread_feedback_threads': unread_feedback_threads,
+            'suggestion_thread_summaries': suggestion_thread_summaries,
             'unread_suggestion_threads': unread_suggestion_threads,
         }
         self.render_json(self.values)

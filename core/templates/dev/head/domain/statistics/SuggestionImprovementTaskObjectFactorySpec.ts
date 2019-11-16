@@ -31,8 +31,6 @@ import { ExplorationDraftObjectFactory } from
   'domain/exploration/ExplorationDraftObjectFactory';
 import { FeedbackThreadObjectFactory } from
   'domain/feedback_thread/FeedbackThreadObjectFactory';
-import { FeedbackThreadSummaryObjectFactory } from
-  'domain/feedback_thread/FeedbackThreadSummaryObjectFactory';
 import { FractionObjectFactory } from 'domain/objects/FractionObjectFactory';
 import { HintObjectFactory } from 'domain/exploration/HintObjectFactory';
 import { ImprovementActionButtonObjectFactory } from
@@ -109,9 +107,6 @@ describe('SuggestionImprovementTaskObjectFactory', function() {
       'ExplorationDraftObjectFactory', new ExplorationDraftObjectFactory());
     $provide.value(
       'FeedbackThreadObjectFactory', new FeedbackThreadObjectFactory());
-    $provide.value(
-      'FeedbackThreadSummaryObjectFactory',
-      new FeedbackThreadSummaryObjectFactory());
     $provide.value('FractionObjectFactory', new FractionObjectFactory());
     $provide.value(
       'HintObjectFactory', new HintObjectFactory(

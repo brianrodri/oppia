@@ -39,6 +39,8 @@ import { ExplorationDiffService } from
   'pages/exploration-editor-page/services/exploration-diff.service';
 import { ExtensionTagAssemblerService }
   from 'services/extension-tag-assembler.service';
+import { FeedbackThreadSummaryObjectFactory } from
+  'domain/feedback_thread/FeedbackThreadSummaryObjectFactory';
 import { FormatTimePipe } from 'filters/format-timer.pipe';
 import { FractionObjectFactory } from
   'domain/objects/FractionObjectFactory';
@@ -95,7 +97,9 @@ export class UpgradedServices {
     'UtilsService': new UtilsService(),
     'NumberWithUnitsObjectFactory': new NumberWithUnitsObjectFactory(
       new UnitsObjectFactory(), new FractionObjectFactory()),
-    'WindowDimensionsService': new WindowDimensionsService()
+    'WindowDimensionsService': new WindowDimensionsService(),
+    'FeedbackThreadSummaryObjectFactory':
+      new FeedbackThreadSummaryObjectFactory(),
   };
 }
 

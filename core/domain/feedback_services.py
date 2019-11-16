@@ -528,7 +528,8 @@ def get_thread_summaries(user_id, thread_ids):
             'author_second_last_message': author_second_last_message,
             'exploration_title': explorations[index].title,
             'exploration_id': exploration_ids[index],
-            'thread_id': thread_ids[index]
+            'thread_id': thread_ids[index],
+            'has_suggestion': thread.has_suggestion,
         }
 
         thread_summaries.append(thread_summary)

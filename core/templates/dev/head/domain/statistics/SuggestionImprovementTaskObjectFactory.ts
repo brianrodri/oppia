@@ -99,8 +99,8 @@ angular.module('oppia').factory('SuggestionImprovementTaskObjectFactory', [
        *    suggestion threads associated to the current exploration.
        */
       fetchTasks: function() {
-        return ThreadDataService.fetchThreads().then(
-          threadData => threadData.suggestionThreads.map(this.createNew)
+        return ThreadDataService.fetchThreadSummaries().then(
+          summaries => summaries.suggestion_thread_summaries.map(this.createNew)
         );
       },
     };

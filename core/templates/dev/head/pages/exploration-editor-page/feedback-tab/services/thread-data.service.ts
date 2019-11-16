@@ -18,6 +18,7 @@
  */
 
 require('domain/feedback_thread/FeedbackThreadObjectFactory.ts');
+require('domain/statistics/ThreadSummaryObjectFactory.ts');
 require('domain/suggestion/SuggestionThreadObjectFactory.ts');
 require('pages/exploration-editor-page/exploration-editor-page.constants.ts');
 require('pages/exploration-editor-page/services/exploration-data.service.ts');
@@ -29,11 +30,13 @@ require(
 angular.module('oppia').factory('ThreadDataService', [
   '$http', '$q', 'AlertsService', 'ExplorationDataService',
   'FeedbackThreadObjectFactory', 'SuggestionThreadObjectFactory',
-  'ACTION_ACCEPT_SUGGESTION', 'STATUS_FIXED', 'STATUS_IGNORED',
+  'ThreadSummaryObjectFactory', 'ACTION_ACCEPT_SUGGESTION', 'STATUS_FIXED',
+  'STATUS_IGNORED',
   function(
       $http, $q, AlertsService, ExplorationDataService,
       FeedbackThreadObjectFactory, SuggestionThreadObjectFactory,
-      ACTION_ACCEPT_SUGGESTION, STATUS_FIXED, STATUS_IGNORED) {
+      ThreadSummaryObjectFactory, ACTION_ACCEPT_SUGGESTION, STATUS_FIXED,
+      STATUS_IGNORED) {
     var _expId = ExplorationDataService.explorationId;
     var _FEEDBACK_STATS_HANDLER_URL = '/feedbackstatshandler/' + _expId;
     var _THREAD_LIST_HANDLER_URL = '/threadlisthandler/' + _expId;
@@ -47,14 +50,24 @@ angular.module('oppia').factory('ThreadDataService', [
     // All the threads for this exploration. This is a list whose entries are
     // objects, each representing threads. The 'messages' key of this object
     // is updated lazily.
-    var _data = {
-      feedbackThreads: [],
-      suggestionThreads: [],
-    };
+    var _data = {feedbackThreads: [], suggestionThreads: []};
     var _threadsById = {};
 
     // Number of open threads that need action
     var _openThreadsCount = 0;
+
+    var _fetchThreadSummaries = function() {
+      return $http.get(_THREAD_SUMMARY_HANDLER_URL).then(response => {
+        return {
+          /** @type {ThreadSummary[]} */
+          feedbackThreads: response.data.feedback_thread_summaries.map(
+            ThreadSummaryObjectFactory.createFromBackendDict),
+          /** @type {ThreadSummary[]} */
+          suggestionThreads: response.data.suggestion_thread_summaries.map(
+            ThreadSummaryObjectFactory.createFromBackendDict),
+        };
+      });
+    };
 
     var _fetchThreads = function() {
       return $http.get(_THREAD_LIST_HANDLER_URL).then(response => {
@@ -100,9 +113,7 @@ angular.module('oppia').factory('ThreadDataService', [
         return _fetchThreads();
       },
       fetchThreadSummaries: function() {
-        return $http.get(_THREAD_SUMMARY_HANDLER_URL).then(
-          response => response.data
-        );
+        return _fetchThreadSummaries();
       },
       fetchMessages: function(threadId) {
         return _fetchMessages(threadId);

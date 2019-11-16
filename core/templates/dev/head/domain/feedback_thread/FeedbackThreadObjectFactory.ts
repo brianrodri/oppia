@@ -48,17 +48,10 @@ export class FeedbackThread {
     this.threadId = threadId;
   }
 
-  copyFromBackendDict(feedbackThreadBackendDict: any): void {
-    var source = new FeedbackThreadObjectFactory().createFromBackendDict(
-      feedbackThreadBackendDict);
-    this.status = source.status;
-    this.subject = source.subject;
-    this.summary = source.summary;
-    this.originalAuthorName = source.originalAuthorName;
-    this.lastUpdated = source.lastUpdated;
-    this.messageCount = source.messageCount;
-    this.stateName = source.stateName;
-    this.threadId = source.threadId;
+  copyFromBackendDict(backendDict: any): void {
+    angular.copy(
+      new FeedbackThreadObjectFactory().createFromBackendDict(backendDict),
+      this);
   }
 
   // TODO(#7176): Replace 'any' with the exact type. This has been kept as
@@ -78,20 +71,17 @@ export class FeedbackThread {
 })
 export class FeedbackThreadObjectFactory {
   // TODO(#7176): Replace 'any' with the exact type. This has been kept as
-  // 'any' because 'feedbackThreadBackendDict' is a dict with underscore_cased
+  // 'any' because 'backendDict' is a dict with underscore_cased
   // keys which give tslint errors against underscore_casing in favor of
   // camelCasing.
-  createFromBackendDict(feedbackThreadBackendDict: any): FeedbackThread {
+  createFromBackendDict(backendDict: any): FeedbackThread {
     return new FeedbackThread(
-      feedbackThreadBackendDict.status, feedbackThreadBackendDict.subject,
-      feedbackThreadBackendDict.summary,
-      feedbackThreadBackendDict.original_author_username,
-      feedbackThreadBackendDict.last_updated,
-      feedbackThreadBackendDict.message_count,
-      feedbackThreadBackendDict.state_name,
-      feedbackThreadBackendDict.thread_id, feedbackThreadBackendDict.messages);
+      backendDict.status, backendDict.subject, backendDict.summary,
+      backendDict.original_author_username, backendDict.last_updated,
+      backendDict.message_count, backendDict.state_name, backendDict.thread_id);
   }
 }
+
 angular.module('oppia').factory(
   'FeedbackThreadObjectFactory',
   downgradeInjectable(FeedbackThreadObjectFactory));

@@ -184,13 +184,12 @@ class FeedbackThreadSummaryListHandler(base.BaseHandler):
             feedback_services.get_thread_summaries(
                 self.user_id, suggestion_thread_ids))
 
-        self.values = {
+        self.render_json({
             'feedback_thread_summaries': feedback_thread_summaries,
             'unread_feedback_threads': unread_feedback_threads,
             'suggestion_thread_summaries': suggestion_thread_summaries,
             'unread_suggestion_threads': unread_suggestion_threads,
-        }
-        self.render_json(self.values)
+        })
 
 
 class FeedbackThreadViewEventHandler(base.BaseHandler):

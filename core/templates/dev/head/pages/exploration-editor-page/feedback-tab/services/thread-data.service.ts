@@ -19,7 +19,6 @@
 
 require('domain/feedback_thread/FeedbackThreadObjectFactory.ts');
 require('domain/feedback_thread/FeedbackThreadSummaryObjectFactory.ts');
-require('domain/suggestion/SuggestionThreadObjectFactory.ts');
 require('pages/exploration-editor-page/exploration-editor-page.constants.ts');
 require('pages/exploration-editor-page/services/exploration-data.service.ts');
 require('services/alerts.service.ts');
@@ -30,13 +29,11 @@ require(
 angular.module('oppia').factory('ThreadDataService', [
   '$http', '$q', 'AlertsService', 'ExplorationDataService',
   'FeedbackThreadObjectFactory', 'FeedbackThreadSummaryObjectFactory',
-  'SuggestionThreadObjectFactory', 'ACTION_ACCEPT_SUGGESTION', 'STATUS_FIXED',
-  'STATUS_IGNORED',
+  'ACTION_ACCEPT_SUGGESTION', 'STATUS_FIXED', 'STATUS_IGNORED',
   function(
       $http, $q, AlertsService, ExplorationDataService,
       FeedbackThreadObjectFactory, FeedbackThreadSummaryObjectFactory,
-      SuggestionThreadObjectFactory, ACTION_ACCEPT_SUGGESTION, STATUS_FIXED,
-      STATUS_IGNORED) {
+      ACTION_ACCEPT_SUGGESTION, STATUS_FIXED, STATUS_IGNORED) {
     var _expId = ExplorationDataService.explorationId;
     var _FEEDBACK_STATS_HANDLER_URL = '/feedbackstatshandler/' + _expId;
     var _THREAD_LIST_HANDLER_URL = '/threadlisthandler/' + _expId;

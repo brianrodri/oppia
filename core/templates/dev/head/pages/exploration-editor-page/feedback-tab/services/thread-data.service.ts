@@ -18,7 +18,7 @@
  */
 
 require('domain/feedback_thread/FeedbackThreadObjectFactory.ts');
-require('domain/statistics/ThreadSummaryObjectFactory.ts');
+require('domain/feedback_thread/FeedbackThreadSummaryObjectFactory.ts');
 require('domain/suggestion/SuggestionThreadObjectFactory.ts');
 require('pages/exploration-editor-page/exploration-editor-page.constants.ts');
 require('pages/exploration-editor-page/services/exploration-data.service.ts');
@@ -29,13 +29,13 @@ require(
 
 angular.module('oppia').factory('ThreadDataService', [
   '$http', '$q', 'AlertsService', 'ExplorationDataService',
-  'FeedbackThreadObjectFactory', 'SuggestionThreadObjectFactory',
-  'ThreadSummaryObjectFactory', 'ACTION_ACCEPT_SUGGESTION', 'STATUS_FIXED',
+  'FeedbackThreadObjectFactory', 'FeedbackThreadSummaryObjectFactory',
+  'SuggestionThreadObjectFactory', 'ACTION_ACCEPT_SUGGESTION', 'STATUS_FIXED',
   'STATUS_IGNORED',
   function(
       $http, $q, AlertsService, ExplorationDataService,
-      FeedbackThreadObjectFactory, SuggestionThreadObjectFactory,
-      ThreadSummaryObjectFactory, ACTION_ACCEPT_SUGGESTION, STATUS_FIXED,
+      FeedbackThreadObjectFactory, FeedbackThreadSummaryObjectFactory,
+      SuggestionThreadObjectFactory, ACTION_ACCEPT_SUGGESTION, STATUS_FIXED,
       STATUS_IGNORED) {
     var _expId = ExplorationDataService.explorationId;
     var _FEEDBACK_STATS_HANDLER_URL = '/feedbackstatshandler/' + _expId;
@@ -76,7 +76,7 @@ angular.module('oppia').factory('ThreadDataService', [
       if (threadSummary) {
         threadSummary.copyFromBackendDict(summaryDict);
       } else {
-        threadSummary = ThreadSummaryObjectFactory.createFromBackendDict(
+        threadSummary = FeedbackThreadSummaryObjectFactory.createFromBackendDict(
           summaryDict);
         _threadSummariesById[summaryDict.thread_id] = threadSummary;
       }

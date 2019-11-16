@@ -47,76 +47,70 @@ angular.module('oppia').factory('ThreadDataService', [
     var _FEEDBACK_THREAD_VIEW_EVENT_URL = '/feedbackhandler/thread_view_event';
     var _THREAD_STATUS_OPEN = 'open';
 
-    // All the threads for this exploration. This is a list whose entries are
-    // objects, each representing threads. The 'messages' key of this object
-    // is updated lazily.
-    var _data = {feedbackThreads: [], suggestionThreads: []};
-    var _threadsById = {};
-
     // Number of open threads that need action
     var _openThreadsCount = 0;
 
-    var _fetchThreadSummaries = function() {
-      return $http.get(_THREAD_SUMMARY_HANDLER_URL).then(response => {
-        return {
-          /** @type {ThreadSummary[]} */
-          feedbackThreads: response.data.feedback_thread_summaries.map(
-            ThreadSummaryObjectFactory.createFromBackendDict),
-          /** @type {ThreadSummary[]} */
-          suggestionThreads: response.data.suggestion_thread_summaries.map(
-            ThreadSummaryObjectFactory.createFromBackendDict),
-        };
-      });
+    // All the threads for this exploration. This is a list whose entries are
+    // objects, each representing threads. The 'messages' key of this object
+    // is updated lazily.
+    var _threadData = {feedbackThreads: [], suggestionThreads: []};
+    var _threadsById = {};
+
+    var _setThreadFromBackendDict = function(backendDict) {
+      var thread = _threadsById[backendDict.thread_id];
+      if (thread) {
+        thread.copyFromBackendDict(backendDict);
+      } else {
+        thread = FeedbackThreadObjectFactory.createFromBackendDict(
+          backendDict);
+        _threadsById[thread.threadId] = thread;
+      }
+      return thread;
     };
 
-    var _fetchThreads = function() {
-      return $http.get(_THREAD_LIST_HANDLER_URL).then(response => {
-        var feedbackThreadDicts = response.data.feedback_thread_dicts;
-        _data.feedbackThreads = feedbackThreadDicts.map(threadDict => {
-          var thread = _threadsById[threadDict.thread_id];
-          if (thread) {
-            thread.copyFromBackendDict(threadDict);
-          } else {
-            thread = FeedbackThreadObjectFactory.createFromBackendDict(
-              threadDict);
-            _threadsById[thread.threadId] = thread;
-          }
-          return thread;
-        });
+    var _threadSummaryData = {feedbackThreads: [], suggestionThreads: []};
+    var _threadSummariesById = {};
 
-        var suggestionThreadDicts = response.data.suggestion_thread_dicts;
-        _data.suggestionThreads = suggestionThreadDicts.map(threadDict => {
-          var thread = _threadsById[threadDict.thread_id];
-          if (thread) {
-            thread.copyFromBackendDicts(threadDict, threadDict.suggestion_dict);
-          } else {
-            thread = SuggestionThreadObjectFactory.createFromBackendDicts(
-              threadDict, threadDict.suggestion_dict);
-            _threadsById[thread.threadId] = thread;
-          }
-          return thread;
-        });
-
-        return _data;
-      });
-    };
-
-    var _fetchMessages = function(threadId) {
-      return $http.get(_THREAD_HANDLER_PREFIX + threadId).then(response => {
-        _threadsById[threadId].setMessages(response.data.messages);
-      });
-    };
+    var _setThreadSummaryFromBackendDict = function(summaryDict) {
+      var threadSummary = _threadSummariesById[summaryDict.thread_id];
+      if (threadSummary) {
+        threadSummary.copyFromBackendDict(summaryDict);
+      } else {
+        threadSummary = ThreadSummaryObjectFactory.createFromBackendDict(
+          summaryDict);
+        _threadSummariesById[summaryDict.thread_id] = threadSummary;
+      }
+      return threadSummary;
+    }
 
     return {
-      data: _data,
-      fetchThreads: function() {
-        return _fetchThreads();
+      data: _threadData,
+      fetchThreads: function(forceFetch = false) {
+        return $http.get(_THREAD_LIST_HANDLER_URL).then(response => {
+          _threadData.feedbackThreads =
+            response.data.feedback_thread_dicts.map(
+              _setThreadFromBackendDict);
+          _threadData.suggestionThreads =
+            response.data.suggestion_thread_dicts.map(
+              _setThreadFromBackendDict);
+          return _threadData;
+        });
       },
       fetchThreadSummaries: function() {
-        return _fetchThreadSummaries();
+        return $http.get(_THREAD_SUMMARY_HANDLER_URL).then(response => {
+          _threadSummaryData.feedbackThreads =
+            response.data.feedback_thread_summaries.map(
+              _setThreadSummaryFromBackendDict);
+          _threadSummaryData.suggestionThreads =
+            response.data.suggestion_thread_summaries.map(
+              _setThreadSummaryFromBackendDict);
+          return _threadSummaryData;
+        });
       },
       fetchMessages: function(threadId) {
-        return _fetchMessages(threadId);
+        return $http.get(_THREAD_HANDLER_PREFIX + threadId).then(response => {
+          _threadsById[threadId].setMessages(response.data.messages);
+        });
       },
       fetchFeedbackStats: function() {
         return $http.get(_FEEDBACK_STATS_HANDLER_URL).then(response => {
@@ -133,7 +127,7 @@ angular.module('oppia').factory('ThreadDataService', [
           text: newText
         }).then(() => {
           _openThreadsCount += 1;
-          return _fetchThreads();
+          return $q.all([this.fetchThreads(), this.fetchThreadSummaries()]);
         }, () => {
           AlertsService.addWarning('Error creating new thread.');
         });
@@ -141,7 +135,7 @@ angular.module('oppia').factory('ThreadDataService', [
       markThreadAsSeen: function(threadId) {
         return $http.post(_FEEDBACK_THREAD_VIEW_EVENT_URL + '/' + threadId, {
           thread_id: threadId
-        });
+        }).then(this.fetchThreadSummaries);
       },
       addNewMessage: function(threadId, newMessage, newStatus) {
         var thread = _threadsById[threadId];
@@ -165,7 +159,10 @@ angular.module('oppia').factory('ThreadDataService', [
               _openThreadsCount += 1;
             }
           }
-          return _fetchMessages(threadId);
+          return $q.all([
+            this.fetchMessages(threadId),
+            this.fetchThreadSummaries(),
+          ]);
         });
       },
       resolveSuggestion: function(
@@ -183,7 +180,7 @@ angular.module('oppia').factory('ThreadDataService', [
           thread.status =
             action === ACTION_ACCEPT_SUGGESTION ? STATUS_FIXED : STATUS_IGNORED;
           _openThreadsCount -= 1;
-        });
+        }).then(this.fetchThreadSummaries);
       }
     };
   }

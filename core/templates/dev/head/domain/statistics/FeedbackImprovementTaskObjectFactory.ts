@@ -30,12 +30,13 @@ angular.module('oppia').factory('FeedbackImprovementTaskObjectFactory', [
   function(
       ImprovementActionButtonObjectFactory, ImprovementModalService,
       ThreadDataService, FEEDBACK_IMPROVEMENT_TASK_TYPE) {
-    var FeedbackImprovementTask = function(feedbackThread) {
-      this._feedbackThread = feedbackThread;
+    var FeedbackImprovementTask = function(thread, summary) {
+      this._feedbackThread = thread;
+      this._feedbackThreadSummary = summary;
       this._actionButtons = [
         ImprovementActionButtonObjectFactory.createNew(
           'Review Thread', 'btn-primary',
-          () => ImprovementModalService.openFeedbackThread(feedbackThread)),
+          () => ImprovementModalService.openFeedbackThread(thread)),
       ];
     };
 
@@ -70,7 +71,7 @@ angular.module('oppia').factory('FeedbackImprovementTaskObjectFactory', [
      *    rendering.
      */
     FeedbackImprovementTask.prototype.getDirectiveData = function() {
-      return this._feedbackThread;
+      return this._feedbackThreadSummary;
     };
 
     /**
@@ -86,8 +87,8 @@ angular.module('oppia').factory('FeedbackImprovementTaskObjectFactory', [
        * @returns {FeedbackImprovementTask}
        * @param {FeedbackThread} thread - The thread this task is referring to.
        */
-      createNew: function(thread) {
-        return new FeedbackImprovementTask(thread);
+      createNew: function(thread, threadSummary) {
+        return new FeedbackImprovementTask(thread, threadSummary);
       },
 
       /**
@@ -95,9 +96,10 @@ angular.module('oppia').factory('FeedbackImprovementTaskObjectFactory', [
        *    threads associated to the current exploration.
        */
       fetchTasks: function() {
-        return ThreadDataService.fetchThreadSummaries().then(
-          summaries => summaries.feedback_thread_summaries.map(this.createNew)
-        );
+        return ThreadDataService.fetchThreadsAndSummaries().then(threadData => {
+          return threadData.filter(datum => !datum.thread.hasSuggestion)
+            .map(datum => this.createNew(datum.thread, datum.summary));
+        });
       },
     };
   }

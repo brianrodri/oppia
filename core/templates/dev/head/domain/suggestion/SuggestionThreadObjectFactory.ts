@@ -23,7 +23,7 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
   'SuggestionObjectFactory', function(SuggestionObjectFactory) {
     var SuggestionThread = function(
         status, subject, summary, originalAuthorName, lastUpdated, messageCount,
-        threadId, suggestion, messages = []) {
+        threadId, suggestion) {
       this.status = status;
       this.subject = subject;
       this.summary = summary;
@@ -32,7 +32,7 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
       this.messageCount = messageCount;
       this.threadId = threadId;
       this.suggestion = suggestion;
-      this.messages = messages;
+      this.messages = [];
     };
 
     var createFromBackendDicts = function(
@@ -49,8 +49,7 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
         suggestionThreadBackendDict.original_author_username,
         suggestionThreadBackendDict.last_updated,
         suggestionThreadBackendDict.message_count,
-        suggestionThreadBackendDict.thread_id, suggestion,
-        suggestionThreadBackendDict.messages);
+        suggestionThreadBackendDict.thread_id, suggestion);
     };
 
     // TODO(ankita240796): Remove the bracket notation once Angular2 gets in.
@@ -59,17 +58,10 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
 
     SuggestionThread.prototype.copyFromBackendDicts = function(
         suggestionThreadBackendDict, suggestionBackendDict) {
-      var source = createFromBackendDicts(
-        suggestionThreadBackendDict, suggestionBackendDict);
-      this.status = source.status;
-      this.subject = source.subject;
-      this.summary = source.summary;
-      this.originalAuthorName = source.originalAuthorName;
-      this.lastUpdated = source.lastUpdated;
-      this.messageCount = source.messageCount;
-      this.threadId = source.threadId;
-      this.suggestion = source.suggestion;
-      this.messages = source.messages;
+      angular.copy(
+        createFromBackendDicts(
+          suggestionThreadBackendDict, suggestionBackendDict),
+        this);
     };
 
     SuggestionThread.prototype.setMessages = function(messages) {

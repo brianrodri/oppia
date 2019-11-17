@@ -35,7 +35,9 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
       this.messages = [];
     };
 
-    var createFromBackendDicts = function(
+    // TODO(ankita240796): Remove the bracket notation once Angular2 gets in.
+    // eslint-disable-next-line dot-notation
+    SuggestionThread['createFromBackendDicts'] = function(
         suggestionThreadBackendDict, suggestionBackendDict) {
       var suggestion;
       if (suggestionBackendDict.suggestion_type ===
@@ -52,14 +54,11 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
         suggestionThreadBackendDict.thread_id, suggestion);
     };
 
-    // TODO(ankita240796): Remove the bracket notation once Angular2 gets in.
-    /* eslint-disable dot-notation */
-    SuggestionThread['createFromBackendDicts'] = createFromBackendDicts;
-
     SuggestionThread.prototype.copyFromBackendDicts = function(
         suggestionThreadBackendDict, suggestionBackendDict) {
       angular.copy(
-        createFromBackendDicts(
+        // eslint-disable-next-line dot-notation
+        SuggestionThread['createFromBackendDicts'](
           suggestionThreadBackendDict, suggestionBackendDict),
         this);
     };

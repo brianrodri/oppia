@@ -54,6 +54,13 @@ export class FeedbackThreadSummary {
     this.threadId = threadId;
   }
 
+  copyFromBackendDict(feedbackThreadSummaryBackendDict: any): void {
+    angular.copy(
+      new FeedbackThreadSummaryObjectFactory().createFromBackendDict(
+        feedbackThreadSummaryBackendDict),
+      this);
+  }
+
   markTheLastTwoMessagesAsRead(): void {
     if (this.authorSecondLastMessage) {
       this.secondLastMessageRead = true;

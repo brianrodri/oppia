@@ -33,13 +33,22 @@ class ThreadListHandler(base.BaseHandler):
 
     @acl_decorators.can_play_exploration
     def get(self, exploration_id):
+        feedback_thread_dicts = [
+            thread.to_dict() for thread in feedback_services.get_all_threads(
+                feconf.ENTITY_TYPE_EXPLORATION, exploration_id, False)]
+        suggestion_thread_dicts = [
+            thread.to_dict() for thread in feedback_services.get_all_threads(
+                feconf.ENTITY_TYPE_EXPLORATION, exploration_id, True)]
+
+        suggestions = suggestion_services.get_suggestions_by_id(
+            [d['thread_id'] for d in suggestion_thread_dicts])
+        for suggestion_thread_dict, suggestion in zip(suggestion_thread_dicts,
+                                                      suggestions):
+            suggestion_thread_dict['suggestion_dict'] = suggestion.to_dict()
+
         self.values.update({
-            'feedback_thread_dicts': (
-                [t.to_dict() for t in feedback_services.get_all_threads(
-                    feconf.ENTITY_TYPE_EXPLORATION, exploration_id, False)]),
-            'suggestion_thread_dicts': (
-                [t.to_dict() for t in feedback_services.get_all_threads(
-                    feconf.ENTITY_TYPE_EXPLORATION, exploration_id, True)])
+            'feedback_thread_dicts': feedback_thread_dicts,
+            'suggestion_thread_dicts': suggestion_thread_dicts,
         })
         self.render_json(self.values)
 

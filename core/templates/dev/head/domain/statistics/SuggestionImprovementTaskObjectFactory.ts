@@ -34,18 +34,19 @@ angular.module('oppia').factory('SuggestionImprovementTaskObjectFactory', [
       ImprovementActionButtonObjectFactory, ImprovementModalService,
       ThreadDataService, SUGGESTION_IMPROVEMENT_TASK_TYPE) {
     var SuggestionImprovementTask = function(thread, threadSummary) {
-      this._suggestionThread = thread;
-      this._suggestionThreadSummary = threadSummary;
+      this._suggestion = thread.suggestion;
+      this._thread = thread;
+      this._threadSummary = threadSummary;
       this._actionButtons = [
         ImprovementActionButtonObjectFactory.createNew(
           'Review Thread', 'btn-primary',
-          () => ImprovementModalService.openSuggestionThread(thread)),
+          () => ImprovementModalService.openSuggestionThread(this._thread)),
       ];
     };
 
     /** @returns {string} - The actionable status of this task. */
     SuggestionImprovementTask.prototype.getStatus = function() {
-      return this._suggestionThread.status;
+      return this._thread.status;
     };
 
     /**
@@ -58,8 +59,7 @@ angular.module('oppia').factory('SuggestionImprovementTaskObjectFactory', [
 
     /** @returns {string} - A simple summary of the suggestion thread. */
     SuggestionImprovementTask.prototype.getTitle = function() {
-      return 'Suggestion for the card "' +
-        this._suggestionThread.suggestion.stateName + '"';
+      return 'Suggestion for the card "' + this._suggestion.stateName + '"';
     };
 
     /**
@@ -67,7 +67,7 @@ angular.module('oppia').factory('SuggestionImprovementTaskObjectFactory', [
      *    this task's data.
      */
     SuggestionImprovementTask.prototype.getDirectiveData = function() {
-      return this._suggestionThreadSummary;
+      return this._threadSummary;
     };
 
     /**
@@ -101,8 +101,8 @@ angular.module('oppia').factory('SuggestionImprovementTaskObjectFactory', [
        */
       fetchTasks: function() {
         return ThreadDataService.fetchThreadsAndSummaries().then(threadData => {
-          return threadData.filter(datum => datum.thread.hasSuggestion)
-            .map(datum => this.createNew(datum.thread, datum.summary));
+          return threadData.filter(datum => datum.thread.isSuggestionThread())
+            .map(datum => this.createNew(datum.thread, datum.threadSummary));
         });
       },
     };

@@ -127,6 +127,21 @@ def get_suggestion_by_id(suggestion_id):
     return get_suggestion_from_model(model) if model else None
 
 
+def get_suggestions_by_id(suggestion_ids):
+    """Finds the suggestions corresponding to each suggestion ID.
+
+    Args:
+        suggestion_id: list(str). The IDs of the suggestions.
+
+    Returns:
+        list(Suggestion|None). The corresponding suggestions, with None when no
+            suggestion is found.
+    """
+    return [get_suggestion_from_model(s) if s else None
+            for s in suggestion_models.GeneralSuggestionModel.get_multi(
+                suggestion_ids)]
+
+
 def query_suggestions(query_fields_and_values):
     """Queries for suggestions.
 

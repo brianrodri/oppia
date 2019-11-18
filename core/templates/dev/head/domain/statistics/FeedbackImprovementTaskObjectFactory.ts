@@ -30,24 +30,24 @@ angular.module('oppia').factory('FeedbackImprovementTaskObjectFactory', [
   function(
       ImprovementActionButtonObjectFactory, ImprovementModalService,
       ThreadDataService, FEEDBACK_IMPROVEMENT_TASK_TYPE) {
-    var FeedbackImprovementTask = function(thread, summary) {
-      this._feedbackThread = thread;
-      this._feedbackThreadSummary = summary;
+    var FeedbackImprovementTask = function(thread, threadSummary) {
+      this._thread = thread;
+      this._threadSummary = threadSummary;
       this._actionButtons = [
         ImprovementActionButtonObjectFactory.createNew(
           'Review Thread', 'btn-primary',
-          () => ImprovementModalService.openFeedbackThread(thread)),
+          () => ImprovementModalService.openFeedbackThread(this._thread)),
       ];
     };
 
     /** @returns {string} - The actionable status of this task. */
     FeedbackImprovementTask.prototype.getStatus = function() {
-      return this._feedbackThread.status;
+      return this._thread.status;
     };
 
     /** @returns {string} - A simple summary of the feedback thread. */
     FeedbackImprovementTask.prototype.getTitle = function() {
-      return this._feedbackThread.subject;
+      return this._thread.subject;
     };
 
     /**
@@ -71,7 +71,7 @@ angular.module('oppia').factory('FeedbackImprovementTaskObjectFactory', [
      *    rendering.
      */
     FeedbackImprovementTask.prototype.getDirectiveData = function() {
-      return this._feedbackThreadSummary;
+      return this._threadSummary;
     };
 
     /**
@@ -86,6 +86,8 @@ angular.module('oppia').factory('FeedbackImprovementTaskObjectFactory', [
       /**
        * @returns {FeedbackImprovementTask}
        * @param {FeedbackThread} thread - The thread this task is referring to.
+       * @param {FeedbackThreadSummary} threadSummary - The summary of key
+       *    information regarding the thread.
        */
       createNew: function(thread, threadSummary) {
         return new FeedbackImprovementTask(thread, threadSummary);
@@ -97,8 +99,8 @@ angular.module('oppia').factory('FeedbackImprovementTaskObjectFactory', [
        */
       fetchTasks: function() {
         return ThreadDataService.fetchThreadsAndSummaries().then(threadData => {
-          return threadData.filter(datum => !datum.thread.hasSuggestion)
-            .map(datum => this.createNew(datum.thread, datum.summary));
+          return threadData.filter(datum => !datum.thread.isSuggestionThread())
+            .map(datum => this.createNew(datum.thread, datum.threadSummary));
         });
       },
     };

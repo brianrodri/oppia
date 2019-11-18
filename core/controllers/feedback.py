@@ -44,7 +44,8 @@ class ThreadListHandler(base.BaseHandler):
             [d['thread_id'] for d in suggestion_thread_dicts])
         for suggestion_thread_dict, suggestion in zip(suggestion_thread_dicts,
                                                       suggestions):
-            suggestion_thread_dict['suggestion_dict'] = suggestion.to_dict()
+            suggestion_thread_dict['suggestion_dict'] = (
+                suggestion.to_dict() if suggestion else None)
 
         self.values.update({
             'feedback_thread_dicts': feedback_thread_dicts,

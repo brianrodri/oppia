@@ -129,6 +129,7 @@ angular.module('oppia').factory('ImprovementModalService', [
                 return userInfo.isLoggedIn();
               });
             },
+            threadMessages: ThreadDataService.fetchMessages(thread.threadId),
           },
           controller: [
             '$scope', '$uibModalInstance', 'isUserLoggedIn',
@@ -197,6 +198,7 @@ angular.module('oppia').factory('ImprovementModalService', [
                 return userInfo.isLoggedIn();
               });
             },
+            threadMessages: ThreadDataService.fetchMessages(thread.threadId),
           },
           controller: [
             '$scope', '$uibModalInstance', 'isUserLoggedIn',

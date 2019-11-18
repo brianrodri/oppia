@@ -83,14 +83,14 @@ angular.module('oppia').factory('ThreadDataService', [
     var _threadSummaryData = {feedbackThreads: [], suggestionThreads: []};
     var _threadSummariesById = {};
 
-    var _setThreadSummaryFromBackendDict = function(summaryDict) {
-      var threadSummary = _threadSummariesById[summaryDict.thread_id];
+    var _setThreadSummaryFromBackendDict = function(backendDict) {
+      var threadSummary = _threadSummariesById[backendDict.thread_id];
       if (threadSummary) {
-        threadSummary.copyFromBackendDict(summaryDict);
+        threadSummary.copyFromBackendDict(backendDict);
       } else {
         threadSummary =
-          FeedbackThreadSummaryObjectFactory.createFromBackendDict(summaryDict);
-        _threadSummariesById[summaryDict.thread_id] = threadSummary;
+          FeedbackThreadSummaryObjectFactory.createFromBackendDict(backendDict);
+        _threadSummariesById[backendDict.thread_id] = threadSummary;
       }
       return threadSummary;
     };

@@ -203,8 +203,8 @@ angular.module('oppia').directive('feedbackTab', [
             }
             ctrl.threadIsUpdated = true;
             ctrl.messageSendingInProgress = true;
-            ThreadDataService.addNewMessage(threadId, tmpText, tmpStatus).then(
-              () => {
+            ThreadDataService.addNewMessage(threadId, tmpText, tmpStatus)
+              .then(() => {
                 _resetTmpMessageFields();
                 ctrl.messageSendingInProgress = false;
               }, () => {

@@ -102,11 +102,13 @@ angular.module('oppia').factory('ThreadDataService', [
     return {
       data: _threadData,
       fetchThreadsAndSummaries: function() {
-        return $q.all([this.fetchThreads(), this.fetchThreadSummaries()]).then(
-          () => Object.keys(_threadsById).map(threadId => ({
-            thread: _threadsById[threadId],
-            threadSummary: _threadSummariesById[threadId],
-          })));
+        return $q.all([
+          this.fetchThreads(),
+          this.fetchThreadSummaries(),
+        ]).then(() => Object.keys(_threadsById).map(threadId => ({
+          thread: _threadsById[threadId],
+          threadSummary: _threadSummariesById[threadId],
+        })));
       },
       fetchThreads: function() {
         return $http.get(_THREAD_LIST_HANDLER_URL).then(response => {

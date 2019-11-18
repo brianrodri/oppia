@@ -46,6 +46,7 @@ export class FeedbackThread {
     this.messageCount = messageCount;
     this.stateName = stateName;
     this.threadId = threadId;
+    this.messages = [];
   }
 
   copyFromBackendDict(backendDict: any): void {

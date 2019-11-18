@@ -180,16 +180,14 @@ class FeedbackThreadSummaryListHandler(base.BaseHandler):
     def get(self, exploration_id):
         feedback_thread_ids = [
             thread.id for thread in feedback_services.get_all_threads(
-                feconf.ENTITY_TYPE_EXPLORATION, exploration_id, False)
-        ]
+                feconf.ENTITY_TYPE_EXPLORATION, exploration_id, False)]
         feedback_thread_summaries, unread_feedback_threads = (
             feedback_services.get_thread_summaries(
                 self.user_id, feedback_thread_ids))
 
         suggestion_thread_ids = [
             thread.id for thread in feedback_services.get_all_threads(
-                feconf.ENTITY_TYPE_EXPLORATION, exploration_id, True)
-        ]
+                feconf.ENTITY_TYPE_EXPLORATION, exploration_id, True)]
         suggestion_thread_summaries, unread_suggestion_threads = (
             feedback_services.get_thread_summaries(
                 self.user_id, suggestion_thread_ids))

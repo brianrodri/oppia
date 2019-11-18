@@ -101,8 +101,6 @@ import { SubtitledHtmlObjectFactory } from
 import { SuggestionModalService } from 'services/suggestion-modal.service';
 import { SuggestionObjectFactory } from
   'domain/suggestion/SuggestionObjectFactory';
-import { SuggestionThreadObjectFactory } from
-  'domain/suggestion/SuggestionThreadObjectFactory';
 import { ThreadStatusDisplayService } from
   // eslint-disable-next-line max-len
   'pages/exploration-editor-page/feedback-tab/services/thread-status-display.service';
@@ -224,9 +222,6 @@ export class UpgradedServices {
         upgradedServices['ClassifierObjectFactory']);
     upgradedServices['StateEditorService'] =
       new StateEditorService(upgradedServices['SolutionValidityService']);
-    upgradedServices['SuggestionThreadObjectFactory'] =
-      new SuggestionThreadObjectFactory(
-        upgradedServices['SuggestionObjectFactory']);
     upgradedServices['UrlService'] =
       new UrlService(upgradedServices['WindowRef']);
     upgradedServices['WrittenTranslationsObjectFactory'] =

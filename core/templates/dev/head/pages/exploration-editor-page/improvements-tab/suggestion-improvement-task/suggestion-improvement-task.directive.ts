@@ -36,7 +36,7 @@ angular.module('oppia').directive('suggestionImprovementTask', [
             var data = $scope.getData();
             return {
               text: data.lastMessageText,
-              author: data.lastMessageText,
+              author: data.authorLastMessage,
               updatedOn: data.lastUpdated,
               updatedStatus: data.totalMessageCount === 1 ? null : data.status,
             };

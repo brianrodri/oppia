@@ -218,7 +218,9 @@ describe('SuggestionImprovementTaskObjectFactory', function() {
         summary: 'sample summary',
         message_count: 10,
         state_name: 'state 1',
-        thread_id: 'exploration.exp1.thread1'
+        thread_id: 'exploration.exp1.thread1',
+        last_nonempty_message_text: 'tenth message',
+        last_nonempty_message_author: 'author',
       };
       var mockSuggestionBackendDict = {
         suggestion_id: 'exploration.exp1.thread1',

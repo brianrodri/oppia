@@ -52,7 +52,7 @@ describe('Feedback thread object factory', () => {
     expect(feedbackThread.threadId).toEqual('exp1.thread1');
     expect(feedbackThread.isSuggestionThread()).toEqual(false);
     expect(feedbackThread.lastNonemptyMessageText).toEqual('message0');
-    expect(feedbackThread.lastNonemptyMessageText).toEqual('author');
+    expect(feedbackThread.lastNonemptyMessageAuthor).toEqual('author');
 
     var messages = [
       {text: 'anon message', author_username: null},
@@ -66,6 +66,6 @@ describe('Feedback thread object factory', () => {
     expect(feedbackThread.messages).toEqual(messages);
     expect(feedbackThread.messageCount).toEqual(2);
     expect(feedbackThread.lastNonemptyMessageText).toEqual('user message');
-    expect(feedbackThread.lastNonemptyMessageText).toEqual('creator');
+    expect(feedbackThread.lastNonemptyMessageAuthor).toEqual('creator');
   });
 });

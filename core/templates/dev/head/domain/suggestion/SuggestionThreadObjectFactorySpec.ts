@@ -134,7 +134,7 @@ describe('Suggestion thread object factory', function() {
     expect(suggestionThread.messageCount).toEqual(2);
     expect(suggestionThread.threadId).toEqual('exploration.exp1.thread1');
     expect(suggestionThread.lastNonemptyMessageText).toEqual('message0');
-    expect(suggestionThread.lastNonemptyMessageText).toEqual('author');
+    expect(suggestionThread.lastNonemptyMessageAuthor).toEqual('author');
 
     var suggestion = suggestionThread.getSuggestion();
     expect(suggestion).toBeUndefined();
@@ -162,6 +162,6 @@ describe('Suggestion thread object factory', function() {
     expect(suggestionThread.messageCount).toEqual(2);
     // The cached values for last non-empty messages should also be updated.
     expect(suggestionThread.lastNonemptyMessageText).toEqual('user message');
-    expect(suggestionThread.lastNonemptyMessageText).toEqual('creator');
+    expect(suggestionThread.lastNonemptyMessageAuthor).toEqual('creator');
   });
 });

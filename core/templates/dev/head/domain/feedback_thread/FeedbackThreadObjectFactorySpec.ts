@@ -33,9 +33,11 @@ describe('Feedback thread object factory', () => {
       status: 'accepted',
       subject: 'sample subject',
       summary: 'sample summary',
-      message_count: 10,
+      message_count: 2,
       state_name: 'state 1',
-      thread_id: 'exp1.thread1'
+      thread_id: 'exp1.thread1',
+      last_nonempty_message_text: 'message0',
+      last_nonempty_message_author: 'author',
     };
 
     var feedbackThread = feedbackThreadObjectFactory.createFromBackendDict(
@@ -45,17 +47,25 @@ describe('Feedback thread object factory', () => {
     expect(feedbackThread.summary).toEqual('sample summary');
     expect(feedbackThread.originalAuthorName).toEqual('author');
     expect(feedbackThread.lastUpdated).toEqual(1000);
-    expect(feedbackThread.messageCount).toEqual(10);
+    expect(feedbackThread.messageCount).toEqual(2);
     expect(feedbackThread.stateName).toEqual('state 1');
     expect(feedbackThread.threadId).toEqual('exp1.thread1');
     expect(feedbackThread.isSuggestionThread()).toEqual(false);
+    expect(feedbackThread.lastNonemptyMessageText).toEqual('message0');
+    expect(feedbackThread.lastNonemptyMessageText).toEqual('author');
 
-    var messages = [{
-      text: 'message1'
-    }, {
-      text: 'message2'
-    }];
+    var messages = [
+      {text: 'anon message', author_username: null},
+      {text: 'user message', author_username: 'creator'},
+    ];
+
+    // Set hasn't been called yet, so the messages should still be empty since
+    // they are populated lazily.
+    expect(feedbackThread.messages).toEqual([]);
     feedbackThread.setMessages(messages);
     expect(feedbackThread.messages).toEqual(messages);
+    expect(feedbackThread.messageCount).toEqual(2);
+    expect(feedbackThread.lastNonemptyMessageText).toEqual('user message');
+    expect(feedbackThread.lastNonemptyMessageText).toEqual('creator');
   });
 });

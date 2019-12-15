@@ -23,7 +23,8 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
   'SuggestionObjectFactory', function(SuggestionObjectFactory) {
     var SuggestionThread = function(
         status, subject, summary, originalAuthorName, lastUpdated, messageCount,
-        threadId, suggestion) {
+        threadId, suggestion, lastNonemptyMessageText,
+        lastNonemptyMessageAuthor) {
       this.status = status;
       this.subject = subject;
       this.summary = summary;
@@ -32,6 +33,8 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
       this.messageCount = messageCount;
       this.threadId = threadId;
       this.suggestion = suggestion;
+      this.lastNonemptyMessageText = lastNonemptyMessageText;
+      this.lastNonemptyMessageAuthor = lastNonemptyMessageAuthor;
       this.messages = [];
     };
 
@@ -52,11 +55,23 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
         suggestionThreadBackendDict.original_author_username,
         suggestionThreadBackendDict.last_updated,
         suggestionThreadBackendDict.message_count,
-        suggestionThreadBackendDict.thread_id, suggestion);
+        suggestionThreadBackendDict.thread_id,
+        suggestionThreadBackendDict.last_nonempty_message_text,
+        suggestionThreadBackendDict.last_nonempty_message_author, suggestion);
     };
 
     SuggestionThread.prototype.setMessages = function(messages) {
       this.messages = messages;
+      this.messageCount = messages.length;
+      // Update the cache to point to the last nonempty message in the sequence
+      // of messages.
+      for (let message of messages.slice().reverse()) {
+        if (message.text) {
+          this.lastNonemptyMessageText = message.text;
+          this.lastNonemptyMessageAuthor = message.author_username;
+          break;
+        }
+      }
     };
 
     SuggestionThread.prototype.getMessages = function() {

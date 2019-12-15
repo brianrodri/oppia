@@ -51,9 +51,11 @@ describe('Suggestion thread object factory', function() {
       status: 'accepted',
       subject: 'sample subject',
       summary: 'sample summary',
-      message_count: 10,
+      message_count: 2,
       state_name: 'state 1',
-      thread_id: 'exploration.exp1.thread1'
+      thread_id: 'exploration.exp1.thread1',
+      last_nonempty_message_text: 'message0',
+      last_nonempty_message_author: 'author',
     };
     suggestionBackendDict = {
       suggestion_id: 'exploration.exp1.thread1',
@@ -90,8 +92,10 @@ describe('Suggestion thread object factory', function() {
     expect(suggestionThread.status).toEqual('accepted');
     expect(suggestionThread.subject).toEqual('sample subject');
     expect(suggestionThread.summary).toEqual('sample summary');
-    expect(suggestionThread.messageCount).toEqual(10);
+    expect(suggestionThread.messageCount).toEqual(2);
     expect(suggestionThread.threadId).toEqual('exploration.exp1.thread1');
+    expect(suggestionThread.lastNonemptyMessageText).toEqual('message0');
+    expect(suggestionThread.lastNonemptyMessageText).toEqual('author');
 
     var suggestion = suggestionThread.getSuggestion();
     expect(suggestion.suggestionId).toEqual('exploration.exp1.thread1');
@@ -117,6 +121,8 @@ describe('Suggestion thread object factory', function() {
   });
 
   it('should create a new suggestion thread.', function() {
+    suggestionBackendDict.suggestion_type = '';
+
     var suggestionThread = SuggestionThreadObjectFactory.createFromBackendDicts(
       suggestionThreadBackendDict, suggestionBackendDict);
 
@@ -125,8 +131,10 @@ describe('Suggestion thread object factory', function() {
     expect(suggestionThread.status).toEqual('accepted');
     expect(suggestionThread.subject).toEqual('sample subject');
     expect(suggestionThread.summary).toEqual('sample summary');
-    expect(suggestionThread.messageCount).toEqual(10);
+    expect(suggestionThread.messageCount).toEqual(2);
     expect(suggestionThread.threadId).toEqual('exploration.exp1.thread1');
+    expect(suggestionThread.lastNonemptyMessageText).toEqual('message0');
+    expect(suggestionThread.lastNonemptyMessageText).toEqual('author');
 
     var suggestion = suggestionThread.getSuggestion();
     expect(suggestion).toBeUndefined();
@@ -141,14 +149,19 @@ describe('Suggestion thread object factory', function() {
   it('should handle message getter and setter.', function() {
     var suggestionThread = SuggestionThreadObjectFactory.createFromBackendDicts(
       suggestionThreadBackendDict, suggestionBackendDict);
+    var messages = [
+      {text: 'anon message', author_username: null},
+      {text: 'user message', author_username: 'creator'},
+    ];
 
-    expect(suggestionThread.getMessages().length).toBe(0);
-    var messages = [{
-      text: 'message1'
-    }, {
-      text: 'message2'
-    }];
+    // Set hasn't been called yet, so the messages should still be empty since
+    // they are populated lazily.
+    expect(suggestionThread.getMessages()).toEqual([]);
     suggestionThread.setMessages(messages);
-    expect(suggestionThread.getMessages()).toEqual(messages);
+    expect(suggestionThread.messages).toEqual(messages);
+    expect(suggestionThread.messageCount).toEqual(2);
+    // The cached values for last non-empty messages should also be updated.
+    expect(suggestionThread.lastNonemptyMessageText).toEqual('user message');
+    expect(suggestionThread.lastNonemptyMessageText).toEqual('creator');
   });
 });

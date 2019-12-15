@@ -23,8 +23,8 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
   'SuggestionObjectFactory', function(SuggestionObjectFactory) {
     var SuggestionThread = function(
         status, subject, summary, originalAuthorName, lastUpdated, messageCount,
-        threadId, suggestion, lastNonemptyMessageText,
-        lastNonemptyMessageAuthor) {
+        threadId, lastNonemptyMessageText, lastNonemptyMessageAuthor,
+        suggestion) {
       this.status = status;
       this.subject = subject;
       this.summary = summary;
@@ -32,9 +32,9 @@ angular.module('oppia').factory('SuggestionThreadObjectFactory', [
       this.lastUpdated = lastUpdated;
       this.messageCount = messageCount;
       this.threadId = threadId;
-      this.suggestion = suggestion;
       this.lastNonemptyMessageText = lastNonemptyMessageText;
       this.lastNonemptyMessageAuthor = lastNonemptyMessageAuthor;
+      this.suggestion = suggestion;
       this.messages = [];
     };
 

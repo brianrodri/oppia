@@ -95,7 +95,7 @@ describe('Suggestion thread object factory', function() {
     expect(suggestionThread.messageCount).toEqual(2);
     expect(suggestionThread.threadId).toEqual('exploration.exp1.thread1');
     expect(suggestionThread.lastNonemptyMessageText).toEqual('message0');
-    expect(suggestionThread.lastNonemptyMessageText).toEqual('author');
+    expect(suggestionThread.lastNonemptyMessageAuthor).toEqual('author');
 
     var suggestion = suggestionThread.getSuggestion();
     expect(suggestion.suggestionId).toEqual('exploration.exp1.thread1');

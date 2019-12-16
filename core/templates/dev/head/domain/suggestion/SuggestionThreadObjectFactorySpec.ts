@@ -92,7 +92,7 @@ describe('Suggestion thread object factory', function() {
     expect(suggestionThread.status).toEqual('accepted');
     expect(suggestionThread.subject).toEqual('sample subject');
     expect(suggestionThread.summary).toEqual('sample summary');
-    expect(suggestionThread.messageCount).toEqual(2);
+    expect(suggestionThread.messageCount).toEqual(10);
     expect(suggestionThread.lastNonemptyMessageText).toEqual('message #10');
     expect(suggestionThread.lastNonemptyMessageAuthor).toEqual('author');
     expect(suggestionThread.threadId).toEqual('exploration.exp1.thread1');
@@ -159,7 +159,7 @@ describe('Suggestion thread object factory', function() {
     expect(suggestionThread.getMessages()).toEqual([]);
     suggestionThread.setMessages(messages);
     expect(suggestionThread.messages).toEqual(messages);
-    expect(suggestionThread.messageCount).toEqual(10);
+    expect(suggestionThread.messageCount).toEqual(2);
     expect(suggestionThread.lastNonemptyMessageText).toEqual('user message');
     expect(suggestionThread.lastNonemptyMessageAuthor).toEqual('creator');
   });

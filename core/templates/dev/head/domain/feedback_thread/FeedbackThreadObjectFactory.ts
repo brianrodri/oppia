@@ -60,8 +60,6 @@ export class FeedbackThread {
   setMessages(messages: any[]): void {
     this.messages = messages;
     this.messageCount = messages.length;
-    // Update the cache to point to the last nonempty message in the sequence of
-    // messages.
     for (let message of messages.slice().reverse()) {
       if (message.text) {
         this.lastNonemptyMessageText = message.text;

@@ -528,7 +528,6 @@ class JsTsLintChecksManager(python_utils.OBJECT):
             names_found = set()
             names_reported = set()
             file_tokens = self.parsed_js_and_ts_file_tokens[filepath]
-            python_utils.PRINT('\n'.join(repr(t) for t in file_tokens))
             for i in python_utils.RANGE(0, len(file_tokens) - 4):
                 if not (is_identifier(file_tokens[i], value='prototype')
                         and is_punctuator(file_tokens[i + 1], value='.')

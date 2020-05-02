@@ -57,10 +57,10 @@ angular.module('oppia').directive('improvementsTab', [
           const COMPLETION_BAR_ARC_RADIUS = 58;
           const COMPLETION_BAR_ARC_LENGTH = Math.PI * COMPLETION_BAR_ARC_RADIUS;
           var ctrl = this;
-          var completionRate = Math.random();
+          var completionRate = 0.6;
           var fetchedTasks = [];
 
-          $scope.testOnlyRefreshCompletionRate = function() {
+          $scope.refreshCompletionRate = function() {
             completionRate = Math.random();
           };
 

@@ -1862,18 +1862,21 @@ pre.oppia-pre-wrapped-text {
 
 .improvements-tab-header {
   align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.12);
   display: inline-flex;
   justify-content: center;
-  border-bottom: 1px solid rgba(0,0,0,0.12);
+  min-width: 100%;
 }
 
 .improvements-tab-completion-rate {
   align-items: center;
   display: flex;
   flex-direction: column;
+  flex-grow: 0;
   height: 100px;
   margin: 79px 0 50px 84px;
   position: relative;
+  width: 184px;
 }
 
 .improvements-tab-completion-rate svg.completion-bar {
@@ -1911,13 +1914,13 @@ pre.oppia-pre-wrapped-text {
   margin: 11px 0 0 0;
   padding: 0;
   text-align: center;
-  width: 184px;
   z-index: 1;
 }
 
 .improvements-tab-overview {
+  flex-grow: 1;
   padding: 39px 0 50px 0;
-  width: 774px;
+  max-width: 774px;
 }
 
 .improvements-tab-overview-header {
@@ -1989,7 +1992,7 @@ pre.oppia-pre-wrapped-text {
   display: flex;
   height: 121px;
   margin: 0 6px 0 65px;
-  width: 703px;
+  min-width: 502px;
 }
 
 .improvements-tab-overview-summary {

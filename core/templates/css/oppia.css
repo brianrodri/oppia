@@ -1855,24 +1855,25 @@ pre.oppia-pre-wrapped-text {
   background-color: #EEEEEE;
   font-family: Roboto, Arial, sans-serif;
   margin: 0;
+  overflow: scroll;
   padding: 0;
   width: 100%;
 }
 
 .improvements-tab-header {
   align-items: center;
-  display: flex;
+  display: inline-flex;
   justify-content: center;
+  border-bottom: 1px solid rgba(0,0,0,0.12);
 }
 
 .improvements-tab-completion-rate {
   align-items: center;
   display: flex;
   flex-direction: column;
-  margin: 0 78px 0 78px;
-  position: relative;
   height: 100px;
   margin: 79px 0 50px 84px;
+  position: relative;
 }
 
 .improvements-tab-completion-rate svg.completion-bar {
@@ -1883,26 +1884,25 @@ pre.oppia-pre-wrapped-text {
 }
 
 .improvements-tab-completion-rate p.value {
+  bottom: 35px;
   color: rgba(0,0,0,0.54);
   font-size: 20px;
   font-weight: bold;
   height: 28px;
-  position: absolute;
-  bottom: 35px;
   letter-spacing: 0;
   line-height: 28px;
-  width: 100%;
   margin: 0;
   padding: 0;
+  position: absolute;
   text-align: center;
   vertical-align: bottom;
+  width: 100%;
   z-index: 1;
 }
 
 .improvements-tab-completion-rate p.label {
   color: rgba(0,0,0,0.54);
   flex-grow: 0;
-  font-family: Roboto;
   font-size: 14px;
   font-weight: 500;
   height: 24px;
@@ -1911,6 +1911,7 @@ pre.oppia-pre-wrapped-text {
   margin: 11px 0 0 0;
   padding: 0;
   text-align: center;
+  width: 184px;
   z-index: 1;
 }
 
@@ -2147,7 +2148,6 @@ pre.oppia-pre-wrapped-text {
 
 .improvements-tab-body {
   background-color: #EEEEEE;
-  border-top: 1px solid rgba(0,0,0,0.12);
   margin: 0;
   padding: 0;
   width: 100%;

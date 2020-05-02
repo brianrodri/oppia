@@ -1866,8 +1866,52 @@ pre.oppia-pre-wrapped-text {
 }
 
 .improvements-tab-completion-rate {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
   margin: 0 78px 0 78px;
-  width: 242px;
+  position: relative;
+  height: 100px;
+  margin: 79px 0 50px 84px;
+}
+
+.improvements-tab-completion-rate svg.completion-bar {
+  background: none;
+  flex-grow: 1;
+  height: 64px;
+  width: 128px;
+}
+
+.improvements-tab-completion-rate p.value {
+  color: rgba(0,0,0,0.54);
+  font-size: 20px;
+  font-weight: bold;
+  height: 28px;
+  position: absolute;
+  bottom: 35px;
+  letter-spacing: 0;
+  line-height: 28px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  vertical-align: bottom;
+  z-index: 1;
+}
+
+.improvements-tab-completion-rate p.label {
+  color: rgba(0,0,0,0.54);
+  flex-grow: 0;
+  font-family: Roboto;
+  font-size: 14px;
+  font-weight: 500;
+  height: 24px;
+  letter-spacing: 0;
+  line-height: 24px;
+  margin: 11px 0 0 0;
+  padding: 0;
+  text-align: center;
+  z-index: 1;
 }
 
 .improvements-tab-overview {

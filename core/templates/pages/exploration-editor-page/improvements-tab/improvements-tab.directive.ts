@@ -54,8 +54,22 @@ angular.module('oppia').directive('improvementsTab', [
         function(
             $scope, ImprovementTaskService, ImprovementsDisplayService,
             UrlInterpolationService) {
+          const COMPLETION_BAR_ARC_LENGTH = Math.PI * 58;
           var ctrl = this;
+          var completionRate = 0.618033989;
           var fetchedTasks = [];
+
+          $scope.getCompletionRateAsPercent = function() {
+            return Math.round(100 * completionRate) + '%';
+          };
+
+          $scope.getCompletionBarStyle = function() {
+            return {
+              'stroke-dasharray': COMPLETION_BAR_ARC_LENGTH,
+              'stroke-dashoffset': (
+                COMPLETION_BAR_ARC_LENGTH * (1 - completionRate)),
+            };
+          };
 
           $scope.getStaticImageUrl = function(imagePath) {
             return UrlInterpolationService.getStaticImageUrl(imagePath);

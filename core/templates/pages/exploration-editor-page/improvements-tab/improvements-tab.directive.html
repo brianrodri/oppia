@@ -13,7 +13,8 @@
       <div class="improvements-tab-overview-body">
         <div class="improvements-tab-overview-summary">
           <div class="improvements-count">
-            <strong class="count">8</strong><p class="units">Total Improvements pending</p>
+            <strong class="count">8</strong>
+            <p class="units">Total Improvements pending</p>
           </div>
           <div class="improvements-health">
             <span class="outer-dot">
@@ -72,11 +73,11 @@
                     ry: number. Vertical radius of the ellipse.
                     angle: number. Rotation (in degrees) of the ellipse relative
                         to the x-axis
-                    large-arc-flag: boolean (1 or 0). When true traces the
+                    large-arc-flag: boolean (1 or 0). When true, follows the
                         larger of two arcs which would connect the two
                         end-points of the arc, otherwise the smaller of the two.
-                    sweep-flag: boolean (1 or 0). When true traces the path of
-                        the arc with a clockwise motion, otherwise with an
+                    sweep-flag: boolean (1 or 0). When true, follows the path of
+                        the arc using a clockwise motion, otherwise with an
                         anti-clockwise motion.
                     dx: number. Shift in x coordinate from the beginning point
                         to the end point.
@@ -88,7 +89,9 @@
                 class="completion" ng-style="getCompletionBarStyle()"/>
         </g>
       </svg>
-      <p class="value"><[getCompletionRateAsPercent()]></p>
+      <p ng-click="testOnlyRefreshCompletionRate()" class="value">
+        <[getCompletionRateAsPercent()]>
+      </p>
       <p class="label">Exploration Completion Rate</p>
     </div>
   </div>

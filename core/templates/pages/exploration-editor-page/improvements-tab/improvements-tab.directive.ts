@@ -54,10 +54,15 @@ angular.module('oppia').directive('improvementsTab', [
         function(
             $scope, ImprovementTaskService, ImprovementsDisplayService,
             UrlInterpolationService) {
-          const COMPLETION_BAR_ARC_LENGTH = Math.PI * 58;
+          const COMPLETION_BAR_ARC_RADIUS = 58;
+          const COMPLETION_BAR_ARC_LENGTH = Math.PI * COMPLETION_BAR_ARC_RADIUS;
           var ctrl = this;
-          var completionRate = 0.618033989;
+          var completionRate = Math.random();
           var fetchedTasks = [];
+
+          $scope.testOnlyRefreshCompletionRate = function() {
+            completionRate = Math.random();
+          };
 
           $scope.getCompletionRateAsPercent = function() {
             return Math.round(100 * completionRate) + '%';

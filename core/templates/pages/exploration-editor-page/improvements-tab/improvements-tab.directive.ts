@@ -17,28 +17,7 @@
  * exploration editor.
  */
 
-require(
-  'pages/exploration-editor-page/improvements-tab/' +
-  'answer-details-improvement-task/answer-details-improvement-task.directive.ts'
-);
-require(
-  'pages/exploration-editor-page/improvements-tab/' +
-  'feedback-improvement-task/feedback-improvement-task.directive.ts'
-);
-require(
-  'pages/exploration-editor-page/improvements-tab/' +
-  'playthrough-improvement-task/playthrough-improvement-task.directive.ts'
-);
-require(
-  'pages/exploration-editor-page/improvements-tab/' +
-  'suggestion-improvement-task/suggestion-improvement-task.directive.ts'
-);
-
 require('domain/utilities/url-interpolation.service.ts');
-require('services/improvement-task.service.ts');
-require(
-  'pages/exploration-editor-page/improvements-tab/services/' +
-  'improvements-display.service.ts');
 
 angular.module('oppia').directive('improvementsTab', [
   'UrlInterpolationService', function(UrlInterpolationService) {
@@ -48,77 +27,27 @@ angular.module('oppia').directive('improvementsTab', [
       templateUrl: UrlInterpolationService.getDirectiveTemplateUrl(
         '/pages/exploration-editor-page/improvements-tab/' +
         'improvements-tab.directive.html'),
-      controller: [
-        '$scope', 'ImprovementTaskService', 'ImprovementsDisplayService',
-        'UrlInterpolationService',
-        function(
-            $scope, ImprovementTaskService, ImprovementsDisplayService,
-            UrlInterpolationService) {
-          const COMPLETION_BAR_ARC_RADIUS = 58;
-          const COMPLETION_BAR_ARC_LENGTH = Math.PI * COMPLETION_BAR_ARC_RADIUS;
-          var ctrl = this;
-          var completionRate = 0.6;
-          var fetchedTasks = [];
+      controller: ['$scope', $scope => {
+        const COMPLETION_BAR_ARC_RADIUS = 58;
+        const COMPLETION_BAR_ARC_LENGTH = Math.PI * COMPLETION_BAR_ARC_RADIUS;
+        var completionRate = 0.6;
 
-          $scope.refreshCompletionRate = function() {
-            completionRate = Math.random();
-          };
+        $scope.refreshCompletionRate = function() {
+          completionRate = Math.random();
+        };
 
-          $scope.getCompletionRateAsPercent = function() {
-            return Math.round(100 * completionRate) + '%';
-          };
+        $scope.getCompletionRateAsPercent = function() {
+          return Math.round(100 * completionRate) + '%';
+        };
 
-          $scope.getCompletionBarStyle = function() {
-            return {
-              'stroke-dasharray': COMPLETION_BAR_ARC_LENGTH,
-              'stroke-dashoffset': (
-                COMPLETION_BAR_ARC_LENGTH * (1 - completionRate)),
-            };
+        $scope.getCompletionBarStyle = function() {
+          return {
+            'stroke-dasharray': COMPLETION_BAR_ARC_LENGTH,
+            'stroke-dashoffset': (
+              COMPLETION_BAR_ARC_LENGTH * (1 - completionRate)),
           };
-
-          $scope.getStaticImageUrl = function(imagePath) {
-            return UrlInterpolationService.getStaticImageUrl(imagePath);
-          };
-
-          $scope.getStatusCssClass = function(status) {
-            return ImprovementsDisplayService.getStatusCssClass(status);
-          };
-
-          $scope.getHumanReadableStatus = function(status) {
-            return ImprovementsDisplayService.getHumanReadableStatus(status);
-          };
-
-          $scope.getTasks = function() {
-            return fetchedTasks;
-          };
-
-          $scope.isTaskOpen = function(task) {
-            return ImprovementsDisplayService.isOpen(task.getStatus());
-          };
-
-          $scope.isTaskShown = function(task) {
-            return $scope.isTaskOpen(task) || !$scope.onlyShowOpenTasks;
-          };
-
-          $scope.getTaskTitle = function(task) {
-            return task.getTitle();
-          };
-
-          $scope.isTaskObsolete = function(task) {
-            return task.isObsolete();
-          };
-
-          $scope.getOpenTaskCount = function() {
-            return fetchedTasks.filter($scope.isTaskOpen).length;
-          };
-
-          ctrl.$onInit = function() {
-            ImprovementTaskService.fetchTasks().then(function(tasks) {
-              fetchedTasks = tasks;
-            });
-            $scope.onlyShowOpenTasks = true;
-          };
-        }
-      ],
+        };
+      }],
     };
-  }]);
+  }
+]);

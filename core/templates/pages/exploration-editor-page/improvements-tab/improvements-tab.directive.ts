@@ -31,6 +31,25 @@ angular.module('oppia').directive('improvementsTab', [
         const COMPLETION_BAR_ARC_RADIUS = 58;
         const COMPLETION_BAR_ARC_LENGTH = Math.PI * COMPLETION_BAR_ARC_RADIUS;
         var completionRate = 0.6;
+        var explorationHealth = 'critical';
+
+        $scope.getStaticImageUrl = function(imagePath) {
+          return UrlInterpolationService.getStaticImageUrl(imagePath);
+        };
+
+        $scope.cycleExplorationHealth = function() {
+          if (explorationHealth === 'critical') {
+            explorationHealth = 'healthy';
+          } else if (explorationHealth === 'healthy') {
+            explorationHealth = 'warning';
+          } else if (explorationHealth === 'warning') {
+            explorationHealth = 'critical';
+          }
+        };
+
+        $scope.getExplorationHealth = function() {
+          return explorationHealth;
+        };
 
         $scope.refreshCompletionRate = function() {
           completionRate = Math.random();

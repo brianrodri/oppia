@@ -12,7 +12,8 @@
       <div class="improvements-tab-overview-body">
         <div class="improvements-tab-overview-summary">
           <div class="improvements-count">
-            <strong class="count">8</strong><p class="units">Total Improvements pending</p>
+            <strong class="count"><[getImprovementsPending()]></strong>
+            <p class="units">Total Improvements pending</p>
           </div>
           <div class="improvements-health" ng-class="[getExplorationHealth()]">
             <span class="outer-dot">
@@ -23,7 +24,7 @@
             </p>
           </div>
         </div>
-        <ul class="improvements-tab-overview-navigation" ng-if="getExplorationHealth() !== 'healthy'">
+        <ul class="improvements-tab-overview-navigation" ng-if="getImprovementsPending() > 0">
           <li class="improvements-tab-overview-navigation-item">
             <a class="task-scope" href="#">
               <span class="dot-warning">&nbsp;</span>

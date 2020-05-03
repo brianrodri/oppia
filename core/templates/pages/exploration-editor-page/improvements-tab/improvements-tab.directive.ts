@@ -32,9 +32,14 @@ angular.module('oppia').directive('improvementsTab', [
         const COMPLETION_BAR_ARC_LENGTH = Math.PI * COMPLETION_BAR_ARC_RADIUS;
         var completionRate = 0.6;
         var explorationHealth = 'critical';
+        var improvementsPending = 0;
 
         $scope.getStaticImageUrl = function(imagePath) {
           return UrlInterpolationService.getStaticImageUrl(imagePath);
+        };
+
+        $scope.getImprovementsPending = function() {
+          return improvementsPending;
         };
 
         $scope.cycleExplorationHealth = function() {

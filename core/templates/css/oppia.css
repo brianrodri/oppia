@@ -1919,8 +1919,8 @@ pre.oppia-pre-wrapped-text {
 
 .improvements-tab-overview {
   flex-grow: 1;
-  padding: 39px 0 50px 0;
   max-width: 774px;
+  padding: 39px 0 50px 0;
 }
 
 .improvements-tab-overview-header {

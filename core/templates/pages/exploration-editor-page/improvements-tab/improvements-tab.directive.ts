@@ -27,7 +27,7 @@ angular.module('oppia').directive('improvementsTab', [
       templateUrl: UrlInterpolationService.getDirectiveTemplateUrl(
         '/pages/exploration-editor-page/improvements-tab/' +
         'improvements-tab.directive.html'),
-      controller: ['$scope', $scope => {
+      controller: ['$scope', function($scope) {
         const COMPLETION_BAR_ARC_RADIUS = 58;
         const COMPLETION_BAR_ARC_LENGTH = Math.PI * COMPLETION_BAR_ARC_RADIUS;
         var completionRate = 0.6;

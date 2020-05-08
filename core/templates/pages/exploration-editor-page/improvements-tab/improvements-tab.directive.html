@@ -1,21 +1,21 @@
-<div class="improvements-tab-wrapper">
+<div class="improvements-tab-container">
   <div class="improvements-tab-header">
     <div class="improvements-tab-overview">
       <div class="improvements-tab-overview-header">
-        <h1 class="header-title">Overview</h1>
+        <h1 class="header-title" ng-click="reroll()">Overview</h1>
         <a class="view-resolved-tasks" href="#">
           <img class="time-machine" ng-src="<[getStaticImageUrl('/icons/time_machine.svg')]>">
-          <span class="text" ng-click="reroll()">View Resolved Tasks</span>
+          <span class="text">View Resolved Tasks</span>
           <i class="material-icons chevron-right">chevron_right</i>
         </a>
       </div>
       <div class="improvements-tab-overview-body">
-        <div class="improvements-tab-overview-summary">
-          <div class="improvements-count">
+        <div class="improvements-tab-summary">
+          <div class="improvements-pending-summary">
             <strong class="count"><[getImprovementsPending()]></strong>
             <p class="units">Total Improvements pending</p>
           </div>
-          <div class="improvements-health" ng-class="[getExplorationHealth()]">
+          <div class="exploration-health-summary" ng-class="[getExplorationHealth()]">
             <span class="outer-dot">
               <span class="inner-dot">&nbsp;</span>
             </span>

@@ -1851,7 +1851,7 @@ pre.oppia-pre-wrapped-text {
   font-size: 13px;
 }
 
-.improvements-tab-wrapper {
+.improvements-tab-container {
   background-color: #EEEEEE;
   font-family: Roboto, Arial, sans-serif;
   margin: 0;
@@ -1995,21 +1995,21 @@ pre.oppia-pre-wrapped-text {
   min-width: 502px;
 }
 
-.improvements-tab-overview-summary {
+.improvements-tab-summary {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   padding: 25px 17px 15px 17px;
 }
 
-.improvements-tab-overview-summary div.improvements-count {
+.improvements-tab-summary div.improvements-pending-summary {
   color: rgba(25,24,24,0.7);
   display: inline-flex;
   flex-grow: 1;
   vertical-align: bottom;
 }
 
-.improvements-tab-overview-summary div.improvements-count strong.count {
+.improvements-tab-summary div.improvements-pending-summary strong.count {
   display: inline-block;
   font-size: 24px;
   font-weight: bold;
@@ -2020,7 +2020,7 @@ pre.oppia-pre-wrapped-text {
   width: 24px;
 }
 
-.improvements-tab-overview-summary div.improvements-count p.units {
+.improvements-tab-summary div.improvements-pending-summary p.units {
   display: inline-block;
   flex-grow: 1;
   font-size: 16px;
@@ -2029,7 +2029,7 @@ pre.oppia-pre-wrapped-text {
   margin: 6px 7px 7px 7px;
 }
 
-.improvements-tab-overview-summary div.improvements-health {
+.improvements-tab-summary div.exploration-health-summary {
   display: inline-flex;
   flex-grow: 0;
   height: 21px;
@@ -2037,7 +2037,7 @@ pre.oppia-pre-wrapped-text {
   vertical-align: bottom;
 }
 
-.improvements-tab-overview-summary div.improvements-health span.outer-dot {
+.improvements-tab-summary div.exploration-health-summary span.outer-dot {
   border-radius: 50%;
   display: inline-block;
   height: 16px;
@@ -2046,7 +2046,7 @@ pre.oppia-pre-wrapped-text {
   width: 16px;
 }
 
-.improvements-tab-overview-summary div.improvements-health span.outer-dot span.inner-dot {
+.improvements-tab-summary div.exploration-health-summary span.outer-dot span.inner-dot {
   border-radius: 50%;
   display: inline-block;
   height: 10px;
@@ -2055,7 +2055,7 @@ pre.oppia-pre-wrapped-text {
   width: 10px;
 }
 
-.improvements-tab-overview-summary div.improvements-health p.exploration-health {
+.improvements-tab-summary div.exploration-health-summary p.exploration-health {
   display: inline-block;
   flex-grow: 1;
   font-size: 14px;
@@ -2067,39 +2067,39 @@ pre.oppia-pre-wrapped-text {
   text-transform: uppercase;
 }
 
-.improvements-tab-overview-summary div.improvements-health.healthy span.outer-dot {
+.improvements-tab-summary div.exploration-health-summary.healthy span.outer-dot {
   background-color: rgba(65,152,137,0.37);
 }
 
-.improvements-tab-overview-summary div.improvements-health.healthy span.outer-dot span.inner-dot {
+.improvements-tab-summary div.exploration-health-summary.healthy span.outer-dot span.inner-dot {
   background-color: #419848;
 }
 
-.improvements-tab-overview-summary div.improvements-health.healthy p.exploration-health {
+.improvements-tab-summary div.exploration-health-summary.healthy p.exploration-health {
   color: #419848;
 }
 
-.improvements-tab-overview-summary div.improvements-health.warning span.outer-dot {
+.improvements-tab-summary div.exploration-health-summary.warning span.outer-dot {
   background-color: rgba(242,169,0,0.28);
 }
 
-.improvements-tab-overview-summary div.improvements-health.warning span.outer-dot span.inner-dot {
+.improvements-tab-summary div.exploration-health-summary.warning span.outer-dot span.inner-dot {
   background-color: #F2A900;
 }
 
-.improvements-tab-overview-summary div.improvements-health.warning p.exploration-health {
+.improvements-tab-summary div.exploration-health-summary.warning p.exploration-health {
   color: #F2A900;
 }
 
-.improvements-tab-overview-summary div.improvements-health.critical span.outer-dot {
+.improvements-tab-summary div.exploration-health-summary.critical span.outer-dot {
   background-color: rgba(209,11,35,0.28);
 }
 
-.improvements-tab-overview-summary div.improvements-health.critical span.outer-dot span.inner-dot {
+.improvements-tab-summary div.exploration-health-summary.critical span.outer-dot span.inner-dot {
   background-color: #D10B23;
 }
 
-.improvements-tab-overview-summary div.improvements-health.critical p.exploration-health {
+.improvements-tab-summary div.exploration-health-summary.critical p.exploration-health {
   color: #D10B23;
 }
 

@@ -53,11 +53,6 @@ angular.module('oppia').directive('editorNavigation', [
             StateTutorialFirstTimeService, ThreadDataService, UserService,
             WindowDimensionsService) {
           var ctrl = this;
-          var taskCount = 0;
-          $scope.getOpenTaskCount = function() {
-            return taskCount;
-          };
-
           $scope.isImprovementsTabEnabled = function() {
             return ExplorationFeaturesService.isInitialized() &&
               ExplorationFeaturesService.isImprovementsTabEnabled();

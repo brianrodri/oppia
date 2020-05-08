@@ -96,6 +96,7 @@ angular.module('oppia').directive('statisticsTab', [
                 var initStateName = response.exploration.init_state_name;
 
                 ctrl.playthroughsAreAvailable =
+                  ExplorationFeaturesService.isInitialized() &&
                   ExplorationFeaturesService.isPlaythroughRecordingEnabled() &&
                   !ExplorationFeaturesService.isImprovementsTabEnabled();
                 ctrl.statsGraphData = ComputeGraphService.compute(

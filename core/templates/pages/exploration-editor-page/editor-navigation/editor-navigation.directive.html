@@ -143,14 +143,9 @@
       <li class="dropdown-item oppia-exploration-editor-tabs-dropdown-item" ng-class="{'active': getActiveTabName() === 'improvements'}" ng-if="isImprovementsTabEnabled()">
         <a href="#" uib-tooltip="Improvements" tooltip-placement="bottom" ng-click="selectImprovementsTab()"
            class="oppia-exploration-editor-tabs-dropdown-element">
-          <i class="material-icons oppia-mobile-exploration-editor-tabs-icon">trending_up</i>
+          <i class="material-icons oppia-mobile-exploration-editor-tabs-icon">&#xE8E5;</i>
           <span class="oppia-exploration-editor-tabs-dropdown-inner">Improvements</span>
         </a>
-        <div ng-show="getOpenTaskCount()" uib-tooltip="Open Tasks" tooltip-placement="bottom" class="oppia-exploration-open-threads-indicator-dropdown">
-          <span class="oppia-exploration-open-threads-count">
-            <[getOpenTaskCount()]>
-          </span>
-        </div>
       </li>
       <li class="dropdown-item oppia-exploration-editor-tabs-dropdown-item" ng-class="{'active': getActiveTabName() === 'history'}">
         <a href="#" uib-tooltip="History" tooltip-placement="bottom" ng-click="selectHistoryTab()"

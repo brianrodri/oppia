@@ -20,7 +20,7 @@
 import { ImprovementsTabConstants } from
   'pages/exploration-editor-page/improvements-tab/improvements-tab.constants';
 
-require('components/improvements-directives/completion-graph.directive.ts');
+require('components/statistics-directives/completion-graph.directive.ts');
 
 require('domain/utilities/url-interpolation.service.ts');
 

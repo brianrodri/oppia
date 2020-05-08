@@ -17,6 +17,11 @@
  * exploration editor.
  */
 
+import { ImprovementsTabConstants } from
+  'pages/exploration-editor-page/improvements-tab/improvements-tab.constants';
+
+require('components/improvements-directives/completion-graph.directive.ts');
+
 require('domain/utilities/url-interpolation.service.ts');
 
 angular.module('oppia').directive('improvementsTab', [
@@ -28,49 +33,25 @@ angular.module('oppia').directive('improvementsTab', [
         '/pages/exploration-editor-page/improvements-tab/' +
         'improvements-tab.directive.html'),
       controller: ['$scope', function($scope) {
-        const COMPLETION_BAR_ARC_RADIUS = 58;
-        const COMPLETION_BAR_ARC_LENGTH = Math.PI * COMPLETION_BAR_ARC_RADIUS;
         var completionRate = 0.6;
+        var improvementsPending = 2;
         var explorationHealth = 'critical';
-        var improvementsPending = 0;
 
-        $scope.getStaticImageUrl = function(imagePath) {
-          return UrlInterpolationService.getStaticImageUrl(imagePath);
-        };
+        $scope.getStaticImageUrl = (
+          imageUrl => UrlInterpolationService.getStaticImageUrl(imageUrl));
 
-        $scope.getImprovementsPending = function() {
-          return improvementsPending;
-        };
-
-        $scope.cycleExplorationHealth = function() {
-          if (explorationHealth === 'critical') {
-            explorationHealth = 'healthy';
-          } else if (explorationHealth === 'healthy') {
-            explorationHealth = 'warning';
-          } else if (explorationHealth === 'warning') {
-            explorationHealth = 'critical';
-          }
-        };
-
-        $scope.getExplorationHealth = function() {
-          return explorationHealth;
-        };
-
-        $scope.refreshCompletionRate = function() {
+        $scope.reroll = () => {
           completionRate = Math.random();
+          improvementsPending = (improvementsPending + 1) % 3;
+          explorationHealth = ImprovementsTabConstants.EXPLORATION_HEALTH_TYPES[
+            improvementsPending];
         };
 
-        $scope.getCompletionRateAsPercent = function() {
-          return Math.round(100 * completionRate) + '%';
-        };
-
-        $scope.getCompletionBarStyle = function() {
-          return {
-            'stroke-dasharray': COMPLETION_BAR_ARC_LENGTH,
-            'stroke-dashoffset': (
-              COMPLETION_BAR_ARC_LENGTH * (1 - completionRate)),
-          };
-        };
+        $scope.getCompletionRate = () => completionRate;
+        $scope.getCompletionRateAsPercent = (
+          () => Math.round(100 * $scope.getCompletionRate()) + '%');
+        $scope.getImprovementsPending = () => improvementsPending;
+        $scope.getExplorationHealth = () => explorationHealth;
       }],
     };
   }

@@ -2103,7 +2103,7 @@ pre.oppia-pre-wrapped-text {
   color: #D10B23;
 }
 
-.improvements-tab-overview-navigation {
+.improvements-tab-navigation {
   align-items: stretch;
   border-left: 2px solid rgba(0,0,0,0.06);
   display: flex;
@@ -2116,7 +2116,7 @@ pre.oppia-pre-wrapped-text {
   width: 212px;
 }
 
-.improvements-tab-overview-navigation-item {
+.improvements-tab-navigation-item {
   align-items: center;
   background-color: #F5F5F5;
   display: flex;
@@ -2124,11 +2124,11 @@ pre.oppia-pre-wrapped-text {
   list-style: none;
 }
 
-.improvements-tab-overview-navigation-item + .improvements-tab-overview-navigation-item {
+.improvements-tab-navigation-item + .improvements-tab-navigation-item {
   border-top: 2px solid rgba(0,0,0,0.06);
 }
 
-.improvements-tab-overview-navigation-item a.task-scope {
+.improvements-tab-navigation-item a.task-scope {
   color: #00829B;
   display: inline-flex;
   font-size: 14px;
@@ -2136,11 +2136,11 @@ pre.oppia-pre-wrapped-text {
   line-height: 16px;
 }
 
-.improvements-tab-overview-navigation-item a.task-scope:hover {
+.improvements-tab-navigation-item a.task-scope:hover {
   text-decoration: none;
 }
 
-.improvements-tab-overview-navigation-item span.dot-healthy {
+.improvements-tab-navigation-item span.dot-healthy {
   background-color: #419848;
   border-radius: 50%;
   display: inline-block;
@@ -2149,7 +2149,7 @@ pre.oppia-pre-wrapped-text {
   width: 8px;
 }
 
-.improvements-tab-overview-navigation-item span.dot-warning {
+.improvements-tab-navigation-item span.dot-warning {
   background-color: #F2A900;
   border-radius: 50%;
   display: inline-block;
@@ -2158,7 +2158,7 @@ pre.oppia-pre-wrapped-text {
   width: 8px;
 }
 
-.improvements-tab-overview-navigation-item span.dot-critical {
+.improvements-tab-navigation-item span.dot-critical {
   background-color: #D10B23;
   border-radius: 50%;
   display: inline-block;
@@ -2167,18 +2167,18 @@ pre.oppia-pre-wrapped-text {
   width: 8px;
 }
 
-.improvements-tab-overview-navigation-item a.task-scope strong.number {
+.improvements-tab-navigation-item a.task-scope strong.number {
   display: inline-block;
   font-weight: bold;
   width: 25px;
 }
 
-.improvements-tab-overview-navigation-item a.task-scope span.content {
+.improvements-tab-navigation-item a.task-scope span.content {
   display: inline-block;
   width: 129px;
 }
 
-.improvements-tab-overview-navigation-item a.task-scope i.chevron-right {
+.improvements-tab-navigation-item a.task-scope i.chevron-right {
   display: inline-block;
   font-size: 14px;
   height: 9px;

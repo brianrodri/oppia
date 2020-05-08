@@ -5,7 +5,7 @@
         <h1 class="header-title">Overview</h1>
         <a class="view-resolved-tasks" href="#">
           <img class="time-machine" ng-src="<[getStaticImageUrl('/icons/time_machine.svg')]>">
-          <span class="text">View Resolved Tasks</span>
+          <span class="text" ng-click="reroll()">View Resolved Tasks</span>
           <i class="material-icons chevron-right">chevron_right</i>
         </a>
       </div>
@@ -19,27 +19,25 @@
             <span class="outer-dot">
               <span class="inner-dot">&nbsp;</span>
             </span>
-            <p class="exploration-health" ng-click="cycleExplorationHealth()">
-              <[getExplorationHealth()]>
-            </p>
+            <p class="exploration-health"><[getExplorationHealth()]></p>
           </div>
         </div>
-        <ul class="improvements-tab-overview-navigation" ng-if="getImprovementsPending() > 0">
-          <li class="improvements-tab-overview-navigation-item">
+        <ul class="improvements-tab-navigation" ng-if="getImprovementsPending() > 0">
+          <li class="improvements-tab-navigation-item">
             <a class="task-scope" href="#">
               <span class="dot-warning">&nbsp;</span>
               <strong class="number">2</strong><span class="content">exploration-level</span>
               <i class="material-icons chevron-right">chevron_right</i>
             </a>
           </li>
-          <li class="improvements-tab-overview-navigation-item">
+          <li class="improvements-tab-navigation-item">
             <a class="task-scope" href="#">
               <span class="dot-warning">&nbsp;</span>
               <strong class="number">2</strong><span class="content">concept-level</span>
               <i class="material-icons chevron-right">chevron_right</i>
             </a>
           </li>
-          <li class="improvements-tab-overview-navigation-item">
+          <li class="improvements-tab-navigation-item">
             <a class="task-scope" href="#">
               <span class="dot-critical">&nbsp;</span>
               <strong class="number">4</strong><span class="content">card-level</span>
@@ -50,40 +48,8 @@
       </div>
     </div>
     <div class="improvements-tab-completion-rate">
-      <svg class="completion-bar" viewBox="0 0 128 64">
-        <g fill-opacity="0" stroke-width="12px">
-          <!--
-            NOTE TO DEVELOPERS: The d attribute defines a path to be drawn. The definition uses
-            commands (letters) and parameters (numbers) to represent motions.
-            Source: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d
-
-            The following commands are used to draw the completion bar:
-                M command: Move the current point to the coordinate x, y.
-                    x: number (in pixels).
-                    y: number (in pixels).
-                a command: Draws an arc curve from the current point to a point for which
-                coordinates are those of the current point shifted by dx along the x-axis and dy
-                along the y-axis. The center of the ellipse used to draw the arc is determined
-                automatically based on the other parameters of the command:
-                    rx: number (in pixels). Horizontal radius of the ellipse.
-                    ry: number (in pixels). Vertical radius of the ellipse.
-                    angle: number (in degrees). Rotation of the ellipse relative to the x-axis.
-                    large-arc-flag: boolean (1 or 0). When true, follows the larger of two arcs
-                        which would connect the two end-points of the arc, otherwise the smaller of
-                        the two.
-                    sweep-flag: boolean (1 or 0). When true, follows the path of the arc using a
-                        clockwise motion, otherwise with an anti-clockwise motion.
-                    dx: number (in pixels). Shift in x coordinate from the beginning point to the
-                        end point.
-                    dy: number (in pixels). Shift in y coordinate from the beginning point to the
-                        end point.
-          -->
-          <path d="M 6 64, a 58 58 0 1 1 116 0" stroke="#E0E0E0"/>
-          <path d="M 6 64, a 58 58 0 1 1 116 0" stroke="#419889"
-                class="completion" ng-style="getCompletionBarStyle()"/>
-        </g>
-      </svg>
-      <p ng-click="refreshCompletionRate()" class="value"><[getCompletionRateAsPercent()]></p>
+      <completion-graph completion-rate="getCompletionRate()"></completion-graph>
+      <p class="value"><[getCompletionRateAsPercent()]></p>
       <p class="label">Exploration Completion Rate</p>
     </div>
   </div>

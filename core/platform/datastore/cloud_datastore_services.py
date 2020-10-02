@@ -28,11 +28,6 @@ from google.cloud import ndb
 
 
 Model = ndb.Model
-
-DateTimeProperty = ndb.DateTimeProperty
-
-
-Model = ndb.Model
 Key = ndb.Key
 
 BooleanProperty = ndb.BooleanProperty
@@ -102,8 +97,7 @@ def transaction(callback):
         Exception. Whatever callback() raises, or
             datastore_errors.TransactionFailedError when the transaction failed.
     """
-    return ndb.transaction(
-        callback, xg=True, propagation=ndb.TransactionOptions.ALLOWED)
+    return ndb.transaction(callback)
 
 
 def query_everything():

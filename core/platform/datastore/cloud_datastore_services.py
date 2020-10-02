@@ -68,8 +68,7 @@ def put_multi_async(models, update_last_updated_time=True):
     Returns:
         list(future). A list of futures.
     """
-    return ndb.put_multi_async(
-        models, update_last_updated_time=update_last_updated_time)
+    return ndb.put_multi_async(models)
 
 
 def delete_multi(keys):
@@ -246,4 +245,5 @@ def mock_datetime_for_datastore(mocked_now):
 
 
 def make_ndb_client(namespace=None):
+    """Builds an NDB Client for interacting with the Cloud Datastore."""
     return ndb.Client(namespace=namespace)

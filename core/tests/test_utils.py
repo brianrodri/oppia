@@ -2493,6 +2493,9 @@ class AppEngineTestBase(TestBase):
                 created and used. More details can be found here:
                 https://docs.python.org/3/library/unittest.html#unittest.
                 TestCase.run.
+
+        Returns:
+            *. The return value of super().run.
         """
         scoped_client = (
             cloud_datastore_services.make_ndb_client(namespace=self.id()))

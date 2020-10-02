@@ -56,8 +56,9 @@ import time
 import unittest
 
 
-from . import install_third_party_libs
 from . import datastore_emulator
+from . import install_third_party_libs
+
 # This installs third party libraries before importing other files or importing
 # libraries that use the builtins python module (e.g. build, python_utils).
 install_third_party_libs.main()

@@ -54,6 +54,8 @@ from core.domain import topic_domain
 from core.domain import topic_services
 from core.domain import user_services
 from core.platform import models
+from core.platform.datastore import cloud_datastore_services
+from core.platform.datastore import gae_datastore_services
 from core.platform.taskqueue import cloud_tasks_emulator
 import feconf
 import main
@@ -2454,7 +2456,8 @@ class AppEngineTestBase(TestBase):
 
         # Configure datastore policy to emulate instantaneously and globally
         # consistent HRD.
-        policy = datastore_services.make_pseudo_random_hr_consistency_policy()
+        policy = (
+            gae_datastore_services.make_pseudo_random_hr_consistency_policy())
 
         # Declare any relevant App Engine service stubs here.
         self.testbed.init_user_stub()
@@ -2491,6 +2494,8 @@ class AppEngineTestBase(TestBase):
                 https://docs.python.org/3/library/unittest.html#unittest.
                 TestCase.run.
         """
+        scoped_client = (
+            cloud_datastore_services.make_ndb_client(namespace=self.id()))
         swap_create_task = self.swap(
             platform_taskqueue_services, 'create_http_task',
             self.taskqueue_services_stub.create_http_task)
@@ -2511,7 +2516,8 @@ class AppEngineTestBase(TestBase):
             self.memory_cache_services_stub.delete_multi)
         with swap_flush_cache, swap_get_multi, swap_set_multi, swap_create_task:
             with swap_get_memory_cache_stats, swap_delete_multi:
-                super(AppEngineTestBase, self).run(result=result)
+                with scoped_client.context():
+                    return super(AppEngineTestBase, self).run(result=result)
 
     def tearDown(self):
         self.logout()

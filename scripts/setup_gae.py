@@ -83,8 +83,9 @@ def main(args=None):
         # installations of gcloud packages.
         subprocess.call([
             common.GCLOUD_PATH,
-            'components', 'install', 'cloud-datastore-emulator',
+            'components', 'install', 'cloud-datastore-emulator', 'beta',
             'app-engine-python', 'app-engine-python-extras', '--quiet'])
+        subprocess.call([common.GCLOUD_PATH, 'components', 'update', '--quiet'])
 
         os.remove('gcloud-sdk.tar.gz')
 

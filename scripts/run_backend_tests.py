@@ -57,6 +57,7 @@ import unittest
 
 
 from . import install_third_party_libs
+from . import datastore_emulator
 # This installs third party libraries before importing other files or importing
 # libraries that use the builtins python module (e.g. build, python_utils).
 install_third_party_libs.main()
@@ -304,11 +305,12 @@ def main(args=None):
         task_to_taskspec[task] = test
         tasks.append(task)
 
-    task_execution_failed = False
-    try:
-        concurrent_task_utils.execute_tasks(tasks, semaphore)
-    except Exception:
-        task_execution_failed = True
+    with datastore_emulator.datastore_emulator_context():
+        task_execution_failed = False
+        try:
+            concurrent_task_utils.execute_tasks(tasks, semaphore)
+        except Exception:
+            task_execution_failed = True
 
     for task in tasks:
         if task.exception:

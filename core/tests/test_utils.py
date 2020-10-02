@@ -54,6 +54,8 @@ from core.domain import topic_domain
 from core.domain import topic_services
 from core.domain import user_services
 from core.platform import models
+from core.platform.datastore import gae_datastore_services
+from core.platform.datastore import cloud_datastore_services
 from core.platform.taskqueue import cloud_tasks_emulator
 import feconf
 import main
@@ -64,6 +66,7 @@ import requests_mock
 import schema_utils
 import utils
 
+import contextlib2
 from google.appengine.api import mail
 import webtest
 
@@ -2454,7 +2457,8 @@ class AppEngineTestBase(TestBase):
 
         # Configure datastore policy to emulate instantaneously and globally
         # consistent HRD.
-        policy = datastore_services.make_pseudo_random_hr_consistency_policy()
+        policy = (
+            gae_datastore_services.make_pseudo_random_hr_consistency_policy())
 
         # Declare any relevant App Engine service stubs here.
         self.testbed.init_user_stub()
@@ -2491,27 +2495,36 @@ class AppEngineTestBase(TestBase):
                 https://docs.python.org/3/library/unittest.html#unittest.
                 TestCase.run.
         """
-        swap_create_task = self.swap(
-            platform_taskqueue_services, 'create_http_task',
-            self.taskqueue_services_stub.create_http_task)
-        swap_flush_cache = self.swap(
-            memory_cache_services, 'flush_cache',
-            self.memory_cache_services_stub.flush_cache)
-        swap_get_multi = self.swap(
-            memory_cache_services, 'get_multi',
-            self.memory_cache_services_stub.get_multi)
-        swap_set_multi = self.swap(
-            memory_cache_services, 'set_multi',
-            self.memory_cache_services_stub.set_multi)
-        swap_get_memory_cache_stats = self.swap(
-            memory_cache_services, 'get_memory_cache_stats',
-            self.memory_cache_services_stub.get_memory_cache_stats)
-        swap_delete_multi = self.swap(
-            memory_cache_services, 'delete_multi',
-            self.memory_cache_services_stub.delete_multi)
-        with swap_flush_cache, swap_get_multi, swap_set_multi, swap_create_task:
-            with swap_get_memory_cache_stats, swap_delete_multi:
-                super(AppEngineTestBase, self).run(result=result)
+        stack = contextlib2.ExitStack()
+        stack.enter_context(
+            cloud_datastore_services.make_client(namespace=self.id()).context())
+        stack.enter_context(
+            self.swap(
+                platform_taskqueue_services, 'create_http_task',
+                self.taskqueue_services_stub.create_http_task))
+        stack.enter_context(
+            self.swap(
+                memory_cache_services, 'flush_cache',
+                self.memory_cache_services_stub.flush_cache))
+        stack.enter_context(
+            self.swap(
+                memory_cache_services, 'get_multi',
+                self.memory_cache_services_stub.get_multi))
+        stack.enter_context(
+            self.swap(
+                memory_cache_services, 'set_multi',
+                self.memory_cache_services_stub.set_multi))
+        stack.enter_context(
+            self.swap(
+                memory_cache_services, 'get_memory_cache_stats',
+                self.memory_cache_services_stub.get_memory_cache_stats))
+        stack.enter_context(
+            self.swap(
+                memory_cache_services, 'delete_multi',
+                self.memory_cache_services_stub.delete_multi))
+
+        with stack:
+            super(AppEngineTestBase, self).run(result=result)
 
     def tearDown(self):
         self.logout()

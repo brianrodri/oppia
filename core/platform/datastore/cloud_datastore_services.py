@@ -67,8 +67,8 @@ def put_multi_async(models, update_last_updated_time=True):
     Returns:
         list(future). A list of futures.
     """
-    return ndb.put_multi_async(
-        models, update_last_updated_time=update_last_updated_time)
+    del update_last_updated_time # No longer supported.
+    return ndb.put_multi_async(models)
 
 
 def delete_multi(keys):
@@ -262,5 +262,8 @@ def make_client(namespace=None):
 
     Args:
         namespace: str | None. Namespace to pass to proxied API methods.
+
+    Returns:
+        ndb.Client. A Cloud NDB client.
     """
     return ndb.Client(namespace=namespace)

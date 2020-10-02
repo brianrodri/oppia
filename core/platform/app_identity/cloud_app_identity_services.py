@@ -23,8 +23,6 @@ import os
 
 from constants import constants
 
-from google.appengine.api import app_identity
-
 _GCS_RESOURCE_BUCKET_NAME_SUFFIX = '-resources'
 
 

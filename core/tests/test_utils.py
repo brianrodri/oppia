@@ -31,6 +31,7 @@ import os
 import unittest
 
 from constants import constants
+import contextlib2
 from core.controllers import base
 from core.domain import caching_domain
 from core.domain import collection_domain
@@ -54,8 +55,8 @@ from core.domain import topic_domain
 from core.domain import topic_services
 from core.domain import user_services
 from core.platform import models
-from core.platform.datastore import gae_datastore_services
 from core.platform.datastore import cloud_datastore_services
+from core.platform.datastore import gae_datastore_services
 from core.platform.taskqueue import cloud_tasks_emulator
 import feconf
 import main
@@ -66,7 +67,6 @@ import requests_mock
 import schema_utils
 import utils
 
-import contextlib2
 from google.appengine.api import mail
 import webtest
 

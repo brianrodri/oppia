@@ -23,9 +23,8 @@ import subprocess
 import time
 
 import contextlib2
-import psutil
-
 import feconf
+import psutil
 
 from . import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 

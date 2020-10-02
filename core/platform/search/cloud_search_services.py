@@ -68,7 +68,8 @@ def add_documents_to_index(documents, index, retries=DEFAULT_NUM_RETRIES):
             document, none will be inserted.
         ValueError. Raised when invalid values are given.
     """
-    raise NotImplementedError()
+    del documents, index, retries
+    raise NotImplementedError
 
 
 def _dict_to_search_document(d):
@@ -84,6 +85,7 @@ def _dict_to_search_document(d):
     Raises:
         ValueError. The given document is not in the dict format.
     """
+    del d
     raise NotImplementedError()
 
 
@@ -102,6 +104,7 @@ def _make_fields(key, value):
         ValueError. The type of field value is not list, str, Number or
             datetime.
     """
+    del key, value
     raise NotImplementedError()
 
 
@@ -141,6 +144,7 @@ def delete_documents_from_index(
         SearchFailureError. Raised when the deletion fails. If it fails for any
             document, none will be deleted.
     """
+    del doc_ids, index, retries
     raise NotImplementedError()
 
 
@@ -153,6 +157,7 @@ def clear_index(index_name):
     Args:
         index_name: str. The name of the index to delete the document from.
     """
+    del index_name
     raise NotImplementedError()
 
 
@@ -186,6 +191,7 @@ def search(
                 the next page of results. This wil be a web safe string that you
                 can use in urls. It will be None if there is no next page.
     """
+    del query_string, index, cursor, limit, sort, ids_only, retries
     raise NotImplementedError()
 
 
@@ -202,6 +208,7 @@ def _string_to_sort_expressions(input_string):
         ValueError. Fields in the sort expression do not start with '+' or '-'
             to indicate sort direction.
     """
+    del input_string
     raise NotImplementedError()
 
 
@@ -215,6 +222,7 @@ def get_document_from_index(doc_id, index):
     Returns:
         dict. The requested document as a dict.
     """
+    del doc_id, index
     raise NotImplementedError()
 
 

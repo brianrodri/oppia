@@ -46,7 +46,7 @@ def run_in_transaction(fn, *args, **kwargs):
     return ndb.transaction(lambda: fn(*args, **kwargs))
 
 
-def toplevel_wrapper(app, *args, **kwargs):
+def toplevel_wrapper(*args, **kwargs):
     """Enables a WSGI application to not exit until all its asynchronous
     requests have finished.
 
@@ -60,4 +60,4 @@ def toplevel_wrapper(app, *args, **kwargs):
     Returns:
         app. The entire app toplevel.
     """
-    return functools.wraps(ndb.toplevel)(app, *args, **kwargs)
+    return functools.wraps(ndb.toplevel)(*args, **kwargs)

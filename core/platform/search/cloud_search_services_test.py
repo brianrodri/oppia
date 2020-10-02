@@ -297,7 +297,8 @@ class SearchRemoveFromIndexTests(test_utils.GenericTestBase):
             search.TextField(name='k', value='v')])
         index = search.Index('my_index')
         index.put([doc])
-        cloud_search_services.delete_documents_from_index(['doc_id'], 'my_index')
+        cloud_search_services.delete_documents_from_index(
+            ['doc_id'], 'my_index')
         self.assertIsNone(index.get('doc_id'))
 
     def test_delete_multiple_documents(self):
@@ -628,7 +629,8 @@ class SearchQueryTests(test_utils.GenericTestBase):
         doc1 = {'id': 'doc1', 'k': 'abc def', 'rank': 3, 'language_code': 'en'}
         doc2 = {'id': 'doc2', 'k': 'abc ghi', 'rank': 1, 'language_code': 'fr'}
         doc3 = {'id': 'doc3', 'k': 'abc jkl', 'rank': 2, 'language_code': 'nl'}
-        cloud_search_services.add_documents_to_index([doc1, doc2, doc3], 'index')
+        cloud_search_services.add_documents_to_index(
+            [doc1, doc2, doc3], 'index')
         result = cloud_search_services.search('k:abc', 'index')[0]
         self.assertEqual(result, [doc1, doc3, doc2])
 
@@ -636,7 +638,8 @@ class SearchQueryTests(test_utils.GenericTestBase):
         doc1 = {'id': 'doc1', 'k': 'abc ghi'}
         doc2 = {'id': 'doc2', 'k': 'abc def'}
         doc3 = {'id': 'doc3', 'k': 'abc jkl'}
-        cloud_search_services.add_documents_to_index([doc1, doc2, doc3], 'index')
+        cloud_search_services.add_documents_to_index(
+            [doc1, doc2, doc3], 'index')
 
         result = cloud_search_services.search('k:abc', 'index', sort='+k')[0]
         self.assertEqual(result[0].get('id'), 'doc2')
@@ -667,7 +670,8 @@ class SearchQueryTests(test_utils.GenericTestBase):
         doc1 = {'id': 'doc1', 'k1': 2, 'k2': 'abc ghi'}
         doc2 = {'id': 'doc2', 'k1': 1, 'k2': 'abc def'}
         doc3 = {'id': 'doc3', 'k1': 1, 'k2': 'abc jkl'}
-        cloud_search_services.add_documents_to_index([doc1, doc2, doc3], 'index')
+        cloud_search_services.add_documents_to_index(
+            [doc1, doc2, doc3], 'index')
 
         result = cloud_search_services.search(
             'k2:abc', 'index', sort='+k1 -k2')[0]

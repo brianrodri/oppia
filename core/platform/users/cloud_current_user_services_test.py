@@ -54,16 +54,19 @@ class GaeCurrentUserServicesTests(test_utils.GenericTestBase):
 
     def test_is_current_user_super_admin(self):
         self.login(self.OWNER_EMAIL)
-        is_super_admin = cloud_current_user_services.is_current_user_super_admin()
+        is_super_admin = (
+            cloud_current_user_services.is_current_user_super_admin())
         self.assertEqual(is_super_admin, False)
         self.logout()
 
         self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        is_super_admin = cloud_current_user_services.is_current_user_super_admin()
+        is_super_admin = (
+            cloud_current_user_services.is_current_user_super_admin())
         self.assertEqual(is_super_admin, True)
         self.logout()
 
-        is_super_admin = cloud_current_user_services.is_current_user_super_admin()
+        is_super_admin = (
+            cloud_current_user_services.is_current_user_super_admin())
         self.assertEqual(is_super_admin, False)
 
     def test_get_user_id_from_email(self):

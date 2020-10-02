@@ -29,6 +29,7 @@ def create_login_url(slug):
     Returns:
         str. The correct login URL that includes the page to redirect to.
     """
+    del slug
     raise NotImplementedError()
 
 
@@ -47,6 +48,7 @@ def get_gae_id_from_email(email):
 
     Returns None if the email address does not correspond to a valid user id.
     """
+    del email
     raise NotImplementedError()
 
 

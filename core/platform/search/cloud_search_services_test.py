@@ -46,7 +46,7 @@ class SearchAddToIndexTests(test_utils.GenericTestBase):
             'datefield': date,
             'datetimefield': datetime_value
         }
-        result = cloud_search_services.add_documents_to_index([doc], 'my_index')
+        result = cloud_search_services.add_documents_to_index([doc], 'my_index') # pylint: disable=assignment-from-no-return
         self.assertEqual(result, [doc_id])
         result_doc = search.Index('my_index').get(doc_id)
 
@@ -65,7 +65,7 @@ class SearchAddToIndexTests(test_utils.GenericTestBase):
 
     def test_insert_document_without_id(self):
         doc = {'abc': 'def'}
-        result = cloud_search_services.add_documents_to_index([doc], 'my_index')
+        result = cloud_search_services.add_documents_to_index([doc], 'my_index') # pylint: disable=assignment-from-no-return
         retrieved_doc = search.Index('my_index').get(result[0])
         self.assertEqual(retrieved_doc.field('abc').value, 'def')
 
@@ -73,7 +73,7 @@ class SearchAddToIndexTests(test_utils.GenericTestBase):
         docs = [
             {'id': 'id%d' % n, 'name': 'doc%d' % n} for n in python_utils.RANGE(
                 5)]
-        result = cloud_search_services.add_documents_to_index(docs, 'my_index')
+        result = cloud_search_services.add_documents_to_index(docs, 'my_index') # pylint: disable=assignment-from-no-return
         index = search.Index('my_index')
         for ind in python_utils.RANGE(5):
             retrieved_doc = index.get('id%d' % ind)
@@ -507,9 +507,9 @@ class SearchQueryTests(test_utils.GenericTestBase):
         with self.swap(logging, 'exception', mock_logging_function):
             doc = {'id': 'doc1', 'NOT': 'abc', 'rank': 3, 'language_code': 'en'}
             cloud_search_services.add_documents_to_index([doc], 'index')
-            result = cloud_search_services.search('NOT:abc', 'my_index')
+            result = cloud_search_services.search('NOT:abc', 'my_index') # pylint: disable=assignment-from-no-return
             self.assertEqual(result, ([], None))
-            result = cloud_search_services.search(r'\k:abc', 'my_index')
+            result = cloud_search_services.search(r'\k:abc', 'my_index') # pylint: disable=assignment-from-no-return
             self.assertEqual(result, ([], None))
 
             self.assertEqual(len(observed_log_messages), 2)
@@ -567,9 +567,9 @@ class SearchQueryTests(test_utils.GenericTestBase):
             search.TextField(name='k', value='abc jkl ghi')])
         index = search.Index('my_index')
         index.put([doc1, doc2, doc3])
-        result1, cursor = cloud_search_services.search(
+        result1, cursor = cloud_search_services.search( # pylint: disable=assignment-from-no-return
             'k:abc', 'my_index', limit=2)
-        result2, cursor = cloud_search_services.search(
+        result2, cursor = cloud_search_services.search( # pylint: disable=assignment-from-no-return
             'k:abc', 'my_index', cursor=cursor)
         self.assertEqual(len(result1), 2)
         self.assertEqual(len(result2), 1)
@@ -744,7 +744,7 @@ class SearchQueryTests(test_utils.GenericTestBase):
         search_counter_ctx = self.swap(
             cloud_search_services, 'search', search_counter)
         with gae_search_ctx, search_counter_ctx:
-            result, cursor = cloud_search_services.search(
+            result, cursor = cloud_search_services.search( # pylint: disable=assignment-from-no-return
                 'prop:val',
                 'my_index',
                 sort='-index',
@@ -764,7 +764,7 @@ class SearchQueryTests(test_utils.GenericTestBase):
         search_counter_ctx2 = self.swap(
             cloud_search_services, 'search', search_counter2)
         with gae_search_ctx2, search_counter_ctx2:
-            result2, cursor = cloud_search_services.search(
+            result2, cursor = cloud_search_services.search( # pylint: disable=assignment-from-no-return
                 'prop:val',
                 'my_index',
                 sort='-index',
@@ -787,7 +787,7 @@ class SearchGetFromIndexTests(test_utils.GenericTestBase):
             search.TextField(name='my_field', value='value')
         ])
         search.Index('my_index').put(document)
-        result = cloud_search_services.get_document_from_index(
+        result = cloud_search_services.get_document_from_index( # pylint: disable=assignment-from-no-return
             'my_doc', 'my_index')
         self.assertEqual(result.get('id'), 'my_doc')
         self.assertEqual(result.get('my_field'), 'value')

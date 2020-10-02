@@ -31,7 +31,7 @@ class GaeCurrentUserServicesTests(test_utils.GenericTestBase):
     EXPECTED_OWNER_USER_ID = '176177241684014293971'
 
     def test_create_login_url(self):
-        login_url = cloud_current_user_services.create_login_url('')
+        login_url = cloud_current_user_services.create_login_url('') # pylint: disable=assignment-from-no-return
         self.assertEqual(
             login_url,
             'https://www.google.com/accounts/Login' +
@@ -71,12 +71,12 @@ class GaeCurrentUserServicesTests(test_utils.GenericTestBase):
 
     def test_get_user_id_from_email(self):
         # Existing user scenario.
-        user_id = cloud_current_user_services.get_gae_id_from_email(
+        user_id = cloud_current_user_services.get_gae_id_from_email( # pylint: disable=assignment-from-no-return
             self.OWNER_EMAIL)
         self.assertEqual(user_id, self.EXPECTED_OWNER_USER_ID)
 
         # Non-existing user scenario.
-        user_id = cloud_current_user_services.get_gae_id_from_email('')
+        user_id = cloud_current_user_services.get_gae_id_from_email('') # pylint: disable=assignment-from-no-return
         self.assertEqual(user_id, None)
 
     def test_get_current_gae_id(self):

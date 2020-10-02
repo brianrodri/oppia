@@ -19,13 +19,14 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import logging
 import os
+import subprocess
 import time
 
 import contextlib2
 import psutil
-import subprocess
 
 from . import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
+
 
 def _terminate_proc_tree(pid):
     """Recursively terminate the given process and its children by ID.

@@ -68,6 +68,7 @@ def put_multi_async(models, update_last_updated_time=True):
     Returns:
         list(future). A list of futures.
     """
+    del update_last_updated_time # Not supported by Cloud NDB.
     return ndb.put_multi_async(models)
 
 

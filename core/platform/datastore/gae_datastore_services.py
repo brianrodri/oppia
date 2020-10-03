@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-# Copyright 2014 The Oppia Authors. All Rights Reserved.
+# Copyright 2020 The Oppia Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import contextlib
 import datetime
+import functools
 
 import python_utils
 
@@ -28,10 +29,6 @@ from google.appengine.api import datastore_types
 from google.appengine.datastore import datastore_query
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
-
-Model = ndb.Model
-
-DateTimeProperty = ndb.DateTimeProperty
 
 
 Model = ndb.Model
@@ -42,9 +39,23 @@ DateTimeProperty = ndb.DateTimeProperty
 FloatProperty = ndb.FloatProperty
 IntegerProperty = ndb.IntegerProperty
 JsonProperty = ndb.JsonProperty
-StringProperty = ndb.StringProperty
-TextProperty = ndb.TextProperty
 UserProperty = ndb.UserProperty
+
+
+@functools.wraps(ndb.StringProperty)
+def StringProperty(*args, **kwargs):
+    """Enforces requirement for models to use StringProperty(indexed=True)."""
+    if not kwargs.get('indexed', True):
+        raise ValueError('StringProperty(indexed=False) is no longer supported')
+    return ndb.StringProperty(*args, **kwargs)
+
+
+@functools.wraps(ndb.TextProperty)
+def TextProperty(*args, **kwargs):
+    """Enforces requirement for models to use TextProperty(indexed=False)."""
+    if kwargs.get('indexed', False):
+        raise ValueError('TextProperty(indexed=True) is no longer supported')
+    return ndb.TextProperty(*args, **kwargs)
 
 
 def get_multi(keys):

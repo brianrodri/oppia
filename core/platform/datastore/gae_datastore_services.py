@@ -58,7 +58,7 @@ def TextProperty(*args, **kwargs): # pylint: disable=invalid-name
 
 
 def get_multi(keys):
-    """Fetches a sequence of keys.
+    """Fetches models corresponding to a sequence of keys.
 
     Args:
         keys: list(str). The keys to look up.
@@ -105,7 +105,7 @@ def put_multi_async(models, update_last_updated_time=True):
 
 
 def delete_multi(keys):
-    """Deletes a sequence of keys.
+    """Deletes models corresponding to a sequence of keys.
 
     Args:
         keys: list(str). A list of keys.

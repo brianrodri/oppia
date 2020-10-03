@@ -149,10 +149,10 @@ class TransactionTests(test_utils.GenericTestBase):
 
 class EnforcedPropertyTests(unittest.TestCase):
 
-    def test_string_property_raises_value_error_if_indexed_is_true(self):
+    def test_string_property_raises_value_error_if_indexed_is_false(self):
         with self.assertRaisesRegexp(ValueError, 'no longer supported'):
             gae_datastore_services.StringProperty(indexed=False)
 
-    def test_text_property_raises_value_error_if_indexed_is_false(self):
+    def test_text_property_raises_value_error_if_indexed_is_true(self):
         with self.assertRaisesRegexp(ValueError, 'no longer supported'):
             gae_datastore_services.TextProperty(indexed=True)

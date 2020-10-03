@@ -43,7 +43,7 @@ UserProperty = ndb.UserProperty
 
 
 @functools.wraps(ndb.StringProperty)
-def StringProperty(*args, **kwargs):
+def StringProperty(*args, **kwargs): # pylint: disable=invalid-name
     """Enforces requirement for models to use StringProperty(indexed=True)."""
     if not kwargs.get('indexed', True):
         raise ValueError('StringProperty(indexed=False) is no longer supported')
@@ -51,7 +51,7 @@ def StringProperty(*args, **kwargs):
 
 
 @functools.wraps(ndb.TextProperty)
-def TextProperty(*args, **kwargs):
+def TextProperty(*args, **kwargs): # pylint: disable=invalid-name
     """Enforces requirement for models to use TextProperty(indexed=False)."""
     if kwargs.get('indexed', False):
         raise ValueError('TextProperty(indexed=True) is no longer supported')

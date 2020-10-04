@@ -27,7 +27,6 @@ import datetime
 import inspect
 import itertools
 import json
-import logging
 import os
 import unittest
 
@@ -1255,41 +1254,31 @@ tags: []
             email: str. A valid email stored in the App Engine database.
 
         Returns:
-            str. ID of the user possessing the given email.
+            str or None. ID of the user possessing the given email, or None if
+            the user does not exist.
         """
-        gae_id = self.get_gae_id_from_email(email)
-        return user_services.get_user_settings_by_gae_id(gae_id).user_id
+        user_settings = user_services.get_user_settings_by_gae_id(
+            self.get_gae_id_from_email(email))
+        return user_settings and user_settings.user_id
 
     def get_gae_id_from_email(self, email):
-        """Gets the GAE user ID corresponding to the given email.
+        """Returns a mock GAE user ID corresponding to the given email.
+
+        This method can use any algorithm to produce results as long as, during
+        the runtime of each test case/method, it is:
+        1.  Pure (same input always returns the same output).
+        2.  One-to-one (no two distinct inputs return the same output).
+        3.  An integer string (to match the behavior of actual GAE IDs).
 
         Args:
-            email: str. A valid email stored in the App Engine database.
+            email: str. The email address of the user.
 
         Returns:
-            str. GAE ID of the user possessing the given email.
+            str. The mock GAE ID of a user possessing the given email.
         """
-
-        class _MockModelWithUser(datastore_services.Model):
-            """A simple model with a user property."""
-
-            _use_memcache = False
-            _use_cache = False
-            user = datastore_services.UserProperty(required=True)
-
-        mock_user = current_user_services.get_user_by_email(email)
-        if mock_user is None:
-            logging.error(
-                'The email address %s does not correspond to a valid user_id'
-                % email)
-            return None
-
-        key = _MockModelWithUser(id=email, user=mock_user).put()
-        mock_model_with_user = _MockModelWithUser.get_by_id(key.id())
-        # GAE uses the naming 'user_id' internally, we call the GAE user_id just
-        # a gae_id in our code.
-        gae_id = mock_model_with_user.user.user_id()
-        return python_utils.convert_to_bytes(gae_id) if gae_id else None
+        # Although the hash function doesn't guarantee a one-to-one mapping, in
+        # practice it is sufficient for our tests.
+        return python_utils.UNICODE(hash(email))
 
     def save_new_default_exploration(
             self, exploration_id, owner_id, title='A title'):

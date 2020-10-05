@@ -216,7 +216,7 @@ class BaseModel(datastore_services.Model):
         if update_last_updated_time or self.last_updated is None:
             self.last_updated = datetime.datetime.utcnow()
 
-    def put(self, update_last_updated_time=True):
+    def put(self, update_last_updated_time, _):
         """Stores the given datastore_services.Model instance to the datastore.
 
         Args:
@@ -229,7 +229,7 @@ class BaseModel(datastore_services.Model):
         self._update_timestamps(update_last_updated_time)
         return super(BaseModel, self).put()
 
-    def put_async(self, update_last_updated_time=True):
+    def put_async(self, update_last_updated_time, _):
         """Stores the given datastore_services.Model instance to the datastore
         asynchronously.
 
@@ -244,7 +244,7 @@ class BaseModel(datastore_services.Model):
         return super(BaseModel, self).put_async()
 
     @classmethod
-    def put_multi(cls, entities, update_last_updated_time=True):
+    def put_multi(cls, entities, update_last_updated_time, _):
         """Stores the given datastore_services.Model instances.
 
         Args:
@@ -253,13 +253,11 @@ class BaseModel(datastore_services.Model):
             update_last_updated_time: bool. Whether to update the
                 last_updated field of the entities.
         """
-        # Internally put_multi calls put so we don't need to call
-        # _update_timestamps here.
         datastore_services.put_multi(
-            entities, update_last_updated_time=update_last_updated_time)
+            entities, update_last_updated_time)
 
     @classmethod
-    def put_multi_async(cls, entities, update_last_updated_time=True):
+    def put_multi_async(cls, entities, update_last_updated_time, _):
         """Stores the given datastore_services.Model instances asynchronously.
 
         Args:
@@ -271,10 +269,8 @@ class BaseModel(datastore_services.Model):
         Returns:
             list(future). A list of futures.
         """
-        # Internally put_multi_async calls put_async so we don't need to call
-        # _update_timestamps here.
         return datastore_services.put_multi_async(
-            entities, update_last_updated_time=update_last_updated_time)
+            entities, update_last_updated_time)
 
     @classmethod
     def delete_multi(cls, entities):
@@ -298,7 +294,7 @@ class BaseModel(datastore_services.Model):
 
     def delete(self):
         """Deletes this instance."""
-        super(BaseModel, self).key.delete()
+        self.key.delete()
 
     @classmethod
     def get_all(cls, include_deleted=False):
@@ -311,10 +307,9 @@ class BaseModel(datastore_services.Model):
         Returns:
             iterable. Filterable iterable of all entities of this class.
         """
-        query = cls.query()
-        if not include_deleted:
-            query = query.filter(cls.deleted == False)  # pylint: disable=singleton-comparison
-        return query
+        return (
+            cls.query() if include_deleted else
+            cls.query().filter(cls.deleted == False))
 
     @classmethod
     def get_new_id(cls, entity_name):
@@ -375,12 +370,9 @@ class BaseModel(datastore_services.Model):
         else:
             start_cursor = None
 
-        result = query.order(-cls.last_updated).fetch_page(
+        results, cursor, more = query.order(-cls.last_updated).fetch_page(
             page_size, start_cursor=start_cursor)
-        return (
-            result[0],
-            (result[1].urlsafe() if result[1] else None),
-            result[2])
+        return (results, cursor and cursor.urlsafe(), more)
 
 
 class BaseCommitLogEntryModel(BaseModel):

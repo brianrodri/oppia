@@ -217,7 +217,7 @@ class BaseModel(datastore_services.Model):
             self.last_updated = datetime.datetime.utcnow()
 
     def _pre_put_hook(self):
-        self._update_timestamps(True)
+        self._update_timestamps(False)
 
     def delete(self):
         """Deletes this instance."""

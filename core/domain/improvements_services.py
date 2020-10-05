@@ -183,8 +183,10 @@ def put_tasks(tasks, update_last_updated_time=True):
                     resolved_on=task.resolved_on))
         elif apply_changes_to_model(task, model):
             models_to_put.append(model)
-    improvements_models.TaskEntryModel.put_multi(
-        models_to_put, update_last_updated_time=update_last_updated_time)
+    if update_last_updated_time:
+        for model in models_to_put:
+            model.update_timestamps()
+    improvements_models.TaskEntryModel.put_multi(models_to_put)
 
 
 def apply_changes_to_model(task_entry, task_entry_model):

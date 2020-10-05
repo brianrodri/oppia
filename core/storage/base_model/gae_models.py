@@ -63,11 +63,11 @@ class BaseModel(datastore_services.Model):
     """Base model for all persistent object storage classes."""
 
     # When this entity was first created. This value should only be modified
-    # with the _update_timestamps method.
+    # with the update_timestamps method.
     created_on = (
         datastore_services.DateTimeProperty(indexed=True, required=True))
     # When this entity was last updated. This value should only be modified
-    # with the _update_timestamps method.
+    # with the update_timestamps method.
     last_updated = (
         datastore_services.DateTimeProperty(indexed=True, required=True))
     # Whether the current version of the model instance is deleted.
@@ -203,7 +203,7 @@ class BaseModel(datastore_services.Model):
                     entities[i] = None
         return entities
 
-    def _update_timestamps(self, update_last_updated_time):
+    def update_timestamps(self, update_last_updated_time=True):
         """Update the created_on and last_updated fields.
 
         Args:
@@ -217,7 +217,7 @@ class BaseModel(datastore_services.Model):
             self.last_updated = datetime.datetime.utcnow()
 
     def _pre_put_hook(self):
-        self._update_timestamps(False)
+        self.update_timestamps(update_last_updated_time=False)
 
     def delete(self):
         """Deletes this instance."""

@@ -216,76 +216,19 @@ class BaseModel(datastore_services.Model):
         if update_last_updated_time or self.last_updated is None:
             self.last_updated = datetime.datetime.utcnow()
 
-    def put(self, update_last_updated_time=True):
-        """Stores the given datastore_services.Model instance to the datastore.
-
-        Args:
-            update_last_updated_time: bool. Whether to update the
-                last_updated field of the model.
-
-        Returns:
-            Model. The entity that was stored.
-        """
-        self._update_timestamps(update_last_updated_time)
-        return super(BaseModel, self).put()
-
-    def put_async(self, update_last_updated_time=True):
-        """Stores the given datastore_services.Model instance to the datastore
-        asynchronously.
-
-        Args:
-            update_last_updated_time: bool. Whether to update the
-                last_updated field of the model.
-
-        Returns:
-            Model. The entity that was stored.
-        """
-        self._update_timestamps(update_last_updated_time)
-        return super(BaseModel, self).put_async()
+    def delete(self):
+        """Deletes this instance."""
+        self.key.delete()
 
     @classmethod
-    def put_multi(cls, entities, update_last_updated_time=True):
-        """Stores the given datastore_services.Model instances.
-
-        Args:
-            entities: list(datastore_services.Model). List of model instances to
-                be stored.
-            update_last_updated_time: bool. Whether to update the
-                last_updated field of the entities.
-        """
-        # Internally put_multi calls put so we don't need to call
-        # _update_timestamps here.
-        datastore_services.put_multi(
-            entities, update_last_updated_time=update_last_updated_time)
-
-    @classmethod
-    def put_multi_async(cls, entities, update_last_updated_time=True):
-        """Stores the given datastore_services.Model instances asynchronously.
-
-        Args:
-            entities: list(datastore_services.Model). The list of model
-                instances to be stored.
-            update_last_updated_time: bool. Whether to update the
-                last_updated field of the entities.
-
-        Returns:
-            list(future). A list of futures.
-        """
-        # Internally put_multi_async calls put_async so we don't need to call
-        # _update_timestamps here.
-        return datastore_services.put_multi_async(
-            entities, update_last_updated_time=update_last_updated_time)
-
-    @classmethod
-    def delete_multi(cls, entities):
+    def delete_multi(cls, models):
         """Deletes the given datastore_services.Model instances.
 
         Args:
-            entities: list(datastore_services.Model). The list of model
+            models: list(datastore_services.Model). The list of model
                 instances to be deleted.
         """
-        keys = [entity.key for entity in entities]
-        datastore_services.delete_multi(keys)
+        datastore_services.delete_multi([model.key for model in models])
 
     @classmethod
     def delete_by_id(cls, instance_id):
@@ -295,10 +238,6 @@ class BaseModel(datastore_services.Model):
             instance_id: str. Id of the model to delete.
         """
         datastore_services.Key(cls, instance_id).delete()
-
-    def delete(self):
-        """Deletes this instance."""
-        super(BaseModel, self).key.delete()
 
     @classmethod
     def get_all(cls, include_deleted=False):
@@ -311,10 +250,9 @@ class BaseModel(datastore_services.Model):
         Returns:
             iterable. Filterable iterable of all entities of this class.
         """
-        query = cls.query()
-        if not include_deleted:
-            query = query.filter(cls.deleted == False)  # pylint: disable=singleton-comparison
-        return query
+        return (
+            cls.query() if include_deleted else
+            cls.query().filter(cls.deleted == False))
 
     @classmethod
     def get_new_id(cls, entity_name):
@@ -705,7 +643,7 @@ class VersionedModel(BaseModel):
             self.SNAPSHOT_CONTENT_CLASS.create(snapshot_id, snapshot))
 
         transaction_services.run_in_transaction(
-            BaseModel.put_multi,
+            datastore_services.put_multi,
             [snapshot_metadata_instance, snapshot_content_instance, self])
 
     def delete(self, committer_id, commit_message, force_deletion=False):
@@ -824,12 +762,6 @@ class VersionedModel(BaseModel):
                 BaseModel.put_multi,
                 snapshot_metadata_models + snapshot_content_models +
                 versioned_models)
-
-    def put(self, *args, **kwargs):
-        """For VersionedModels, this method is replaced with commit()."""
-        raise NotImplementedError(
-            'The put() method is missing from the '
-            'derived class. It should be implemented in the derived class.')
 
     def commit(self, committer_id, commit_message, commit_cmds):
         """Saves a version snapshot and updates the model.

@@ -1134,6 +1134,9 @@ class BaseRealtimeDatastoreClassForContinuousComputations(
         ).get(entity_id, strict=strict)
 
     def _pre_put_hook(self):
+        super(
+            BaseRealtimeDatastoreClassForContinuousComputations,
+            self)._pre_put_hook()
         if (self.realtime_layer is None or
                 python_utils.UNICODE(self.realtime_layer) != self.id[0]):
             raise Exception(

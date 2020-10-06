@@ -645,6 +645,10 @@ class VersionedModel(BaseModel):
         snapshot_content_instance = (
             self.SNAPSHOT_CONTENT_CLASS.create(snapshot_id, snapshot))
 
+        snapshot_metadata_instance.update_timestamps()
+        snapshot_content_instance.update_timestamps()
+        self.update_timestamps()
+
         transaction_services.run_in_transaction(
             datastore_services.put_multi,
             [snapshot_metadata_instance, snapshot_content_instance, self])

@@ -1139,6 +1139,7 @@ class BaseRealtimeDatastoreClassForContinuousComputations(
         ).get(entity_id, strict=strict)
 
     def _pre_put_hook(self):
+        """Operations to perform just before the model is "put" into storage."""
         super(
             BaseRealtimeDatastoreClassForContinuousComputations,
             self)._pre_put_hook()

@@ -204,21 +204,21 @@ class BaseModel(datastore_services.Model):
         return entities
 
     @classmethod
-    def update_timestamps_multi(cls, models, update_last_updated_time=True):
+    def update_timestamps_multi(cls, entities, update_last_updated_time=True):
         """Update the created_on and last_updated fields for multiple models.
 
         Args:
-            models: list(datastore_services.Model). The list of model instances
-                to be updated.
+            entities: list(datastore_services.Model). List of model instances to
+                be updated.
             update_last_updated_time: bool. Whether to update the
                 last_updated field of the model.
         """
         utcnow = datetime.datetime.utcnow()
-        for model in models:
-            if model.created_on is None:
-                model.created_on = utcnow
-            if model.last_updated is None or update_last_updated_time:
-                model.last_updated = utcnow
+        for entity in entities:
+            if entity.created_on is None:
+                entity.created_on = utcnow
+            if entity.last_updated is None or update_last_updated_time:
+                entity.last_updated = utcnow
 
     def update_timestamps(self, update_last_updated_time=True):
         """Update the created_on and last_updated fields.
@@ -234,6 +234,7 @@ class BaseModel(datastore_services.Model):
             self.last_updated = utcnow
 
     def _pre_put_hook(self):
+        """Operations to perform just before the model is "put" into storage."""
         self.update_timestamps(update_last_updated_time=False)
 
     def delete(self):
@@ -241,14 +242,14 @@ class BaseModel(datastore_services.Model):
         self.key.delete()
 
     @classmethod
-    def delete_multi(cls, models):
+    def delete_multi(cls, entities):
         """Deletes the given datastore_services.Model instances.
 
         Args:
-            models: list(datastore_services.Model). The list of model
-                instances to be deleted.
+            entities: list(datastore_services.Model). List of model instances to
+                be deleted.
         """
-        datastore_services.delete_multi([model.key for model in models])
+        datastore_services.delete_multi([entity.key for entity in entities])
 
     @classmethod
     def delete_by_id(cls, instance_id):
@@ -558,6 +559,10 @@ class VersionedModel(BaseModel):
     # previous versions is stored in the snapshot models.
     version = datastore_services.IntegerProperty(default=0)
 
+    def __init__(self, *args, **kwargs):
+        super(VersionedModel, self).__init__(*args, **kwargs)
+        self._put_is_being_called_from_commit = False
+
     def _require_not_marked_deleted(self):
         """Checks whether the model instance is deleted."""
         if self.deleted:
@@ -617,8 +622,7 @@ class VersionedModel(BaseModel):
             str. The unique snapshot id corresponding to the given instance and
             version.
         """
-        return '%s%s%s' % (
-            instance_id, VERSION_DELIMITER, version_number)
+        return '%s%s%s' % (instance_id, VERSION_DELIMITER, version_number)
 
     def _trusted_commit(
             self, committer_id, commit_type, commit_message, commit_cmds):
@@ -666,7 +670,7 @@ class VersionedModel(BaseModel):
         snapshot_content_instance.update_timestamps()
         self.update_timestamps()
 
-        self._put_with_commit = True
+        self._put_is_being_called_from_commit = True
         transaction_services.run_in_transaction(
             datastore_services.put_multi,
             [snapshot_metadata_instance, snapshot_content_instance, self])
@@ -735,8 +739,8 @@ class VersionedModel(BaseModel):
         Raises:
             Exception. This model instance has been already deleted.
         """
-        versioned_models = cls.get_multi(
-            entity_ids, include_deleted=force_deletion)
+        versioned_models = (
+            cls.get_multi(entity_ids, include_deleted=force_deletion))
         if force_deletion:
             all_models_metadata_keys = []
             all_models_content_keys = []
@@ -748,14 +752,14 @@ class VersionedModel(BaseModel):
                     model.get_snapshot_id(model.id, version_number)
                     for version_number in model_version_numbers]
 
-                all_models_metadata_keys.extend([
+                all_models_metadata_keys.extend(
                     datastore_services.Key(
                         model.SNAPSHOT_METADATA_CLASS, snapshot_id)
-                    for snapshot_id in model_snapshot_ids])
-                all_models_content_keys.extend([
+                    for snapshot_id in model_snapshot_ids)
+                all_models_content_keys.extend(
                     datastore_services.Key(
                         model.SNAPSHOT_CONTENT_CLASS, snapshot_id)
-                    for snapshot_id in model_snapshot_ids])
+                    for snapshot_id in model_snapshot_ids)
             versioned_models_keys = [model.key for model in versioned_models]
             transaction_services.run_in_transaction(
                 datastore_services.delete_multi,
@@ -985,14 +989,14 @@ class VersionedModel(BaseModel):
             return cls.get_version(entity_id, version, strict=strict)
 
     def _pre_put_hook(self):
+        """Operations to perform just before the model is "put" into storage."""
         super(VersionedModel, self)._pre_put_hook()
-        if not getattr(self, '_put_with_commit', default=False):
-            # put method was not called by commit(), so we raise an exception.
+        if not self._put_is_being_called_from_commit:
             raise NotImplementedError(
                 'The put() method is missing from the derived class. It should '
                 'be implemented in the derived class.')
         # Reset the value so that subsequent calls can be verified.
-        self._put_with_commit = False
+        self._put_is_being_called_from_commit = False
 
     @classmethod
     def get_snapshots_metadata(

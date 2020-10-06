@@ -390,4 +390,6 @@ def delete_explorations_from_recommendations(exp_ids):
         for exp_id in exp_ids:
             recommending_model.recommended_exploration_ids.remove(exp_id)
 
-    datastore_services.put_multi(list(all_recommending_models.values()))
+    recommending_model_list = list(all_recommending_models.values())
+    recs_model_class.update_timestamps_multi(recommending_model_list)
+    datastore_services.put_multi(recommending_model_list)

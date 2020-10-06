@@ -260,9 +260,9 @@ def _update_suggestions(suggestions, update_last_updated_time=True):
         suggestion_model.score_category = suggestion.score_category
         suggestion_model.language_code = suggestion.language_code
 
-    if update_last_updated_time:
-        for model in suggestion_models_to_update:
-            model.update_timestamps()
+    suggestion_models.GeneralSuggestionModel.update_timestamps_multi(
+        suggestion_models_to_update,
+        update_last_updated_time=update_last_updated_time)
     datastore_services.put_multi(suggestion_models_to_update)
 
 

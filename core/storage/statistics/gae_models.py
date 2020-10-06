@@ -1232,6 +1232,7 @@ class ExplorationStatsModel(base_models.BaseModel):
                 state_stats_mapping=exploration_stats_dict[
                     'state_stats_mapping'])
             exploration_stats_models.append(stats_instance)
+        cls.update_timestamps_multi(exploration_stats_models)
         datastore_services.put_multi(exploration_stats_models)
 
     @classmethod
@@ -1952,6 +1953,7 @@ class StateAnswersModel(base_models.BaseModel):
             if last_shard_updated:
                 entities_to_put.append(last_shard)
 
+        cls.update_timestamps_multi(entities_to_put)
         datastore_services.put_multi(entities_to_put)
 
     @classmethod

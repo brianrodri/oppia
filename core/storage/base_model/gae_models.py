@@ -203,6 +203,23 @@ class BaseModel(datastore_services.Model):
                     entities[i] = None
         return entities
 
+    @classmethod
+    def update_timestamps_multi(cls, models, update_last_updated_time=True):
+        """Update the created_on and last_updated fields for multiple models.
+
+        Args:
+            models: list(datastore_services.Model). The list of model instances
+                to be updated.
+            update_last_updated_time: bool. Whether to update the
+                last_updated field of the model.
+        """
+        utcnow = datetime.datetime.utcnow()
+        for model in models:
+            if model.created_on is None:
+                model.created_on = utcnow
+            if model.last_updated is None or update_last_updated_time:
+                model.last_updated = utcnow
+
     def update_timestamps(self, update_last_updated_time=True):
         """Update the created_on and last_updated fields.
 
@@ -210,11 +227,11 @@ class BaseModel(datastore_services.Model):
             update_last_updated_time: bool. Whether to update the
                 last_updated field of the model.
         """
+        utcnow = datetime.datetime.utcnow()
         if self.created_on is None:
-            self.created_on = datetime.datetime.utcnow()
-
-        if update_last_updated_time or self.last_updated is None:
-            self.last_updated = datetime.datetime.utcnow()
+            self.created_on = utcnow
+        if self.last_updated is None or update_last_updated_time:
+            self.last_updated = utcnow
 
     def _pre_put_hook(self):
         self.update_timestamps(update_last_updated_time=False)

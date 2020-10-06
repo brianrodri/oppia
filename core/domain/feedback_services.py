@@ -256,6 +256,8 @@ def create_messages(
                     )
         if updated_subject:
             message_model.updated_subject = updated_subject
+    feedback_models.GeneralFeedbackMessageModel.update_timestamps_multi(
+        message_models)
     datastore_services.put_multi(message_models)
 
     # Update the message data cache of the threads.
@@ -281,6 +283,8 @@ def create_messages(
                         updated_subject != thread_model.subject):
                     thread_model.subject = updated_subject
             new_statuses.append(thread_model.status)
+    feedback_models.GeneralFeedbackThreadModel.update_timestamps_multi(
+        thread_models)
     datastore_services.put_multi(thread_models)
 
     # For each thread, we do a put on the suggestion linked (if it exists) to
@@ -300,6 +304,8 @@ def create_messages(
         # we need not update the suggestion.
         if suggestion_model:
             suggestion_models_to_update.append(suggestion_model)
+    suggestion_models.GeneralSuggestionModel.update_timestamps_multi(
+        suggestion_models_to_update)
     datastore_services.put_multi(suggestion_models_to_update)
 
     if (feconf.CAN_SEND_EMAILS and (
@@ -474,6 +480,8 @@ def add_message_ids_to_read_by_list(user_id, message_identifiers):
     # Update both the new and previously existing models in the datastore.
     current_feedback_thread_user_models.extend(
         new_feedback_thread_user_models)
+    feedback_models.GeneralFeedbackThreadUserModel.update_timestamps_multi(
+        current_feedback_thread_user_models)
     datastore_services.put_multi(current_feedback_thread_user_models)
 
 

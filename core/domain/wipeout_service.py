@@ -119,8 +119,9 @@ def save_pending_deletion_requests(pending_deletion_requests):
             )
         final_pending_deletion_request_models.append(deletion_request_model)
 
-    datastore_services.put_multi(
+    user_models.PendingDeletionRequestModel.update_timestamps_multi(
         final_pending_deletion_request_models)
+    datastore_services.put_multi(final_pending_deletion_request_models)
 
 
 def delete_pending_deletion_request(user_id):
@@ -599,6 +600,8 @@ def _pseudonymize_config_models(pending_deletion_request):
         for metadata_model in metadata_models:
             metadata_model.committer_id = pseudonymized_id
 
+        base_models.BaseSnapshotMetadataModel.update_timestamps_multi(
+            metadata_models)
         datastore_services.put_multi(metadata_models)
 
     config_ids_to_pids = (
@@ -678,12 +681,15 @@ def _pseudonymize_activity_models_without_associated_rights_models(
             if isinstance(model, snapshot_model_class)]
         for metadata_model in metadata_models:
             metadata_model.committer_id = pseudonymized_id
+        snapshot_model_class.update_timestamps_multi(metadata_models)
 
         commit_log_models = [
             model for model in activity_related_models
             if isinstance(model, commit_log_model_class)]
         for commit_log_model in commit_log_models:
             commit_log_model.user_id = pseudonymized_id
+        commit_log_model_class.update_timestamps_multi(commit_log_models)
+
         datastore_services.put_multi(metadata_models + commit_log_models)
 
     activity_ids_to_pids = (
@@ -846,11 +852,14 @@ def _pseudonymize_activity_models_with_associated_rights_models(
         for commit_log_model in commit_log_models:
             commit_log_model.user_id = pseudonymized_id
 
-        datastore_services.put_multi(
+        all_models_to_commit = (
             snapshot_metadata_models +
             rights_snapshot_metadata_models +
             rights_snapshot_content_models +
             commit_log_models)
+
+        base_models.BaseModel.update_timestamps_multi(all_models_to_commit)
+        datastore_services.put_multi(all_models_to_commit)
 
     activity_ids_to_pids = (
         pending_deletion_request.pseudonymizable_entity_mappings[
@@ -923,6 +932,7 @@ def _remove_user_id_from_contributors_in_summary_models(
             ]
             del summary_model.contributors_summary[user_id]
 
+        summary_model_class.update_timestamps_multi(summary_models)
         datastore_services.put_multi(summary_models)
 
     for i in python_utils.RANGE(
@@ -994,12 +1004,16 @@ def _pseudonymize_feedback_models(pending_deletion_request):
             if feedback_thread_model.last_nonempty_message_author_id == user_id:
                 feedback_thread_model.last_nonempty_message_author_id = (
                     pseudonymized_id)
+        feedback_thread_model_class.update_timestamps_multi(
+            feedback_thread_models)
 
         feedback_message_models = [
             model for model in feedback_related_models
             if isinstance(model, feedback_message_model_class)]
         for feedback_message_model in feedback_message_models:
             feedback_message_model.author_id = pseudonymized_id
+        feedback_message_model_class.update_timestamps_multi(
+            feedback_message_models)
 
         general_suggestion_models = [
             model for model in feedback_related_models
@@ -1009,6 +1023,8 @@ def _pseudonymize_feedback_models(pending_deletion_request):
                 general_suggestion_model.author_id = pseudonymized_id
             if general_suggestion_model.final_reviewer_id == user_id:
                 general_suggestion_model.final_reviewer_id = pseudonymized_id
+        suggestion_model_class.update_timestamps_multi(
+            general_suggestion_models)
 
         datastore_services.put_multi(
             feedback_thread_models +
@@ -1080,6 +1096,8 @@ def _pseudonymize_suggestion_models(pending_deletion_request):
                 voiceover_application_model.final_reviewer_id = (
                     suggestion_ids_to_pids[voiceover_application_model.id]
                 )
+        voiceover_application_class.update_timestamps_multi(
+            voiceover_application_models)
         datastore_services.put_multi(voiceover_application_models)
 
     suggestion_ids_to_pids = (

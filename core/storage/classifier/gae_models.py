@@ -214,6 +214,7 @@ class ClassifierTrainingJobModel(base_models.BaseModel):
 
             job_models.append(training_job_instance)
             job_ids.append(instance_id)
+        cls.update_timestamps_multi(job_models)
         datastore_services.put_multi(job_models)
         return job_ids
 
@@ -349,5 +350,6 @@ class TrainingJobExplorationMappingModel(base_models.BaseModel):
 
             mapping_models.append(mapping_instance)
             mapping_ids.append(instance_id)
+        cls.update_timestamps_multi(mapping_models)
         datastore_services.put_multi(mapping_models)
         return mapping_ids

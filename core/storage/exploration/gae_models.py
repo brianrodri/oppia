@@ -225,6 +225,7 @@ class ExplorationModel(base_models.VersionedModel):
                 )
                 exploration_commit_log.exploration_id = model.id
                 commit_log_models.append(exploration_commit_log)
+            cls.update_timestamps_multi(commit_log_models)
             datastore_services.put_multi_async(commit_log_models)
 
 

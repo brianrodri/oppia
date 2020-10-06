@@ -1275,6 +1275,7 @@ def _save_existing_users_settings(user_settings_list):
             user_settings_models, user_settings_list):
         user_settings.validate()
         user_model.populate(**user_settings.to_dict())
+    user_models.UserSettingsModel.update_timestamps_multi(user_ids)
     datastore_services.put_multi(user_settings_models)
 
 
@@ -1297,6 +1298,7 @@ def _save_existing_users_auth_details(user_auth_details_list):
             'deleted': user_auth_details.deleted
         }
         user_auth_details_model.populate(**user_auth_details_dict)
+    user_models.UserAuthDetailsModel.update_timestamps_multi(user_auth_models)
     datastore_services.put_multi(user_auth_models)
 
 

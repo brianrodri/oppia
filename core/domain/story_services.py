@@ -541,6 +541,8 @@ def update_story(
         id=exp_id,
         story_id=story_id
     ) for exp_id in exp_ids_added_to_story]
+    exp_models.ExplorationContextModel.update_timestamps_multi(
+        new_exploration_context_models)
     datastore_services.put_multi(new_exploration_context_models)
 
 

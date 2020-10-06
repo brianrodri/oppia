@@ -500,6 +500,7 @@ def update_playthroughs_multi(playthrough_ids, playthroughs):
             playthrough_dict['issue_customization_args'])
         playthrough_instance.actions = playthrough_dict['actions']
         updated_instances.append(playthrough_instance)
+    stats_models.PlaythroughModel.update_timestamps_multi(updated_instances)
     datastore_services.put_multi(updated_instances)
 
 

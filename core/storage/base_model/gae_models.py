@@ -986,10 +986,13 @@ class VersionedModel(BaseModel):
 
     def _pre_put_hook(self):
         super(VersionedModel, self)._pre_put_hook()
-        if not self._put_with_commit:
+        if not getattr(self, '_put_with_commit', default=False):
+            # put method was not called by commit(), so we raise an exception.
             raise NotImplementedError(
                 'The put() method is missing from the derived class. It should '
                 'be implemented in the derived class.')
+        # Reset the value so that subsequent calls can be verified.
+        self._put_with_commit = False
 
     @classmethod
     def get_snapshots_metadata(

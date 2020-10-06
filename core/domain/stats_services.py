@@ -33,6 +33,7 @@ import feconf
 import utils
 
 (stats_models,) = models.Registry.import_models([models.NAMES.statistics])
+datastore_services = models.Registry.import_datastore_services()
 transaction_services = models.Registry.import_transaction_services()
 
 
@@ -499,7 +500,7 @@ def update_playthroughs_multi(playthrough_ids, playthroughs):
             playthrough_dict['issue_customization_args'])
         playthrough_instance.actions = playthrough_dict['actions']
         updated_instances.append(playthrough_instance)
-    stats_models.PlaythroughModel.put_multi(updated_instances)
+    datastore_services.put_multi(updated_instances)
 
 
 def get_exploration_stats_by_id(exp_id, exp_version):

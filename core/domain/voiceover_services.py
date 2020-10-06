@@ -28,6 +28,7 @@ from core.platform import models
 import feconf
 
 (suggestion_models,) = models.Registry.import_models([models.NAMES.suggestion])
+datastore_services = models.Registry.import_datastore_services()
 
 
 def _get_voiceover_application_class(target_type):
@@ -116,8 +117,7 @@ def _save_voiceover_applications(voiceover_applications):
             voiceover_application)
         voiceover_application_models.append(voiceover_application_model)
 
-    suggestion_models.GeneralVoiceoverApplicationModel.put_multi(
-        voiceover_application_models)
+    datastore_services.put_multi(voiceover_application_models)
 
 
 def get_voiceover_application_by_id(voiceover_application_id):

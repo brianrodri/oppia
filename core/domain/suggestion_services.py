@@ -32,6 +32,7 @@ import feconf
 (feedback_models, suggestion_models, user_models) = (
     models.Registry.import_models(
         [models.NAMES.feedback, models.NAMES.suggestion, models.NAMES.user]))
+datastore_services = models.Registry.import_datastore_services()
 
 DEFAULT_SUGGESTION_THREAD_SUBJECT = 'Suggestion from a user'
 DEFAULT_SUGGESTION_THREAD_INITIAL_MESSAGE = ''
@@ -262,8 +263,7 @@ def _update_suggestions(suggestions, update_last_updated_time=True):
     if update_last_updated_time:
         for model in suggestion_models_to_update:
             model.update_timestamps()
-    suggestion_models.GeneralSuggestionModel.put_multi(
-        suggestion_models_to_update)
+    datastore_services.put_multi(suggestion_models_to_update)
 
 
 def get_commit_message_for_suggestion(author_username, commit_message):

@@ -762,7 +762,7 @@ class VersionedModel(BaseModel):
                     model.SNAPSHOT_CONTENT_CLASS.create(snapshot_id, snapshot))
 
             transaction_services.run_in_transaction(
-                BaseModel.put_multi,
+                datastore_services.put_multi,
                 snapshot_metadata_models + snapshot_content_models +
                 versioned_models)
 

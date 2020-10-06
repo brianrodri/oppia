@@ -28,6 +28,7 @@ import feconf
 import python_utils
 
 (base_models,) = models.Registry.import_models([models.NAMES.base_model])
+datastore_services = models.Registry.import_datastore_services()
 
 
 class BaseModelUnitTests(test_utils.GenericTestBase):
@@ -168,7 +169,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
             self.assertIsNone(model.last_updated)
 
         # Field last_updated will get updated because it is None.
-        base_models.BaseModel.put_multi(models_1)
+        datastore_services.put_multi(models_1)
         model_ids = [model.id for model in models_1]
         last_updated_values = []
         for model_id in model_ids:
@@ -179,7 +180,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
 
         # Field last_updated won't get updated.
         models_2 = base_models.BaseModel.get_multi(model_ids)
-        base_models.BaseModel.put_multi(models_2)
+        datastore_services.put_multi(models_2)
         for model_id, last_updated in python_utils.ZIP(
                 model_ids, last_updated_values):
             model = base_models.BaseModel.get_by_id(model_id)
@@ -189,7 +190,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
         models_3 = base_models.BaseModel.get_multi(model_ids)
         for model in models_3:
             model.update_timestamps()
-        base_models.BaseModel.put_multi(models_3)
+        datastore_services.put_multi(models_3)
         for model_id, last_updated in python_utils.ZIP(
                 model_ids, last_updated_values):
             model = base_models.BaseModel.get_by_id(model_id)
@@ -202,7 +203,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
             self.assertIsNone(model.last_updated)
 
         # Field last_updated will get updated because it is None.
-        futures = base_models.BaseModel.put_multi_async(models_1)
+        futures = datastore_services.put_multi_async(models_1)
         for future in futures:
             future.get_result()
         model_ids = [model.id for model in models_1]
@@ -215,7 +216,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
 
         # Field last_updated won't get updated.
         models_2 = base_models.BaseModel.get_multi(model_ids)
-        futures = base_models.BaseModel.put_multi_async(models_2)
+        futures = datastore_services.put_multi_async(models_2)
         for future in futures:
             future.get_result()
         for model_id, last_updated in python_utils.ZIP(
@@ -227,7 +228,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
         models_3 = base_models.BaseModel.get_multi(model_ids)
         for model in models_3:
             model.update_timestamps()
-        futures = base_models.BaseModel.put_multi_async(models_3)
+        futures = datastore_services.put_multi_async(models_3)
         for future in futures:
             future.get_result()
         for model_id, last_updated in python_utils.ZIP(

@@ -35,9 +35,10 @@ import utils
 
 import requests
 
-current_user_services = models.Registry.import_current_user_services()
 (user_models, audit_models) = models.Registry.import_models(
     [models.NAMES.user, models.NAMES.audit])
+current_user_services = models.Registry.import_current_user_services()
+datastore_services = models.Registry.import_datastore_services()
 transaction_services = models.Registry.import_transaction_services()
 
 # Size (in px) of the gravatar being retrieved.
@@ -1274,7 +1275,7 @@ def _save_existing_users_settings(user_settings_list):
             user_settings_models, user_settings_list):
         user_settings.validate()
         user_model.populate(**user_settings.to_dict())
-    user_models.UserSettingsModel.put_multi(user_settings_models)
+    datastore_services.put_multi(user_settings_models)
 
 
 def _save_existing_users_auth_details(user_auth_details_list):
@@ -1296,7 +1297,7 @@ def _save_existing_users_auth_details(user_auth_details_list):
             'deleted': user_auth_details.deleted
         }
         user_auth_details_model.populate(**user_auth_details_dict)
-    user_models.UserAuthDetailsModel.put_multi(user_auth_models)
+    datastore_services.put_multi(user_auth_models)
 
 
 def _save_user_auth_details(user_auth_details):

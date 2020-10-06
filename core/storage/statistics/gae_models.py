@@ -1232,7 +1232,7 @@ class ExplorationStatsModel(base_models.BaseModel):
                 state_stats_mapping=exploration_stats_dict[
                     'state_stats_mapping'])
             exploration_stats_models.append(stats_instance)
-        cls.put_multi(exploration_stats_models)
+        datastore_services.put_multi(exploration_stats_models)
 
     @classmethod
     def get_export_policy(cls):
@@ -1952,7 +1952,7 @@ class StateAnswersModel(base_models.BaseModel):
             if last_shard_updated:
                 entities_to_put.append(last_shard)
 
-        cls.put_multi(entities_to_put)
+        datastore_services.put_multi(entities_to_put)
 
     @classmethod
     def insert_submitted_answers(

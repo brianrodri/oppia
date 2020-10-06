@@ -29,6 +29,7 @@ import python_utils
 
 (classifier_models, exp_models) = models.Registry.import_models(
     [models.NAMES.classifier, models.NAMES.exploration])
+datastore_services = models.Registry.import_datastore_services()
 
 
 def handle_trainable_states(exploration, state_names):
@@ -294,8 +295,7 @@ def _update_classifier_training_jobs_status(job_ids, status):
 
         classifier_training_job_models[index].status = status
 
-    classifier_models.ClassifierTrainingJobModel.put_multi(
-        classifier_training_job_models)
+    datastore_services.put_multi(classifier_training_job_models)
 
 
 def mark_training_job_complete(job_id):

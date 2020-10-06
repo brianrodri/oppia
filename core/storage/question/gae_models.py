@@ -205,7 +205,7 @@ class QuestionModel(base_models.VersionedModel):
             questions: list(Question). The list of question objects
                 to put into the datastore.
         """
-        cls.put_multi(questions)
+        datastore_services.put_multi(questions)
 
 
 class QuestionSkillLinkModel(base_models.BaseModel):
@@ -622,7 +622,7 @@ class QuestionSkillLinkModel(base_models.BaseModel):
             question_skill_links: list(QuestionSkillLink). The list of
                 question skill link domain objects to put into the datastore.
         """
-        cls.put_multi(question_skill_links)
+        datastore_services.put_multi(question_skill_links)
 
     @classmethod
     def delete_multi_question_skill_links(cls, question_skill_links):

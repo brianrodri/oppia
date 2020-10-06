@@ -30,6 +30,7 @@ import python_utils
 
 (exp_models, recommendations_models,) = models.Registry.import_models([
     models.NAMES.exploration, models.NAMES.recommendations])
+datastore_services = models.Registry.import_datastore_services()
 
 # pylint: disable=line-too-long, single-line-pragma
 DEFAULT_TOPIC_SIMILARITIES_STRING = (
@@ -389,4 +390,4 @@ def delete_explorations_from_recommendations(exp_ids):
         for exp_id in exp_ids:
             recommending_model.recommended_exploration_ids.remove(exp_id)
 
-    recs_model_class.put_multi(list(all_recommending_models.values()))
+    datastore_services.put_multi(list(all_recommending_models.values()))

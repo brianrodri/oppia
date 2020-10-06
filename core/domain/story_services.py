@@ -41,6 +41,7 @@ import utils
 
 (exp_models, story_models, user_models,) = models.Registry.import_models(
     [models.NAMES.exploration, models.NAMES.story, models.NAMES.user])
+datastore_services = models.Registry.import_datastore_services()
 
 
 def get_new_story_id():
@@ -540,7 +541,7 @@ def update_story(
         id=exp_id,
         story_id=story_id
     ) for exp_id in exp_ids_added_to_story]
-    exp_models.ExplorationContextModel.put_multi(new_exploration_context_models)
+    datastore_services.put_multi(new_exploration_context_models)
 
 
 def _is_topic_published(story):

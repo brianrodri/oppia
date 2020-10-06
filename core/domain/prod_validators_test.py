@@ -15180,7 +15180,7 @@ class PendingDeletionRequestModelValidatorTests(test_utils.AuditJobsTestBase):
     def test_exploration_not_marked_deleted_failure(self):
         exp = exp_models.ExplorationModel.get_by_id('exp_id')
         exp.deleted = False
-        exp_models.ExplorationModel.put_multi([exp])
+        datastore_services.put_multi([exp])
         expected_output = [
             (
                 u'[u\'failed validation check for deleted exploration check '
@@ -15193,7 +15193,7 @@ class PendingDeletionRequestModelValidatorTests(test_utils.AuditJobsTestBase):
     def test_collection_not_marked_deleted_failure(self):
         col = collection_models.CollectionModel.get_by_id('col_id')
         col.deleted = False
-        collection_models.CollectionModel.put_multi([col])
+        datastore_services.put_multi([col])
         expected_output = [
             (
                 u'[u\'failed validation check for deleted collection check '

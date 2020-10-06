@@ -119,7 +119,7 @@ def save_pending_deletion_requests(pending_deletion_requests):
             )
         final_pending_deletion_request_models.append(deletion_request_model)
 
-    user_models.PendingDeletionRequestModel.put_multi(
+    datastore_services.put_multi(
         final_pending_deletion_request_models)
 
 
@@ -1080,7 +1080,7 @@ def _pseudonymize_suggestion_models(pending_deletion_request):
                 voiceover_application_model.final_reviewer_id = (
                     suggestion_ids_to_pids[voiceover_application_model.id]
                 )
-        voiceover_application_class.put_multi(voiceover_application_models)
+        datastore_services.put_multi(voiceover_application_models)
 
     suggestion_ids_to_pids = (
         pending_deletion_request.pseudonymizable_entity_mappings[

@@ -188,8 +188,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
 
         # Field last_updated will get updated.
         models_3 = base_models.BaseModel.get_multi(model_ids)
-        for model in models_3:
-            model.update_timestamps()
+        base_models.BaseModel.update_timestamps_multi(models_3)
         datastore_services.put_multi(models_3)
         for model_id, last_updated in python_utils.ZIP(
                 model_ids, last_updated_values):
@@ -226,8 +225,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
 
         # Explicitly update last_updated.
         models_3 = base_models.BaseModel.get_multi(model_ids)
-        for model in models_3:
-            model.update_timestamps()
+        base_models.BaseModel.update_timestamps_multi(models_3)
         futures = datastore_services.put_multi_async(models_3)
         for future in futures:
             future.get_result()

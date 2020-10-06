@@ -990,6 +990,7 @@ def _save_user_settings(user_settings):
     user_model = user_models.UserSettingsModel.get_by_id(user_settings.user_id)
     if user_model is not None:
         user_model.populate(**user_settings_dict)
+        user_model.update_timestamps()
         user_model.put()
     else:
         user_settings_dict['id'] = user_settings.user_id
@@ -1323,6 +1324,7 @@ def _save_user_auth_details(user_auth_details):
         user_auth_details.user_id)
     if user_auth_details_model is not None:
         user_auth_details_model.populate(**user_auth_details_dict)
+        user_auth_details_model.update_timestamps()
         user_auth_details_model.put()
     else:
         user_auth_details_dict['id'] = user_auth_details.user_id
@@ -1827,6 +1829,7 @@ def update_email_preferences(
         can_receive_feedback_email)
     email_preferences_model.subscription_notifications = (
         can_receive_subscription_email)
+    email_preferences_model.update_timestamps()
     email_preferences_model.put()
 
 
@@ -1920,6 +1923,7 @@ def set_email_preferences_for_exploration(
     if mute_suggestion_notifications is not None:
         exploration_user_model.mute_suggestion_notifications = (
             mute_suggestion_notifications)
+    exploration_user_model.update_timestamps()
     exploration_user_model.put()
 
 
@@ -2328,6 +2332,7 @@ def update_dashboard_stats_log(user_id):
         }
     }
     model.weekly_creator_stats_list.append(weekly_dashboard_stats)
+    model.update_timestamps()
     model.put()
 
 

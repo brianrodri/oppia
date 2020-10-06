@@ -128,6 +128,7 @@ def save_topic_similarities(topic_similarities):
                 content=json.dumps(topic_similarities)))
     else:
         topic_similarities_entity.content = json.dumps(topic_similarities)
+    topic_similarities_entity.update_timestamps()
     topic_similarities_entity.put()
 
     return topic_similarities_entity

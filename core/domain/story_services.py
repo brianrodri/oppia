@@ -677,6 +677,7 @@ def save_story_summary(story_summary):
         story_models.StorySummaryModel.get_by_id(story_summary.id))
     if story_summary_model is not None:
         story_summary_model.populate(**story_summary_dict)
+        story_summary_model.update_timestamps()
         story_summary_model.put()
     else:
         story_summary_dict['id'] = story_summary.id
@@ -697,4 +698,5 @@ def record_completed_node_in_story_context(user_id, story_id, node_id):
 
     if node_id not in progress_model.completed_node_ids:
         progress_model.completed_node_ids.append(node_id)
+        progress_model.update_timestamps()
         progress_model.put()

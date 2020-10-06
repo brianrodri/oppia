@@ -2150,6 +2150,7 @@ class StateAnswersCalcOutputModel(base_models.BaseMapReduceBatchResultsModel):
 
         try:
             # This may fail if calculation_output is too large.
+            instance.update_timestamps()
             instance.put()
         except Exception:
             logging.exception(

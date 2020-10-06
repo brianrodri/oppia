@@ -149,6 +149,7 @@ class CollectionModel(base_models.VersionedModel):
             collection_rights.community_owned
         )
         collection_commit_log.collection_id = self.id
+        collection_commit_log.update_timestamps()
         collection_commit_log.put()
 
     @classmethod
@@ -429,6 +430,7 @@ class CollectionRightsModel(base_models.VersionedModel):
         snapshot_metadata_model.commit_cmds_user_ids = list(
             sorted(commit_cmds_user_ids))
 
+        snapshot_metadata_model.update_timestamps()
         snapshot_metadata_model.put()
 
     @classmethod

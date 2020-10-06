@@ -398,6 +398,7 @@ class UserLastExplorationActivityOneOffJob(jobs.BaseMapReduceOneOffJobManager):
         if user_commits:
             user_model.last_edited_an_exploration = user_commits[0].created_on
 
+        user_model.update_timestamps()
         user_model.put()
 
 
@@ -428,6 +429,7 @@ class CleanupActivityIdsFromUserSubscriptionsModelOneOffJob(
                     exp_ids_removed.append(exp_id)
                     model_instance.activity_ids.remove(exp_id)
             if exp_ids_removed:
+                model_instance.update_timestamps()
                 model_instance.put()
                 yield (
                     'Successfully cleaned up UserSubscriptionsModel %s and '

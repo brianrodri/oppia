@@ -677,6 +677,7 @@ def save_stats_model(exploration_stats):
         exploration_stats.num_completions_v2)
     exploration_stats_model.state_stats_mapping = new_state_stats_mapping
 
+    exploration_stats_model.update_timestamps()
     exploration_stats_model.put()
 
 
@@ -709,6 +710,7 @@ def _save_exp_issues_model(exp_issues):
     exp_issues_model.exp_version = exp_issues.exp_version
     exp_issues_model.unresolved_issues = unresolved_issues_dicts
 
+    exp_issues_model.update_timestamps()
     exp_issues_model.put()
 
 
@@ -1176,6 +1178,7 @@ def save_learner_answer_details(
                 learner_answer_details.learner_answer_info_schema_version)
             learner_answer_details_model.accumulated_answer_info_json_size_bytes = ( # pylint: disable=line-too-long
                 learner_answer_details.accumulated_answer_info_json_size_bytes)
+            learner_answer_details_model.update_timestamps()
             learner_answer_details_model.put()
         else:
             learner_answer_details_model.delete()

@@ -92,6 +92,7 @@ def _create_models_for_thread_and_first_message(
     thread.subject = subject
     thread.has_suggestion = has_suggestion
     thread.message_count = 0
+    thread.update_timestamps()
     thread.put()
     create_message(
         thread_id, original_author_id, feedback_models.STATUS_CHOICES_OPEN,
@@ -407,6 +408,7 @@ def update_messages_read_by_the_user(user_id, thread_id, message_ids):
         feedback_models.GeneralFeedbackThreadUserModel.create(
             user_id, thread_id))
     feedback_thread_user_model.message_ids_read_by_user = message_ids
+    feedback_thread_user_model.update_timestamps()
     feedback_thread_user_model.put()
 
 
@@ -888,6 +890,7 @@ def _add_feedback_message_reference(user_id, reference):
     model = feedback_models.UnsentFeedbackEmailModel.get(user_id, strict=False)
     if model is not None:
         model.feedback_message_references.append(reference.to_dict())
+        model.update_timestamps()
         model.put()
     else:
         model = feedback_models.UnsentFeedbackEmailModel(
@@ -910,6 +913,7 @@ def update_feedback_email_retries(user_id):
     if (time_since_buffered >
             feconf.DEFAULT_FEEDBACK_MESSAGE_EMAIL_COUNTDOWN_SECS):
         model.retries += 1
+        model.update_timestamps()
         model.put()
 
 
@@ -975,6 +979,7 @@ def clear_feedback_message_references(user_id, exploration_id, thread_id):
         model.delete()
     else:
         model.feedback_message_references = updated_references
+        model.update_timestamps()
         model.put()
 
 

@@ -273,7 +273,7 @@ class BaseModel(datastore_services.Model):
         """
         return (
             cls.query() if include_deleted else
-            cls.query().filter(cls.deleted == False))
+            cls.query().filter(cls.deleted == False)) # pylint: disable=comparetozero
 
     @classmethod
     def get_new_id(cls, entity_name):

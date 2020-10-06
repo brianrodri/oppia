@@ -167,7 +167,6 @@ class SuggestionMathMigrationOneOffJob(jobs.BaseMapReduceOneOffJobManager):
                         item.id, e))
                 return
             item.change_cmd = suggestion.change.to_dict()
-            item.update_timestamps()
             item.put()
             yield ('suggestion_migrated', 1)
 

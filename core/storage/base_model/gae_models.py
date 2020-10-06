@@ -666,6 +666,7 @@ class VersionedModel(BaseModel):
         snapshot_content_instance.update_timestamps()
         self.update_timestamps()
 
+        self._put_with_commit = True
         transaction_services.run_in_transaction(
             datastore_services.put_multi,
             [snapshot_metadata_instance, snapshot_content_instance, self])
@@ -982,6 +983,13 @@ class VersionedModel(BaseModel):
             return super(VersionedModel, cls).get(entity_id, strict=strict)
         else:
             return cls.get_version(entity_id, version, strict=strict)
+
+    def _pre_put_hook(self):
+        super(VersionedModel, self)._pre_put_hook()
+        if not self._put_with_commit:
+            raise NotImplementedError(
+                'The put() method is missing from the derived class. It should '
+                'be implemented in the derived class.')
 
     @classmethod
     def get_snapshots_metadata(

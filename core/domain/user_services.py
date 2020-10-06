@@ -1276,7 +1276,7 @@ def _save_existing_users_settings(user_settings_list):
             user_settings_models, user_settings_list):
         user_settings.validate()
         user_model.populate(**user_settings.to_dict())
-    user_models.UserSettingsModel.update_timestamps_multi(user_ids)
+    user_models.UserSettingsModel.update_timestamps_multi(user_settings_models)
     datastore_services.put_multi(user_settings_models)
 
 

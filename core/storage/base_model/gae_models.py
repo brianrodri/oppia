@@ -228,7 +228,7 @@ class BaseModel(datastore_services.Model):
         if update_last_updated_time:
             logging.error(
                 'brianrodri(Hello World): %s' % (
-                    '\t'.join(traceback.format_stack()),))
+                    '\t'.join(repr(s) for s in traceback.extract_stack()),))
 
     def put(self, update_last_updated_time=True):
         """Stores the given datastore_services.Model instance to the datastore.

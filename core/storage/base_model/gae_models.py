@@ -18,6 +18,8 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import datetime
+import logging
+import traceback
 
 from constants import constants
 from core.platform import models
@@ -222,6 +224,11 @@ class BaseModel(datastore_services.Model):
 
         if update_last_updated_time or self.last_updated is None:
             self.last_updated = datetime.datetime.utcnow()
+
+        if update_last_updated_time:
+            logging.error(
+                'brianrodri(Hello World): %s' % (
+                    '\t'.join(traceback.format_stack()),))
 
     def put(self, update_last_updated_time=True):
         """Stores the given datastore_services.Model instance to the datastore.

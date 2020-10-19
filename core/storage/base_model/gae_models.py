@@ -223,7 +223,7 @@ class BaseModel(datastore_services.Model):
         if update_last_updated_time or self.last_updated is None:
             self.last_updated = datetime.datetime.utcnow()
 
-    def put(self, update_last_updated_time=True):
+    def put(self, update_last_updated_time=True, **kwargs):
         """Stores the given datastore_services.Model instance to the datastore.
 
         Args:
@@ -234,9 +234,9 @@ class BaseModel(datastore_services.Model):
             Model. The entity that was stored.
         """
         self._update_timestamps(update_last_updated_time)
-        return super(BaseModel, self).put()
+        return super(BaseModel, self).put(**kwargs)
 
-    def put_async(self, update_last_updated_time=True):
+    def put_async(self, update_last_updated_time=True, **kwargs):
         """Stores the given datastore_services.Model instance to the datastore
         asynchronously.
 
@@ -248,7 +248,7 @@ class BaseModel(datastore_services.Model):
             Model. The entity that was stored.
         """
         self._update_timestamps(update_last_updated_time)
-        return super(BaseModel, self).put_async()
+        return super(BaseModel, self).put_async(**kwargs)
 
     @classmethod
     def put_multi(cls, entities, update_last_updated_time=True):

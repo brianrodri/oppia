@@ -41,7 +41,7 @@ MODULES_WITH_PSEUDONYMIZABLE_CLASSES = utils.create_enum(  # pylint: disable=inv
     NAMES.question, NAMES.skill, NAMES.story, NAMES.subtopic, NAMES.suggestion,
     NAMES.topic)
 
-GAE_PLATFORM = 'gae'
+GAE_PLATFORM = 'gae-to-cloud'
 
 
 class Platform(python_utils.OBJECT):
@@ -290,6 +290,48 @@ class _Gae(Platform):
     NAME = 'gae'
 
 
+class _Cloud(Platform):
+    """Provides platform-specific imports related to Google Cloud NDB."""
+
+    @classmethod
+    def import_datastore_services(cls):
+        """Imports and returns datastore_services module.
+
+        Returns:
+            module. The datastore_services module.
+        """
+        from core.platform.datastore import cloud_datastore_services
+        return cloud_datastore_services
+
+    @classmethod
+    def import_transaction_services(cls):
+        from core.platform.transactions import cloud_transaction_services
+        return cloud_transaction_services
+
+    NAME = 'cloud'
+
+
+class _GaeToCloud(_Gae):
+    """Provides platform-specific imports we are incrementally moving from GAE
+    to Cloud.
+    """
+
+    @classmethod
+    def import_datastore_services(cls):
+        """Imports and returns datastore_services module.
+
+        Returns:
+            module. The datastore_services module.
+        """
+        return _Cloud.import_datastore_services()
+
+    @classmethod
+    def import_transaction_services(cls):
+        return _Cloud.import_transaction_services()
+
+    NAME = 'gae-to-cloud'
+
+
 class Registry(python_utils.OBJECT):
     """Platform-agnostic interface for retrieving platform-specific
     modules.
@@ -297,7 +339,9 @@ class Registry(python_utils.OBJECT):
 
     # Maps platform names to the corresponding module registry classes.
     _PLATFORM_MAPPING = {
+        _Cloud.NAME: _Cloud,
         _Gae.NAME: _Gae,
+        _GaeToCloud.NAME: _GaeToCloud,
     }
 
     @classmethod

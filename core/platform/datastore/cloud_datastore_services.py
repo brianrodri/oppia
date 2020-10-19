@@ -20,16 +20,12 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import contextlib
-import contextlib2
 import datetime
 import functools
 
 import python_utils
 
-from google.appengine.api import datastore_types
-from google.appengine.datastore import datastore_query
-from google.appengine.datastore import datastore_stub_util
-from google.appengine.ext import ndb
+from google.cloud import ndb
 
 Model = ndb.Model
 Key = ndb.Key
@@ -39,23 +35,9 @@ DateTimeProperty = ndb.DateTimeProperty
 FloatProperty = ndb.FloatProperty
 IntegerProperty = ndb.IntegerProperty
 JsonProperty = ndb.JsonProperty
+StringProperty = ndb.StringProperty
+TextProperty = ndb.TextProperty
 UserProperty = ndb.UserProperty
-
-
-@functools.wraps(ndb.StringProperty)
-def StringProperty(*args, **kwargs): # pylint: disable=invalid-name
-    """Enforces requirement for models to use StringProperty(indexed=True)."""
-    if not kwargs.get('indexed', True):
-        raise ValueError('StringProperty(indexed=False) is no longer supported')
-    return ndb.StringProperty(*args, **kwargs)
-
-
-@functools.wraps(ndb.TextProperty)
-def TextProperty(*args, **kwargs): # pylint: disable=invalid-name
-    """Enforces requirement for models to use TextProperty(indexed=False)."""
-    if kwargs.get('indexed', False):
-        raise ValueError('TextProperty(indexed=True) is no longer supported')
-    return ndb.TextProperty(*args, **kwargs)
 
 
 def get_multi(keys):
@@ -82,13 +64,10 @@ def put_multi(models, update_last_updated_time=True):
     Returns:
         list(str). A list with the stored keys.
     """
-    # TODO(#10863): Stop passing in update_last_updated_time through these
-    # top-level functions.
-    return ndb.put_multi(
-        models, update_last_updated_time=update_last_updated_time)
+    return ndb.put_multi(models)
 
 
-def put_multi_async(models, update_last_updated_time=True):
+def put_multi_async(models):
     """Stores a sequence of Model instances asynchronously.
 
     Args:
@@ -99,10 +78,7 @@ def put_multi_async(models, update_last_updated_time=True):
     Returns:
         list(future). A list of futures.
     """
-    # TODO(#10863): Stop passing in update_last_updated_time through these
-    # top-level functions.
-    return ndb.put_multi_async(
-        models, update_last_updated_time=update_last_updated_time)
+    return ndb.put_multi_async(models)
 
 
 def delete_multi(keys):
@@ -135,8 +111,7 @@ def transaction(callback):
         Exception. Whatever callback() raises, or
             datastore_errors.TransactionFailedError when the transaction failed.
     """
-    return ndb.transaction(
-        callback, xg=True, propagation=ndb.TransactionOptions.ALLOWED)
+    return ndb.transaction(callback, xg=True)
 
 
 def all_of(*nodes):
@@ -185,9 +160,9 @@ def make_cursor(urlsafe_cursor=None):
             result of any query.
 
     Returns:
-        datastore_query.Cursor. A cursor into an arbitrary query.
+        ndb.Cursor. A cursor into an arbitrary query.
     """
-    return datastore_query.Cursor(urlsafe=urlsafe_cursor)
+    return ndb.Cursor(urlsafe=urlsafe_cursor)
 
 
 def fetch_multiple_entities_by_ids_and_models(ids_and_models):
@@ -227,9 +202,9 @@ def make_consistency_policy():
     decisions.
 
     Returns:
-        datastore_stub_util.PseudoRandomHRConsistencyPolicy. The policy.
+        None. Policies are not used in Google Cloud.
     """
-    return datastore_stub_util.PseudoRandomHRConsistencyPolicy(probability=1)
+    return None
 
 
 @contextlib.contextmanager
@@ -242,30 +217,30 @@ def mock_datetime_for_datastore(mocked_now):
         mocked_now = datetime.datetime.utcnow() - datetime.timedelta(days=1)
         with mock_datetime_for_datastore(mocked_now):
             self.assertEqual(datetime.datetime.utcnow(), mocked_now)
-        not_now = datetime.datetime.utcnow() # Returns actual time.
+        real_now = datetime.datetime.utcnow() # Returns actual time.
 
     Args:
-        mocked_now: datetime.datetime. The datetime which will be used
-            instead of the current UTC datetime.
+        mocked_now: datetime.datetime. The datetime which will be used instead
+            of the actual UTC datetime.
 
     Yields:
-        None. Empty yield statement.
+        MockDatetime. The class built to mock datetime.
     """
 
     if not isinstance(mocked_now, datetime.datetime):
         raise Exception('mocked_now must be datetime, got: %r' % mocked_now)
 
-    old_datetime_type = datetime.datetime
+    old_datetime = datetime.datetime
 
     class MockDatetimeType(type):
         """Pretends to be a datetime.datetime object."""
 
         def __instancecheck__(cls, other):
             """Validates whether the given instance is a datetime instance."""
-            return isinstance(other, old_datetime_type)
+            return isinstance(other, old_datetime)
 
     class MockDatetime( # pylint: disable=inherit-non-class
-            python_utils.with_metaclass(MockDatetimeType, old_datetime_type)):
+            python_utils.with_metaclass(MockDatetimeType, old_datetime)):
         """Always returns mocked_now as the current time."""
 
         @classmethod
@@ -275,27 +250,15 @@ def mock_datetime_for_datastore(mocked_now):
             return mocked_now
 
     setattr(datetime, 'datetime', MockDatetime)
-    setattr(ndb.DateTimeProperty, 'data_type', MockDatetime)
-
-    # Updates datastore types for MockDatetime to ensure that validation of ndb
-    # datetime properties does not fail.
-    datastore_types._VALIDATE_PROPERTY_VALUES[MockDatetime] = ( # pylint: disable=protected-access
-        datastore_types.ValidatePropertyNothing)
-    datastore_types._PACK_PROPERTY_VALUES[MockDatetime] = ( # pylint: disable=protected-access
-        datastore_types.PackDatetime)
-    datastore_types._PROPERTY_MEANINGS[MockDatetime] = ( # pylint: disable=protected-access
-        datastore_types.entity_pb.Property.GD_WHEN)
+    setattr(DateTimeProperty, 'data_type', MockDatetime)
 
     try:
-        yield
+        yield MockDatetime
     finally:
         # Resets the datastore types to forget the mocked types.
-        del datastore_types._PROPERTY_MEANINGS[MockDatetime] # pylint: disable=protected-access
-        del datastore_types._PACK_PROPERTY_VALUES[MockDatetime] # pylint: disable=protected-access
-        del datastore_types._VALIDATE_PROPERTY_VALUES[MockDatetime] # pylint: disable=protected-access
-        setattr(ndb.DateTimeProperty, 'data_type', datetime.datetime)
-        setattr(datetime, 'datetime', old_datetime_type)
+        setattr(DateTimeProperty, 'data_type', old_datetime)
+        setattr(datetime, 'datetime', old_datetime)
 
 
-def get_ndb_client():
-    return None
+def get_ndb_client(namespace=None):
+    return ndb.Client()

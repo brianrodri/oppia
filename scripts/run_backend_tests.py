@@ -64,6 +64,7 @@ install_third_party_libs.main()
 import python_utils # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 from . import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 from . import concurrent_task_utils # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
+from . import datastore_emulator_util
 
 DIRS_TO_ADD_TO_SYS_PATH = [
     os.path.join(common.OPPIA_TOOLS_DIR, 'pylint-%s' % common.PYLINT_VERSION),
@@ -304,11 +305,12 @@ def main(args=None):
         task_to_taskspec[task] = test
         tasks.append(task)
 
-    task_execution_failed = False
-    try:
-        concurrent_task_utils.execute_tasks(tasks, semaphore)
-    except Exception:
-        task_execution_failed = True
+    with datastore_emulator_util.emulator_context():
+        task_execution_failed = False
+        try:
+            concurrent_task_utils.execute_tasks(tasks, semaphore)
+        except Exception:
+            task_execution_failed = True
 
     for task in tasks:
         if task.exception:

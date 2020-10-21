@@ -27,6 +27,7 @@ import feconf
 import psutil
 
 from scripts import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
+import python_utils
 
 
 def _terminate_proc_tree(pid):
@@ -82,10 +83,13 @@ def emulator_context():
         onto it.
     """
     with contextlib2.ExitStack() as stack:
+        devnull = stack.enter_context(python_utils.open_file(os.devnull, 'w'))
+
         proc = subprocess.Popen(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'start',
              '--project', feconf.OPPIA_PROJECT_ID, '--no-store-on-disk',
-             '--consistency=1.0'])
+             '--consistency=1.0'],
+            stdout=devnull, stderr=devnull)
         stack.callback(lambda: _terminate_proc_tree(proc.pid))
 
         while not common.is_port_open(8081):

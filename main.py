@@ -17,6 +17,7 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
+import contextlib2
 import logging
 from constants import constants
 
@@ -72,6 +73,7 @@ from webapp2_extras import routes
 
 
 current_user_services = models.Registry.import_current_user_services()
+datastore_services = models.Registry.import_datastore_services()
 transaction_services = models.Registry.import_transaction_services()
 
 
@@ -845,5 +847,9 @@ for subject in feconf.AVAILABLE_LANDING_PAGES:
 # 404 error handler (Needs to be at the end of the URLS list).
 URLS.append(get_redirect_route(r'/<:.*>', base.Error404Handler))
 
-app = transaction_services.toplevel_wrapper(  # pylint: disable=invalid-name
-    webapp2.WSGIApplication(URLS, debug=feconf.DEBUG))
+ndb_client = datastore_services.get_ndb_client()
+app_context = ndb_client.context() if ndb_client else contextlib2.nullcontext()
+
+with app_context:
+    app = transaction_services.toplevel_wrapper(  # pylint: disable=invalid-name
+        webapp2.WSGIApplication(URLS, debug=feconf.DEBUG))

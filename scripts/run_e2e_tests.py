@@ -30,6 +30,7 @@ import time
 import python_utils
 from scripts import build
 from scripts import common
+from scripts import datastore_emulator_util
 from scripts import install_chrome_on_travis
 from scripts import install_third_party_libs
 
@@ -559,9 +560,10 @@ def main(args=None):
     commands.extend(get_e2e_test_parameters(
         parsed_args.sharding_instances, parsed_args.suite, dev_mode))
 
-    p = subprocess.Popen(commands)
-    p.communicate()
-    sys.exit(p.returncode)
+    with datastore_emulator_util.emulator_context():
+        p = subprocess.Popen(commands)
+        p.communicate()
+        sys.exit(p.returncode)
 
 
 if __name__ == '__main__':  # pragma: no cover

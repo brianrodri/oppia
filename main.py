@@ -17,10 +17,10 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import contextlib2
 import logging
-from constants import constants
 
+from constants import constants
+import contextlib2
 from core.controllers import acl_decorators
 from core.controllers import admin
 from core.controllers import base
@@ -847,8 +847,8 @@ for subject in feconf.AVAILABLE_LANDING_PAGES:
 # 404 error handler (Needs to be at the end of the URLS list).
 URLS.append(get_redirect_route(r'/<:.*>', base.Error404Handler))
 
-ndb_client = datastore_services.get_ndb_client()
-app_context = ndb_client.context() if ndb_client else contextlib2.nullcontext()
+ndb_client = datastore_services.get_ndb_client()  # pylint: disable=invalid-name
+app_context = ndb_client.context() if ndb_client else contextlib2.nullcontext()  # pylint: disable=invalid-name
 
 with app_context:
     app = transaction_services.toplevel_wrapper(  # pylint: disable=invalid-name

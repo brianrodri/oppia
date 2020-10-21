@@ -25,9 +25,9 @@ import time
 import contextlib2
 import feconf
 import psutil
+import python_utils
 
 from scripts import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
-import python_utils
 
 
 def _terminate_proc_tree(pid):

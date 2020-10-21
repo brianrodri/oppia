@@ -74,6 +74,15 @@ import requests_toolbelt.adapters.appengine # isort:skip  pylint: disable=wrong-
 requests_toolbelt.adapters.appengine.monkeypatch()
 old_get_distribution = pkg_resources.get_distribution # pylint: disable=invalid-name
 
+# Disables "AppEnginePlatformWarning" because it is a "warning" that occurs
+# frequently and tends to bury other important logs.
+# It should be fine to ignore this, see https://stackoverflow.com/a/47494229
+# and https://github.com/urllib3/urllib3/issues/1138#issuecomment-290325277.
+import requests # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
+requests.packages.urllib3.disable_warnings(
+    requests.packages.urllib3.contrib.appengine.AppEnginePlatformWarning
+)
+
 
 class MockDistribution(python_utils.OBJECT):
     """Mock distribution object for the monkeypatching function."""
@@ -105,9 +114,7 @@ def monkeypatched_get_distribution(distribution_name):
     try:
         return old_get_distribution(distribution_name)
     except pkg_resources.DistributionNotFound:
-        if distribution_name == 'google-api-core':
-            return MockDistribution('1.22.2')
-        elif distribution_name == 'google-cloud-tasks':
+        if distribution_name == 'google-cloud-tasks':
             return MockDistribution('1.5.0')
         else:
             raise

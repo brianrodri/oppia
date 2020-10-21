@@ -195,22 +195,6 @@ class WipeoutServiceHelpersTests(test_utils.GenericTestBase):
             pending_deletion_request_model_old.created_on,
             pending_deletion_request_model_new.created_on)
 
-    def test_deletes_pending_deletion_request(self):
-        wipeout_service.save_pending_deletion_requests(
-            [wipeout_domain.PendingDeletionRequest.create_default(
-                self.user_1_id,
-                self.USER_1_EMAIL,
-                self.user_1_role,
-                ['exp1', 'exp2'],
-                ['col1']
-            )]
-        )
-
-        wipeout_service.delete_pending_deletion_request(self.user_1_id)
-
-        self.assertIsNone(
-            user_models.PendingDeletionRequestModel.get_by_id(self.user_1_id))
-
 
 class WipeoutServicePreDeleteTests(test_utils.GenericTestBase):
     """Provides testing of the pre-deletion part of wipeout service."""
@@ -231,15 +215,28 @@ class WipeoutServicePreDeleteTests(test_utils.GenericTestBase):
         self.signup(self.USER_2_EMAIL, self.USER_2_USERNAME)
         self.user_2_id = self.get_user_id_from_email(self.USER_2_EMAIL)
         self.user_1_gae_id = self.get_gae_id_from_email(self.USER_1_EMAIL)
-        schema_version = 1
-        self.modifiable_user_data = user_domain.ModifiableUserData(
-            'display_alias', '12345', [constants.DEFAULT_LANGUAGE_CODE],
-            None, None, schema_version, self.user_1_id
-        )
-        self.modifiable_new_user_data = user_domain.ModifiableUserData(
-            'display_alias3', '12345', [constants.DEFAULT_LANGUAGE_CODE],
-            None, None, schema_version
-        )
+        user_data_dict = {
+            'schema_version': 1,
+            'display_alias': 'display_alias',
+            'pin': '12345',
+            'preferred_language_codes': [constants.DEFAULT_LANGUAGE_CODE],
+            'preferred_site_language_code': None,
+            'preferred_audio_language_code': None,
+            'user_id': self.user_1_id,
+        }
+        new_user_data_dict = {
+            'schema_version': 1,
+            'display_alias': 'display_alias3',
+            'pin': '12345',
+            'preferred_language_codes': [constants.DEFAULT_LANGUAGE_CODE],
+            'preferred_site_language_code': None,
+            'preferred_audio_language_code': None,
+            'user_id': None,
+        }
+        self.modifiable_user_data = (
+            user_domain.ModifiableUserData.from_raw_dict(user_data_dict))
+        self.modifiable_new_user_data = (
+            user_domain.ModifiableUserData.from_raw_dict(new_user_data_dict))
 
         user_services.update_multiple_users_data(
             [self.modifiable_user_data])
@@ -529,6 +526,13 @@ class WipeoutServiceRunFunctionsTests(test_utils.GenericTestBase):
             wipeout_domain.USER_VERIFICATION_NOT_DELETED
         )
 
+        self.assertIsNotNone(
+            user_models.UserSettingsModel.get_by_id(self.user_1_id))
+        self.assertIsNotNone(
+            user_models.UserAuthDetailsModel.get_by_id(self.user_1_id))
+        self.assertIsNotNone(
+            user_models.PendingDeletionRequestModel.get_by_id(self.user_1_id))
+
     def test_run_user_deletion_completion_with_user_wrongly_deleted(self):
         wipeout_service.run_user_deletion(self.pending_deletion_request)
         self.assertEqual(
@@ -536,6 +540,12 @@ class WipeoutServiceRunFunctionsTests(test_utils.GenericTestBase):
                 self.pending_deletion_request),
             wipeout_domain.USER_VERIFICATION_SUCCESS
         )
+        self.assertIsNone(
+            user_models.UserSettingsModel.get_by_id(self.user_1_id))
+        self.assertIsNone(
+            user_models.UserAuthDetailsModel.get_by_id(self.user_1_id))
+        self.assertIsNone(
+            user_models.PendingDeletionRequestModel.get_by_id(self.user_1_id))
 
     def test_run_user_deletion_completion_with_user_properly_deleted(self):
         wipeout_service.run_user_deletion(self.pending_deletion_request)
@@ -549,6 +559,13 @@ class WipeoutServiceRunFunctionsTests(test_utils.GenericTestBase):
                 self.pending_deletion_request),
             wipeout_domain.USER_VERIFICATION_FAILURE
         )
+
+        self.assertIsNotNone(
+            user_models.UserSettingsModel.get_by_id(self.user_1_id))
+        self.assertIsNotNone(
+            user_models.UserAuthDetailsModel.get_by_id(self.user_1_id))
+        self.assertIsNotNone(
+            user_models.PendingDeletionRequestModel.get_by_id(self.user_1_id))
 
 
 class WipeoutServiceDeleteConfigModelsTests(test_utils.GenericTestBase):
@@ -601,6 +618,7 @@ class WipeoutServiceDeleteConfigModelsTests(test_utils.GenericTestBase):
                 '%s-1' % self.CONFIG_1_ID)
         )
         metadata_model.committer_id = self.user_1_id
+        metadata_model.update_timestamps()
         metadata_model.put()
 
         # Run the user deletion again.
@@ -982,6 +1000,7 @@ class WipeoutServiceDeleteCollectionModelsTests(test_utils.GenericTestBase):
             )
         )
         metadata_model.committer_id = self.user_1_id
+        metadata_model.update_timestamps()
         metadata_model.put()
 
         # Run the user deletion again.
@@ -1295,6 +1314,7 @@ class WipeoutServiceDeleteExplorationModelsTests(test_utils.GenericTestBase):
             )
         )
         metadata_model.committer_id = self.user_1_id
+        metadata_model.update_timestamps()
         metadata_model.put()
 
         # Run the user deletion again.
@@ -1622,6 +1642,7 @@ class WipeoutServiceDeleteFeedbackModelsTests(test_utils.GenericTestBase):
                 self.FEEDBACK_1_ID)
         )
         feedback_thread_model.original_author_id = self.user_1_id
+        feedback_thread_model.update_timestamps()
         feedback_thread_model.put()
 
         # Run the user deletion again.
@@ -1658,6 +1679,8 @@ class WipeoutServiceDeleteFeedbackModelsTests(test_utils.GenericTestBase):
                     last_nonempty_message_author_id=self.user_2_id
                 )
             )
+            feedback_models.GeneralFeedbackThreadModel.update_timestamps_multi(
+                feedback_thread_models)
         feedback_message_models = []
         for i in python_utils.RANGE(self.NUMBER_OF_MODELS):
             feedback_message_models.append(
@@ -1669,6 +1692,8 @@ class WipeoutServiceDeleteFeedbackModelsTests(test_utils.GenericTestBase):
                     text='Some text'
                 )
             )
+            feedback_models.GeneralFeedbackMessageModel.update_timestamps_multi(
+                feedback_message_models)
         datastore_services.put_multi(
             feedback_thread_models + feedback_message_models)
 
@@ -2068,6 +2093,7 @@ class WipeoutServiceDeleteQuestionModelsTests(test_utils.GenericTestBase):
             )
         )
         metadata_model.committer_id = self.user_1_id
+        metadata_model.update_timestamps()
         metadata_model.put()
 
         # Run the user deletion again.
@@ -2451,6 +2477,7 @@ class WipeoutServiceDeleteSkillModelsTests(test_utils.GenericTestBase):
         metadata_model = skill_models.SkillSnapshotMetadataModel.get_by_id(
             '%s-1' % self.SKILL_1_ID)
         metadata_model.committer_id = self.user_1_id
+        metadata_model.update_timestamps()
         metadata_model.put()
 
         # Run the user deletion again.
@@ -2760,6 +2787,7 @@ class WipeoutServiceDeleteStoryModelsTests(test_utils.GenericTestBase):
         metadata_model = story_models.StorySnapshotMetadataModel.get_by_id(
             '%s-1' % self.STORY_1_ID)
         metadata_model.committer_id = self.user_1_id
+        metadata_model.update_timestamps()
         metadata_model.put()
 
         # Run the user deletion again.
@@ -3085,6 +3113,7 @@ class WipeoutServiceDeleteSubtopicModelsTests(test_utils.GenericTestBase):
             subtopic_models.SubtopicPageSnapshotMetadataModel.get_by_id(
                 '%s-%s-1' % (self.TOP_1_ID, self.SUBTOP_1_ID)))
         metadata_model.committer_id = self.user_1_id
+        metadata_model.update_timestamps()
         metadata_model.put()
 
         # Run the user deletion again.
@@ -3655,6 +3684,7 @@ class WipeoutServiceDeleteTopicModelsTests(test_utils.GenericTestBase):
             )
         )
         metadata_model.committer_id = self.user_1_id
+        metadata_model.update_timestamps()
         metadata_model.put()
 
         # Run the user deletion again.
@@ -3796,16 +3826,29 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         user_models.LearnerPlaylistModel(
             id=self.user_2_id, exploration_ids=[], collection_ids=[]
         ).put()
-        schema_version = 1
         self.user_1_gae_id = self.get_gae_id_from_email(self.USER_1_EMAIL)
-        self.modifiable_user_data = user_domain.ModifiableUserData(
-            'display_alias', '12345', [constants.DEFAULT_LANGUAGE_CODE],
-            None, None, schema_version, self.user_1_id
-        )
-        self.modifiable_new_user_data = user_domain.ModifiableUserData(
-            'display_alias3', '12345', [constants.DEFAULT_LANGUAGE_CODE],
-            None, None, schema_version
-        )
+        user_data_dict = {
+            'schema_version': 1,
+            'display_alias': 'display_alias',
+            'pin': '12345',
+            'preferred_language_codes': [constants.DEFAULT_LANGUAGE_CODE],
+            'preferred_site_language_code': None,
+            'preferred_audio_language_code': None,
+            'user_id': self.user_1_id,
+        }
+        new_user_data_dict = {
+            'schema_version': 1,
+            'display_alias': 'display_alias3',
+            'pin': '12345',
+            'preferred_language_codes': [constants.DEFAULT_LANGUAGE_CODE],
+            'preferred_site_language_code': None,
+            'preferred_audio_language_code': None,
+            'user_id': None,
+        }
+        self.modifiable_user_data = (
+            user_domain.ModifiableUserData.from_raw_dict(user_data_dict))
+        self.modifiable_new_user_data = (
+            user_domain.ModifiableUserData.from_raw_dict(new_user_data_dict))
 
         user_services.update_multiple_users_data(
             [self.modifiable_user_data])
@@ -3831,8 +3874,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         wipeout_service.pre_delete_user(self.profile_user_id)
 
         self.assertIsNotNone(
-            user_models.UserSettingsModel.get_by_id(self.profile_user_id))
-        self.assertIsNotNone(
             user_models.UserAuthDetailsModel.get_by_id(self.profile_user_id))
         self.assertIsNotNone(
             user_models.CompletedActivitiesModel.get_by_id(
@@ -3848,10 +3889,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         wipeout_service.delete_user(
             wipeout_service.get_pending_deletion_request(self.profile_user_id))
 
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.profile_user_id))
-        self.assertIsNone(
-            user_models.UserAuthDetailsModel.get_by_id(self.profile_user_id))
         self.assertIsNone(
             user_models.CompletedActivitiesModel.get_by_id(
                 self.profile_user_id)
@@ -3867,8 +3904,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         wipeout_service.pre_delete_user(self.user_1_id)
 
         self.assertIsNotNone(
-            user_models.UserSettingsModel.get_by_id(self.profile_user_id))
-        self.assertIsNotNone(
             user_models.UserAuthDetailsModel.get_by_id(self.profile_user_id))
         self.assertIsNotNone(
             user_models.CompletedActivitiesModel.get_by_id(
@@ -3880,8 +3915,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         )
         self.assertIsNotNone(
             user_models.LearnerPlaylistModel.get_by_id(self.profile_user_id))
-        self.assertIsNotNone(
-            user_models.UserSettingsModel.get_by_id(self.user_1_id))
         self.assertIsNotNone(
             user_models.UserAuthDetailsModel.get_by_id(self.user_1_id))
         self.assertIsNotNone(
@@ -3893,10 +3926,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
             wipeout_service.get_pending_deletion_request(self.profile_user_id))
 
         self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.profile_user_id))
-        self.assertIsNone(
-            user_models.UserAuthDetailsModel.get_by_id(self.profile_user_id))
-        self.assertIsNone(
             user_models.CompletedActivitiesModel.get_by_id(
                 self.profile_user_id)
         )
@@ -3906,10 +3935,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         )
         self.assertIsNone(
             user_models.LearnerPlaylistModel.get_by_id(self.profile_user_id))
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.user_1_id))
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.user_1_id))
         self.assertIsNone(
             user_models.UserEmailPreferencesModel.get_by_id(self.user_1_id))
 
@@ -3925,12 +3950,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         wipeout_service.pre_delete_user(self.user_1_id)
 
         self.assertIsNotNone(
-            user_models.UserSettingsModel.get_by_id(self.profile_user_id))
-        self.assertIsNotNone(
-            user_models.UserSettingsModel.get_by_id(self.user_1_id))
-        self.assertIsNotNone(
-            user_models.UserAuthDetailsModel.get_by_id(self.user_1_id))
-        self.assertIsNotNone(
             user_models.UserEmailPreferencesModel.get_by_id(self.user_1_id))
         self.assertIsNotNone(
             collection_models.CollectionModel.get_by_id(self.COLLECTION_1_ID))
@@ -3942,12 +3961,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         wipeout_service.delete_user(
             wipeout_service.get_pending_deletion_request(self.profile_user_id))
 
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.profile_user_id))
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.user_1_id))
-        self.assertIsNone(
-            user_models.UserAuthDetailsModel.get_by_id(self.user_1_id))
         self.assertIsNone(
             user_models.UserEmailPreferencesModel.get_by_id(self.user_1_id))
         self.assertIsNone(
@@ -3974,12 +3987,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         wipeout_service.pre_delete_user(self.user_1_id)
 
         self.assertIsNotNone(
-            user_models.UserSettingsModel.get_by_id(self.profile_user_id))
-        self.assertIsNotNone(
-            user_models.UserSettingsModel.get_by_id(self.user_1_id))
-        self.assertIsNotNone(
-            user_models.UserAuthDetailsModel.get_by_id(self.user_1_id))
-        self.assertIsNotNone(
             user_models.UserEmailPreferencesModel.get_by_id(self.user_1_id))
         self.assertIsNotNone(
             collection_models.CollectionModel.get_by_id(self.COLLECTION_1_ID))
@@ -3996,12 +4003,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
             wipeout_service.get_pending_deletion_request(self.profile_user_id))
 
         self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.profile_user_id))
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.user_1_id))
-        self.assertIsNone(
-            user_models.UserAuthDetailsModel.get_by_id(self.user_1_id))
-        self.assertIsNone(
             user_models.UserEmailPreferencesModel.get_by_id(self.user_1_id))
         self.assertIsNone(
             collection_models.CollectionModel.get_by_id(self.COLLECTION_1_ID))
@@ -4012,13 +4013,59 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         self.assertIsNone(
             exp_models.ExplorationModel.get_by_id(self.EXPLORATION_2_ID))
 
+    def test_delete_user_with_collection_and_exploration_repeated_is_successful(
+            self):
+        self.save_new_valid_exploration(
+            self.EXPLORATION_1_ID,
+            self.user_1_id)
+        self.save_new_valid_collection(
+            self.COLLECTION_1_ID,
+            self.user_1_id,
+            exploration_id=self.EXPLORATION_1_ID)
+
+        wipeout_service.pre_delete_user(self.user_1_id)
+
+        self.assertIsNotNone(
+            user_models.UserEmailPreferencesModel.get_by_id(self.user_1_id))
+        self.assertIsNotNone(
+            collection_models.CollectionModel.get_by_id(self.COLLECTION_1_ID))
+        self.assertIsNotNone(
+            exp_models.ExplorationModel.get_by_id(self.EXPLORATION_1_ID))
+
+        wipeout_service.delete_user(
+            wipeout_service.get_pending_deletion_request(self.user_1_id))
+
+        self.assertIsNone(
+            user_models.UserEmailPreferencesModel.get_by_id(self.user_1_id))
+        self.assertIsNone(
+            collection_models.CollectionModel.get_by_id(self.COLLECTION_1_ID))
+        self.assertIsNone(
+            exp_models.ExplorationModel.get_by_id(self.EXPLORATION_1_ID))
+
+        self.save_new_valid_exploration(
+            self.EXPLORATION_1_ID,
+            self.user_1_id)
+        self.save_new_valid_collection(
+            self.COLLECTION_1_ID,
+            self.user_1_id,
+            exploration_id=self.EXPLORATION_1_ID)
+
+        self.assertIsNotNone(
+            collection_models.CollectionModel.get_by_id(self.COLLECTION_1_ID))
+        self.assertIsNotNone(
+            exp_models.ExplorationModel.get_by_id(self.EXPLORATION_1_ID))
+
+        wipeout_service.delete_user(
+            wipeout_service.get_pending_deletion_request(self.user_1_id))
+
+        self.assertIsNone(
+            collection_models.CollectionModel.get_by_id(self.COLLECTION_1_ID))
+        self.assertIsNone(
+            exp_models.ExplorationModel.get_by_id(self.EXPLORATION_1_ID))
+
     def test_delete_user_with_multiple_users_is_successful(self):
         wipeout_service.pre_delete_user(self.user_2_id)
 
-        self.assertIsNotNone(
-            user_models.UserSettingsModel.get_by_id(self.user_2_id))
-        self.assertIsNotNone(
-            user_models.UserAuthDetailsModel.get_by_id(self.user_2_id))
         self.assertIsNotNone(
             user_models.UserEmailPreferencesModel.get_by_id(self.user_2_id))
         self.assertIsNotNone(
@@ -4031,10 +4078,6 @@ class WipeoutServiceDeleteUserModelsTests(test_utils.GenericTestBase):
         wipeout_service.delete_user(
             wipeout_service.get_pending_deletion_request(self.user_2_id))
 
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.user_2_id))
-        self.assertIsNone(
-            user_models.UserAuthDetailsModel.get_by_id(self.user_2_id))
         self.assertIsNone(
             user_models.UserEmailPreferencesModel.get_by_id(self.user_2_id))
         self.assertIsNone(
@@ -4078,15 +4121,28 @@ class WipeoutServiceVerifyDeleteUserModelsTests(test_utils.GenericTestBase):
         self.user_1_id = self.get_user_id_from_email(self.USER_1_EMAIL)
         self.user_2_id = self.get_user_id_from_email(self.USER_2_EMAIL)
         self.user_1_gae_id = self.get_gae_id_from_email(self.USER_1_EMAIL)
-        schema_version = 1
-        self.modifiable_user_data = user_domain.ModifiableUserData(
-            'display_alias', '12345', [constants.DEFAULT_LANGUAGE_CODE],
-            None, None, schema_version, self.user_1_id
-        )
-        self.modifiable_new_user_data = user_domain.ModifiableUserData(
-            'display_alias3', '12345', [constants.DEFAULT_LANGUAGE_CODE],
-            None, None, schema_version
-        )
+        user_data_dict = {
+            'schema_version': 1,
+            'display_alias': 'display_alias',
+            'pin': '12345',
+            'preferred_language_codes': [constants.DEFAULT_LANGUAGE_CODE],
+            'preferred_site_language_code': None,
+            'preferred_audio_language_code': None,
+            'user_id': self.user_1_id,
+        }
+        new_user_data_dict = {
+            'schema_version': 1,
+            'display_alias': 'display_alias3',
+            'pin': '12345',
+            'preferred_language_codes': [constants.DEFAULT_LANGUAGE_CODE],
+            'preferred_site_language_code': None,
+            'preferred_audio_language_code': None,
+            'user_id': None,
+        }
+        self.modifiable_user_data = (
+            user_domain.ModifiableUserData.from_raw_dict(user_data_dict))
+        self.modifiable_new_user_data = (
+            user_domain.ModifiableUserData.from_raw_dict(new_user_data_dict))
 
         user_services.update_multiple_users_data(
             [self.modifiable_user_data])

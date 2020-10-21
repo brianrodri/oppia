@@ -46,6 +46,7 @@ from core.domain import rights_manager
 from core.domain import skill_domain
 from core.domain import skill_services
 from core.domain import state_domain
+from core.domain import stats_services
 from core.domain import story_domain
 from core.domain import story_services
 from core.domain import subtopic_page_domain
@@ -390,6 +391,8 @@ class TestBase(unittest.TestCase):
     NEW_USER_EMAIL = 'new.user@example.com'
     NEW_USER_USERNAME = 'newuser'
     DEFAULT_END_STATE_NAME = 'End'
+
+    PSEUDONYMOUS_ID = 'pid_%s' % (32 * 'a')
 
     VERSION_0_STATES_DICT = {
         feconf.DEFAULT_INIT_STATE_NAME: {
@@ -1268,17 +1271,17 @@ tags: []
         the runtime of each test case/method, it is:
         1.  Pure (same input always returns the same output).
         2.  One-to-one (no two distinct inputs return the same output).
-        3.  An integer string (to match the behavior of actual GAE IDs).
+        3.  An integer byte-string (to match the behavior of actual GAE IDs).
 
         Args:
             email: str. The email address of the user.
 
         Returns:
-            str. The mock GAE ID of a user possessing the given email.
+            bytes. The mock GAE ID of a user possessing the given email.
         """
         # Although the hash function doesn't guarantee a one-to-one mapping, in
         # practice it is sufficient for our tests.
-        return python_utils.UNICODE(hash(email))
+        return python_utils.convert_to_bytes(hash(email))
 
     def save_new_default_exploration(
             self, exploration_id, owner_id, title='A title'):
@@ -1372,8 +1375,8 @@ tags: []
             self, exploration_id, owner_id, title='A title',
             category='A category', objective='An objective',
             language_code=constants.DEFAULT_LANGUAGE_CODE,
-            end_state_name=None,
-            interaction_id='TextInput'):
+            end_state_name=None, interaction_id='TextInput',
+            correctness_feedback_enabled=False):
         """Saves a new strictly-validated exploration.
 
         Args:
@@ -1385,6 +1388,8 @@ tags: []
             language_code: str. The language_code of this exploration.
             end_state_name: str. The name of the end state for the exploration.
             interaction_id: str. The id of the interaction.
+            correctness_feedback_enabled: bool. Whether correctness feedback is
+                enabled for the exploration.
 
         Returns:
             Exploration. The exploration domain object.
@@ -1396,6 +1401,7 @@ tags: []
             exploration.states[exploration.init_state_name], interaction_id)
 
         exploration.objective = objective
+        exploration.correctness_feedback_enabled = correctness_feedback_enabled
 
         # If an end state name is provided, add terminal node with that name.
         if end_state_name is not None:
@@ -1408,6 +1414,8 @@ tags: []
             init_state = exploration.states[exploration.init_state_name]
             init_interaction = init_state.interaction
             init_interaction.default_outcome.dest = end_state_name
+            if correctness_feedback_enabled:
+                init_interaction.default_outcome.labelled_as_correct = True
 
         exp_services.save_new_exploration(owner_id, exploration)
         return exploration
@@ -1518,7 +1526,12 @@ tags: []
             contributor_ids=[],
             contributors_summary={},
         )
+        exp_summary_model.update_timestamps()
         exp_summary_model.put()
+
+        # Create an ExplorationIssues model to match the behavior of creating
+        # new explorations.
+        stats_services.create_exp_issues_for_new_exploration(exp_id, 1)
 
     def save_new_exp_with_custom_states_schema_version(
             self, exp_id, user_id, states_dict, version):
@@ -1580,6 +1593,7 @@ tags: []
             contributor_ids=[],
             contributors_summary={},
         )
+        exp_summary_model.update_timestamps()
         exp_summary_model.put()
 
     def save_new_exp_with_states_schema_v21(self, exp_id, user_id, title):
@@ -1641,6 +1655,7 @@ tags: []
             contributor_ids=[],
             contributors_summary={},
         )
+        exp_summary_model.update_timestamps()
         exp_summary_model.put()
 
     def publish_exploration(self, owner_id, exploration_id):

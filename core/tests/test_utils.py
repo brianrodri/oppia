@@ -1534,10 +1534,6 @@ tags: []
             contributor_ids=[],
             contributors_summary={},
         )
-            owner_ids=exp_rights.owner_ids,
-            contributor_ids=[],
-            contributors_summary={},
-        )
         exp_summary_model.update_timestamps()
         exp_summary_model.put()
 

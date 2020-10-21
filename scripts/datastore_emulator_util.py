@@ -84,7 +84,8 @@ def emulator_context():
     with contextlib2.ExitStack() as stack:
         proc = subprocess.Popen(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'start',
-             '--project', feconf.OPPIA_PROJECT_ID, '--no-store-on-disk'])
+             '--project', feconf.OPPIA_PROJECT_ID, '--no-store-on-disk',
+             '--consistency=1.0'])
         stack.callback(lambda: _terminate_proc_tree(proc.pid))
 
         while not common.is_port_open(8081):

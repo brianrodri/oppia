@@ -456,6 +456,8 @@ class PutTasksTests(ImprovementsServicesTestBase):
         self.assertEqual(model.created_on, created_on)
         self.assertEqual(model.last_updated, created_on)
 
+        task_entry = self._new_resolved_task()
+
         with self.mock_datetime_utcnow(updated_on):
             improvements_services.put_tasks(
                 [task_entry], update_last_updated_time=False)

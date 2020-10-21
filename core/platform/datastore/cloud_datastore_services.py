@@ -69,8 +69,6 @@ def put_multi_async(models):
 
     Args:
         models: list(datastore_services.Model). A list of Model instances.
-        update_last_updated_time: bool. Whether to update the last_updated field
-            of the entities.
 
     Returns:
         list(future). A list of futures.

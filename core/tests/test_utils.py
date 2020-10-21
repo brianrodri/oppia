@@ -22,7 +22,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 import ast
 import collections
 import contextlib
-import contextlib2
 import copy
 import datetime
 import hashlib
@@ -30,10 +29,10 @@ import inspect
 import itertools
 import json
 import os
-import requests
 import unittest
 
 from constants import constants
+import contextlib2
 from core.controllers import base
 from core.domain import caching_domain
 from core.domain import collection_domain
@@ -69,6 +68,7 @@ import schema_utils
 import utils
 
 from google.appengine.api import mail
+import requests
 import webtest
 
 (exp_models, question_models, skill_models, story_models, topic_models,) = (

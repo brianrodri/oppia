@@ -28,9 +28,7 @@ import datetime
 import hashlib
 import inspect
 import itertools
-import functools
 import json
-import operator
 import os
 import requests
 import unittest
@@ -849,7 +847,8 @@ tags: []
         # The testapp uses the status parameter to verify the response. However,
         # the return code is only verified when expect_errors=False. Since we
         # want to verify the error codes anyway, we must do so explicitly.
-        # Reference: https://github.com/Pylons/webtest/blob/bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119
+        # Reference:
+        # https://github.com/Pylons/webtest/blob/bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119 # pylint: disable=line-too-long
         self.assertEqual(response.status_int, expected_status_int)
         if expect_errors:
             self.assertTrue(response.status_int >= 400)
@@ -2331,6 +2330,7 @@ class AppEngineTestBase(TestBase):
 
     @property
     def namespace(self):
+        """Returns a unique identifier for the current test."""
         return hashlib.md5(self.id()).hexdigest()
 
     def setUp(self):

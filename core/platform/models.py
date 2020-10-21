@@ -305,6 +305,11 @@ class _Cloud(Platform):
 
     @classmethod
     def import_transaction_services(cls):
+        """Imports and returns transaction_services module.
+
+        Returns:
+            module. The transaction_services module.
+        """
         from core.platform.transactions import cloud_transaction_services
         return cloud_transaction_services
 
@@ -327,6 +332,11 @@ class _GaeToCloud(_Gae):
 
     @classmethod
     def import_transaction_services(cls):
+        """Imports and returns transaction_services module.
+
+        Returns:
+            module. The transaction_services module.
+        """
         return _Cloud.import_transaction_services()
 
     NAME = 'gae-to-cloud'

@@ -287,4 +287,5 @@ def mock_datetime_for_datastore(mocked_now):
 
 
 def get_ndb_client():
+    """Returns a client for interacting with NDB models."""
     return None

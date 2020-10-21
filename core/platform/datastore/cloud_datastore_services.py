@@ -21,7 +21,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import contextlib
 import datetime
-import functools
 
 import python_utils
 
@@ -53,13 +52,11 @@ def get_multi(keys):
     return ndb.get_multi(keys)
 
 
-def put_multi(models, update_last_updated_time=True):
+def put_multi(models):
     """Stores a sequence of Model instances.
 
     Args:
         models: list(datastore_services.Model). A list of Model instances.
-        update_last_updated_time: bool. Whether to update the last_updated field
-            of the entities.
 
     Returns:
         list(str). A list with the stored keys.
@@ -260,5 +257,6 @@ def mock_datetime_for_datastore(mocked_now):
         setattr(datetime, 'datetime', old_datetime)
 
 
-def get_ndb_client(namespace=None):
+def get_ndb_client():
+    """Returns a client for interacting with NDB models."""
     return ndb.Client()

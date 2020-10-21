@@ -20,8 +20,11 @@ enum34==1.1.10            # via google-cloud-tasks, grpcio
 funcsigs==1.0.2           # via mock
 future==0.18.2            # via -r requirements.in
 futures==3.3.0            # via google-api-core, grpcio
-google-api-core[grpc]==1.22.4  # via google-cloud-tasks
+google-api-core[grpc]==1.22.4  # via google-cloud-core, google-cloud-datastore, google-cloud-tasks
 google-auth==1.22.1       # via google-api-core
+google-cloud-core==1.4.3  # via google-cloud-datastore
+google-cloud-datastore==1.15.3  # via google-cloud-ndb
+google-cloud-ndb==1.5.0   # via -r requirements.in
 google-cloud-tasks==1.5.0  # via -r requirements.in
 googleapis-common-protos[grpc]==1.52.0  # via -r requirements.in, google-api-core, grpc-google-iam-v1
 googleappenginecloudstorageclient==1.9.22.1  # via -r requirements.in, googleappenginemapreduce, googleappenginepipeline

@@ -67,7 +67,11 @@ import requests_mock
 import schema_utils
 import utils
 
+from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import mail
+from google.appengine.api import urlfetch_stub
+from google.appengine.api.app_identity import app_identity_stub
+from google.appengine.ext import testbed
 import requests
 import webtest
 
@@ -2340,7 +2344,6 @@ class AppEngineTestBase(TestBase):
         self.memory_cache_services_stub = MemoryCacheServicesStub()
         self.memory_cache_services_stub.flush_cache()
 
-        from google.appengine.ext import testbed
         self.testbed = testbed.Testbed()
         self.testbed.activate()
 
@@ -2361,18 +2364,18 @@ class AppEngineTestBase(TestBase):
             self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME))
 
         # See: https://stackoverflow.com/a/51227333/4859885.
-        from google.appengine.api import urlfetch_stub
-        from google.appengine.api import apiproxy_stub_map
         apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
         apiproxy_stub_map.apiproxy.RegisterStub(
             'urlfetch', urlfetch_stub.URLFetchServiceStub())
+        apiproxy_stub_map.apiproxy.RegisterStub(
+            'app_identity_service', app_identity_stub.AppIdentityServiceStub())
 
         # Set up the app to be tested.
         self.testapp = webtest.TestApp(main.app)
 
         with contextlib2.ExitStack() as new_context_stack:
             self.ndb_client = datastore_services.get_ndb_client()
-            if self.ndb_client is not None:
+            if self.ndb_client:
                 new_context_stack.callback(
                     requests.post, 'http://%s/reset' % self.ndb_client.host)
                 new_context_stack.enter_context(

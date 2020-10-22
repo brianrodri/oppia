@@ -19,6 +19,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import logging
 import os
+import re
 import subprocess
 import time
 
@@ -54,24 +55,18 @@ def _terminate_proc_tree(pid):
         root_proc.kill()
 
 
-def _set_up_datastore_environ(export_cmds):
+def _set_up_datastore_environ(exports):
     """Configures the environment to interact with the Cloud Datastore."""
     os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID'] = 'true'
-    for export_cmd in export_cmds:
-        if export_cmd.startswith(b'export '):
-            var, val = export_cmd[7:].split(b'=')
-            os.environ[var.strip()] = val.strip()
-            logging.info(export_cmd)
+    for match in re.finditer(r'export (\w*)=(.*)', exports):
+        os.environ[match.group(1)] = match.group(2)
 
 
-def _tear_down_datastore_environ(unset_cmds):
+def _tear_down_datastore_environ(unsets):
     """Removes configurations made by the set up function."""
     del os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID']
-    for unset_cmd in unset_cmds:
-        if unset_cmd.startswith(b'unset '):
-            var = unset_cmd[6:].strip()
-            del os.environ[var]
-            logging.info(unset_cmd)
+    for match in re.finditer(r'unset (\w*)', unsets):
+        del os.environ[match.group(1)]
 
 
 def emulator_context():
@@ -85,23 +80,23 @@ def emulator_context():
     with contextlib2.ExitStack() as stack:
         devnull = stack.enter_context(python_utils.open_file(os.devnull, 'w'))
 
+        datastore_emulator_hostport = '%s:%d' % (
+            feconf.DATASTORE_EMULATOR_HOST, feconf.DATASTORE_EMULATOR_PORT)
         proc = subprocess.Popen(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'start',
-             '--project', feconf.OPPIA_PROJECT_ID, '--no-store-on-disk',
-             '--consistency=1.0'],
-            stdout=devnull, stderr=devnull)
+             '--project', feconf.OPPIA_PROJECT_ID,
+             '--host-port', datastore_emulator_hostport,
+             '--no-store-on-disk', '--consistency=1.0'])
         stack.callback(lambda: _terminate_proc_tree(proc.pid))
 
-        while not common.is_port_open(8081):
-            time.sleep(1)
+        common.wait_for_port_to_be_open(feconf.DATASTORE_EMULATOR_PORT)
 
-        env_sets = subprocess.check_output(
+        exports = subprocess.check_output(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
-        env_unsets = subprocess.check_output(
+        unsets = subprocess.check_output(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-unset'])
 
-        _set_up_datastore_environ(env_sets.split(b'\n'))
-        stack.callback(
-            lambda: _tear_down_datastore_environ(env_unsets.split(b'\n')))
+        _set_up_datastore_environ(exports)
+        stack.callback(lambda: _tear_down_datastore_environ(unsets))
 
         return stack.pop_all()

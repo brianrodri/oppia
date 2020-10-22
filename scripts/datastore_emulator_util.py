@@ -40,16 +40,17 @@ def _terminate_proc_tree(pid):
         pid: int. The process ID of the root process.
     """
     root_proc = psutil.Process(pid)
-    child_procs = root_proc.children(recursive=True)
 
+    child_procs = root_proc.children(recursive=True)
     for proc in child_procs:
         proc.terminate()
+
     _, still_alive = psutil.wait_procs(child_procs, timeout=5)
     for proc in still_alive:
         proc.kill()
 
-    root_proc.terminate()
     try:
+        root_proc.terminate()
         root_proc.wait(timeout=5)
     except psutil.TimeoutExpired:
         root_proc.kill()

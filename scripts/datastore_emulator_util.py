@@ -17,11 +17,9 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import logging
 import os
 import re
 import subprocess
-import time
 
 import contextlib2
 import feconf
@@ -87,7 +85,8 @@ def emulator_context():
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'start',
              '--project', feconf.OPPIA_PROJECT_ID,
              '--host-port', datastore_emulator_hostport,
-             '--no-store-on-disk', '--consistency=1.0'])
+             '--no-store-on-disk', '--consistency=1.0'],
+            stdout=devnull, stderr=devnull)
         stack.callback(lambda: _terminate_proc_tree(proc.pid))
 
         common.wait_for_port_to_be_open(feconf.DATASTORE_EMULATOR_PORT)

@@ -52,8 +52,8 @@ def _terminate_proc_tree(root_proc):
         root_proc.kill()
 
 
-def _set_up_environ():
-    """Performs emulator-specific configuration to os.environ."""
+def _set_up_emulator_environ():
+    """Sets up emulator-specific configuration in os.environ."""
     exports = subprocess.check_output(
         [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
     for match in re.finditer(r'export (\w*)=(.*)', exports):
@@ -61,8 +61,8 @@ def _set_up_environ():
     os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID'] = 'true'
 
 
-def _tear_down_environ():
-    """Undoes emulator-specific configuration to os.environ."""
+def _tear_down_emulator_environ():
+    """Tears down emulator-specific configuration in os.environ."""
     unsets = subprocess.check_output(
         [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-unset'])
     for match in re.finditer(r'unset (\w*)', unsets):
@@ -81,19 +81,19 @@ def emulator_context():
     with contextlib2.ExitStack() as stack:
         devnull = stack.enter_context(python_utils.open_file(os.devnull, 'w'))
 
-        datastore_emulator_hostport = '%s:%d' % (
+        datastore_emulator_host_port = '%s:%d' % (
             feconf.DATASTORE_EMULATOR_HOST, feconf.DATASTORE_EMULATOR_PORT)
         proc = subprocess.Popen(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'start',
              '--project', feconf.OPPIA_PROJECT_ID,
-             '--host-port', datastore_emulator_hostport,
+             '--host-port', datastore_emulator_host_port,
              '--no-store-on-disk', '--consistency=1.0', '--quiet'],
             stdout=devnull, stderr=devnull)
         stack.callback(lambda: _terminate_proc_tree(psutil.Process(proc.pid)))
 
         common.wait_for_port_to_be_open(feconf.DATASTORE_EMULATOR_PORT)
 
-        _set_up_environ()
-        stack.callback(_tear_down_environ)
+        _set_up_emulator_environ()
+        stack.callback(_tear_down_emulator_environ)
 
         return stack.pop_all()

@@ -29,16 +29,14 @@ import python_utils
 from scripts import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
 
-def _terminate_proc_tree(pid):
-    """Recursively terminate the given process and its children by ID.
+def _terminate_proc_tree(root_proc):
+    """Recursively terminate the given process and its children.
 
     If terminating takes too long, the processes will be forcibly killed.
 
     Args:
-        pid: int. The process ID of the root process.
+        root_proc: psutil.Process. The root process.
     """
-    root_proc = psutil.Process(pid)
-
     child_procs = root_proc.children(recursive=True)
     for proc in child_procs:
         proc.terminate()
@@ -54,18 +52,20 @@ def _terminate_proc_tree(pid):
         root_proc.kill()
 
 
-def _set_up_datastore_environ(exports):
-    """Configures the environment to interact with the Cloud Datastore."""
-    os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID'] = 'true'
+def _set_up_environ():
+    exports = subprocess.check_output(
+        [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
     for match in re.finditer(r'export (\w*)=(.*)', exports):
         os.environ[match.group(1)] = match.group(2)
+    os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID'] = 'true'
 
 
-def _tear_down_datastore_environ(unsets):
-    """Removes configurations made by the set up function."""
-    del os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID']
+def _tear_down_environ():
+    unsets = subprocess.check_output(
+        [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-unset'])
     for match in re.finditer(r'unset (\w*)', unsets):
         del os.environ[match.group(1)]
+    del os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID']
 
 
 def emulator_context():
@@ -85,18 +85,13 @@ def emulator_context():
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'start',
              '--project', feconf.OPPIA_PROJECT_ID,
              '--host-port', datastore_emulator_hostport,
-             '--no-store-on-disk', '--consistency=1.0'],
+             '--no-store-on-disk', '--consistency=1.0', '--quiet'],
             stdout=devnull, stderr=devnull)
-        stack.callback(lambda: _terminate_proc_tree(proc.pid))
+        stack.callback(lambda: _terminate_proc_tree(psutil.Process(proc.pid)))
 
         common.wait_for_port_to_be_open(feconf.DATASTORE_EMULATOR_PORT)
 
-        exports = subprocess.check_output(
-            [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
-        unsets = subprocess.check_output(
-            [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-unset'])
-
-        _set_up_datastore_environ(exports)
-        stack.callback(lambda: _tear_down_datastore_environ(unsets))
+        _set_up_environ()
+        stack.callback(_tear_down_environ)
 
         return stack.pop_all()

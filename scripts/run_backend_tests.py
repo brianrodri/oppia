@@ -289,23 +289,23 @@ def main(args=None):
             test_path=parsed_args.test_path,
             include_load_tests=include_load_tests)
 
-    # Prepare tasks.
-    max_concurrent_runs = 25
-    concurrent_count = min(multiprocessing.cpu_count(), max_concurrent_runs)
-    semaphore = threading.Semaphore(concurrent_count)
-
-    task_to_taskspec = {}
-    tasks = []
-    for test_target in all_test_targets:
-        test = TestingTaskSpec(
-            test_target, parsed_args.generate_coverage_report)
-        task = concurrent_task_utils.create_task(
-            test.run, parsed_args.verbose, semaphore, name=test_target,
-            report_enabled=False)
-        task_to_taskspec[task] = test
-        tasks.append(task)
-
     with datastore_emulator_util.emulator_context():
+        # Prepare tasks.
+        max_concurrent_runs = 25
+        concurrent_count = min(multiprocessing.cpu_count(), max_concurrent_runs)
+        semaphore = threading.Semaphore(concurrent_count)
+
+        task_to_taskspec = {}
+        tasks = []
+        for test_target in all_test_targets:
+            test = TestingTaskSpec(
+                test_target, parsed_args.generate_coverage_report)
+            task = concurrent_task_utils.create_task(
+                test.run, parsed_args.verbose, semaphore, name=test_target,
+                report_enabled=False)
+            task_to_taskspec[task] = test
+            tasks.append(task)
+
         task_execution_failed = False
         try:
             concurrent_task_utils.execute_tasks(tasks, semaphore)

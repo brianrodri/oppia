@@ -53,6 +53,7 @@ def _terminate_proc_tree(root_proc):
 
 
 def _set_up_environ():
+    """Performs emulator-specific configuration to os.environ."""
     exports = subprocess.check_output(
         [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
     for match in re.finditer(r'export (\w*)=(.*)', exports):
@@ -61,6 +62,7 @@ def _set_up_environ():
 
 
 def _tear_down_environ():
+    """Undoes emulator-specific configuration to os.environ."""
     unsets = subprocess.check_output(
         [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-unset'])
     for match in re.finditer(r'unset (\w*)', unsets):

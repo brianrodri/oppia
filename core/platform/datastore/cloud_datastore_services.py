@@ -21,7 +21,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import contextlib
 import datetime
-import threading
 
 import contextlib2
 import python_utils
@@ -112,6 +111,7 @@ def transaction(callback):
 
 
 def query_everything():
+    """Returns a query that targets every single entity in the datastore."""
     return ndb.Query()
 
 

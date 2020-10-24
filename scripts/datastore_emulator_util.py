@@ -28,11 +28,8 @@ import psutil
 from scripts import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
 
-def emulator_context(silent=False):
+def emulator_context():
     """Manages the Google Cloud Datastore Emulator within a context.
-
-    Args:
-        silent: bool. Whether the emulator should print its output.
 
     Returns:
         contextlib2.ExitStack. An ExitStack with tear-down operations pushed on.

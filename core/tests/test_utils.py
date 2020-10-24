@@ -72,7 +72,6 @@ from google.appengine.api import urlfetch_stub
 from google.appengine.api.app_identity import app_identity_stub
 from google.appengine.ext import deferred
 from google.appengine.ext import testbed
-import requests
 import webtest
 
 exp_models, question_models, skill_models, story_models, topic_models = (

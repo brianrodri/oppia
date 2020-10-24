@@ -130,6 +130,7 @@ def transaction(callback):
 
 
 def query_everything():
+    """Returns a query that targets every single entity in the datastore."""
     return ndb.Query()
 
 
@@ -291,6 +292,6 @@ def mock_datetime_for_datastore(mocked_now):
         setattr(datetime, 'datetime', old_datetime_type)
 
 
-def get_context(namespace=None): # pylint: disable=unused-args
+def get_context(namespace=None): # pylint: disable=unused-argument
     """Returns a context for interacting with NDB models."""
     return contextlib2.nullcontext()

@@ -20,7 +20,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 import logging
 
 from constants import constants
-import contextlib2
 from core.controllers import acl_decorators
 from core.controllers import admin
 from core.controllers import base

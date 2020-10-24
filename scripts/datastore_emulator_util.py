@@ -47,7 +47,7 @@ def emulator_context(silent=True):
 
         emulator_host_port = '%s:%d' % (
             feconf.DATASTORE_EMULATOR_HOST, feconf.DATASTORE_EMULATOR_PORT)
-        emulator_proc = subprocess.Popen(
+        emulator_process = subprocess.Popen(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'start',
              '--project', feconf.OPPIA_PROJECT_ID,
              '--host-port', emulator_host_port,
@@ -55,22 +55,22 @@ def emulator_context(silent=True):
             stdout=stdout, stderr=stderr)
 
         @stack.callback
-        def tear_down_emulator_proc(): # pylint: disable=unused-variable
+        def tear_down_emulator_process(): # pylint: disable=unused-variable
             """Tears down the emulator process and all of its children."""
-            root_proc = psutil.Process(emulator_proc.pid)
-            child_procs = root_proc.children(recursive=True)
-            for proc in child_procs:
-                proc.terminate()
+            root_process = psutil.Process(emulator_process.pid)
+            child_processes = root_process.children(recursive=True)
+            for process in child_processes:
+                process.terminate()
 
-            _, still_alive = psutil.wait_procs(child_procs, timeout=5)
-            for proc in still_alive:
-                proc.kill()
+            _, still_alive = psutil.wait_procs(child_processes, timeout=5)
+            for process in still_alive:
+                process.kill()
 
             try:
-                root_proc.terminate()
-                root_proc.wait(timeout=5)
+                root_process.terminate()
+                root_process.wait(timeout=5)
             except psutil.TimeoutExpired:
-                root_proc.kill()
+                root_process.kill()
 
         exports = subprocess.check_output(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])

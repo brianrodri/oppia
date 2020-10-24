@@ -29,7 +29,7 @@ from scripts import common # isort:skip  pylint: disable=wrong-import-position, 
 
 
 def emulator_context(silent=True):
-    """Manages a Google Cloud Datastore Emulator within a context.
+    """Manages the Google Cloud Datastore Emulator within a context.
 
     Args:
         silent: bool. Whether the emulator should print its output.

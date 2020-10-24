@@ -17,7 +17,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import contextlib
 import os
 import re
 import subprocess
@@ -25,7 +24,6 @@ import subprocess
 import contextlib2
 import feconf
 import psutil
-import python_utils
 
 from scripts import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
@@ -67,7 +65,7 @@ def emulator_context(silent=True):
             stdout=stdout, stderr=stderr)
 
         @stack.callback
-        def tear_down_emulator_proc():
+        def tear_down_emulator_proc(): # pylint: disable=unused-var
             """Tears down the emulator process and all of its children."""
             root_proc = psutil.Process(emulator_proc.pid)
             child_procs = root_proc.children(recursive=True)
@@ -88,7 +86,7 @@ def emulator_context(silent=True):
         os.environ.update(emulator_environ)
 
         @stack.callback
-        def tear_down_emulator_environ():
+        def tear_down_emulator_environ(): # pylint: disable=unused-var
             """Tears down the emulator-specific environment variables."""
             for var_name in emulator_environ:
                 del os.environ[var_name]

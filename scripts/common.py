@@ -19,7 +19,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import contextlib
 import getpass
-import math
 import os
 import platform
 import re

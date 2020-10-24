@@ -65,7 +65,7 @@ def emulator_context(silent=True):
             stdout=stdout, stderr=stderr)
 
         @stack.callback
-        def tear_down_emulator_proc(): # pylint: disable=unused-var
+        def tear_down_emulator_proc(): # pylint: disable=unused-variable
             """Tears down the emulator process and all of its children."""
             root_proc = psutil.Process(emulator_proc.pid)
             child_procs = root_proc.children(recursive=True)
@@ -86,7 +86,7 @@ def emulator_context(silent=True):
         os.environ.update(emulator_environ)
 
         @stack.callback
-        def tear_down_emulator_environ(): # pylint: disable=unused-var
+        def tear_down_emulator_environ(): # pylint: disable=unused-variable
             """Tears down the emulator-specific environment variables."""
             for var_name in emulator_environ:
                 del os.environ[var_name]

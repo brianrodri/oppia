@@ -28,16 +28,6 @@ import psutil
 from scripts import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
 
-def _get_emulator_environ():
-    """Returns a dict of required emulator-specific environment variables."""
-    export_cmds = subprocess.check_output(
-        [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
-    emulator_environ = {'DATASTORE_USE_PROJECT_ID_AS_APP_ID': 'true'}
-    emulator_environ.update(
-        m.group(1, 2) for m in re.finditer(r'export (\w*)=(.*)', export_cmds))
-    return emulator_environ
-
-
 def emulator_context(silent=True):
     """Returns a context manager that sets up and tears down a datastore
     emulator.
@@ -82,7 +72,11 @@ def emulator_context(silent=True):
             except psutil.TimeoutExpired:
                 root_proc.kill()
 
-        emulator_environ = _get_emulator_environ()
+        exports = subprocess.check_output(
+            [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
+        emulator_environ = {'DATASTORE_USE_PROJECT_ID_AS_APP_ID': 'true'}
+        emulator_environ.update(
+            m.group(1, 2) for m in re.finditer(r'export (\w*)=(.*)', exports))
         os.environ.update(emulator_environ)
 
         @stack.callback

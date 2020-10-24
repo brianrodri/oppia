@@ -19,6 +19,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import contextlib
 import getpass
+import math
 import os
 import platform
 import re
@@ -599,24 +600,19 @@ def inplace_replace_file(filename, regex_pattern, replacement_string):
         raise
 
 
-def wait_for_port_to_be_open(port_number):
-    """Wait until the port is open and exit if port isn't open after
-    1000 seconds.
+def wait_for_port_to_be_open(
+        port_number, timeout_secs=MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
+    """Wait until the port is open or raise an IOError if the wait times out.
 
     Args:
         port_number: int. The port number to wait.
+        timeout_secs: int. The timeout in seconds.
     """
-    waited_seconds = 0
-    while (not is_port_open(port_number)
-           and waited_seconds < MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
+    for _ in python_utils.RANGE(timeout_secs):
+        if is_port_open(port_number):
+            return
         time.sleep(1)
-        waited_seconds += 1
-    if (waited_seconds == MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS
-            and not is_port_open(port_number)):
-        python_utils.PRINT(
-            'Failed to start server on port %s, exiting ...' %
-            port_number)
-        sys.exit(1)
+    raise IOError('Failed to start server on port %d, exiting...' % port_number)
 
 
 def start_redis_server():

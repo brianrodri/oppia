@@ -85,7 +85,6 @@ def emulator_context(silent=True):
             for var_name in emulator_environ:
                 del os.environ[var_name]
 
-        common.wait_for_port_to_be_open(
-            feconf.DATASTORE_EMULATOR_PORT, timeout_secs=10)
+        common.wait_for_port_to_be_open(feconf.DATASTORE_EMULATOR_PORT)
 
         return stack.pop_all()

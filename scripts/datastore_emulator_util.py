@@ -29,15 +29,13 @@ from scripts import common # isort:skip  pylint: disable=wrong-import-position, 
 
 
 def emulator_context(silent=True):
-    """Returns a context manager that sets up and tears down a datastore
-    emulator.
+    """Manages a Google Cloud Datastore Emulator within a context.
 
     Args:
-        silent: bool. Whether the emulator should have its output printed.
+        silent: bool. Whether the emulator should print its output.
 
     Returns:
-        contextlib2.ExitStack. A context manager with necessary clean-up pushed
-        onto it.
+        contextlib2.ExitStack. An ExitStack with tear-down operations pushed on.
     """
     with contextlib2.ExitStack() as stack:
         if silent:

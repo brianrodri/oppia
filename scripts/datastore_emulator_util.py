@@ -29,7 +29,7 @@ from scripts import common # isort:skip  pylint: disable=wrong-import-position, 
 
 
 def _get_emulator_environ():
-    """Returns a dict of environment values needed by the datastore emulator."""
+    """Returns a dict of required emulator-specific environment variables."""
     export_cmds = subprocess.check_output(
         [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
     emulator_environ = {'DATASTORE_USE_PROJECT_ID_AS_APP_ID': 'true'}

@@ -1215,7 +1215,7 @@ tags: []
         """
         # Although the hash function doesn't guarantee a one-to-one mapping, in
         # practice it is sufficient for our tests.
-        return python_utils.convert_to_bytes(hash(email))
+        return python_utils.convert_to_bytes(hash((self.namespace, email)))
 
     def save_new_default_exploration(
             self, exploration_id, owner_id, title='A title'):
@@ -2254,16 +2254,17 @@ tags: []
 class AppEngineTestBase(TestBase):
     """Base class for tests requiring App Engine services."""
 
-    @property
-    def namespace(self):
-        """Returns a unique identifier for the current test."""
-        return hashlib.md5(self.id()).hexdigest()
     def __init__(self, *args, **kwargs):
         super(AppEngineTestBase, self).__init__(*args, **kwargs)
         # We can't instantiate these stubs in setUp() because run() requires the
         # memory cache stub, but setUp() is called *by* run().
         self.taskqueue_services_stub = TaskqueueServicesStub(self)
         self.memory_cache_services_stub = MemoryCacheServicesStub()
+
+    @property
+    def namespace(self):
+        """Returns a unique identifier for the current test."""
+        return hashlib.md5(self.id()).hexdigest()
 
     def run(self, result=None):
         """Enforces swap contexts for test methods to mock out cache services.
@@ -2295,6 +2296,8 @@ class AppEngineTestBase(TestBase):
             stack.enter_context(self.swap(
                 memory_cache_services, 'delete_multi',
                 self.memory_cache_services_stub.delete_multi))
+            stack.enter_context(
+                datastore_services.get_context(namespace=self.namespace))
 
             super(AppEngineTestBase, self).run(result=result)
 
@@ -2321,19 +2324,22 @@ class AppEngineTestBase(TestBase):
         self.mapreduce_taskqueue_stub = (
             self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME))
 
+        # https://stackoverflow.com/a/51227333/4859885.
+        apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
+        apiproxy_stub_map.apiproxy.RegisterStub(
+            'urlfetch', urlfetch_stub.URLFetchServiceStub())
+        apiproxy_stub_map.apiproxy.RegisterStub(
+            'app_identity_service', app_identity_stub.AppIdentityServiceStub())
+
         # Set up the app to be tested.
         self.testapp = webtest.TestApp(main.app)
 
         self.signup_superadmin_user()
 
     def tearDown(self):
-        with self._context_stack:
-            self._context_stack = None
-            # Allow the stack to unwind, which invokes each of the callbacks and
-            # exits it has collected.
-        self.logout()
-        datastore_services.delete_multi(
-            datastore_services.query_everything().iter(keys_only=True))
+        with datastore_services.get_context(namespace=self.namespace):
+            datastore_services.delete_multi(
+                datastore_services.query_everything().iter(keys_only=True))
         self.testbed.deactivate()
 
     def _get_all_queue_names(self):

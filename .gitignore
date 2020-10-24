@@ -35,6 +35,7 @@ venv/
 .vagrant/*
 .lock
 .local/*
+.config/*
 yarn-error.log
 .env
 .pytest_cache/v/cache/*

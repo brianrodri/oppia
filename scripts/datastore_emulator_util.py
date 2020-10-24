@@ -28,7 +28,7 @@ import psutil
 from scripts import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
 
-def emulator_context(silent=True):
+def emulator_context(silent=False):
     """Manages the Google Cloud Datastore Emulator within a context.
 
     Args:
@@ -37,22 +37,20 @@ def emulator_context(silent=True):
     Returns:
         contextlib2.ExitStack. An ExitStack with tear-down operations pushed on.
     """
-    with contextlib2.ExitStack() as stack:
-        if silent:
-            stdout = stderr = stack.enter_context(open(os.devnull, 'w'))
-        else:
-            stdout, stderr = subprocess.STDOUT, subprocess.STDERR
+    if not os.path.exists(common.DATASTORE_EMULATOR_DATA_DIR):
+        os.makedirs(common.DATASTORE_EMULATOR_DATA_DIR)
 
+    with contextlib2.ExitStack() as exit_stack:
         emulator_host_port = '%s:%d' % (
             feconf.DATASTORE_EMULATOR_HOST, feconf.DATASTORE_EMULATOR_PORT)
         emulator_process = subprocess.Popen(
             [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'start',
+             '--data-dir', common.DATASTORE_EMULATOR_DATA_DIR,
              '--project', feconf.OPPIA_PROJECT_ID,
              '--host-port', emulator_host_port,
-             '--consistency=1.0', '--no-store-on-disk', '--quiet'],
-            stdout=stdout, stderr=stderr)
+             '--no-store-on-disk', '--consistency=1.0', '--quiet'])
 
-        @stack.callback
+        @exit_stack.callback
         def tear_down_emulator_process(): # pylint: disable=unused-variable
             """Tears down the emulator process and all of its children."""
             root_process = psutil.Process(emulator_process.pid)
@@ -70,19 +68,20 @@ def emulator_context(silent=True):
             except psutil.TimeoutExpired:
                 root_process.kill()
 
+        common.wait_for_port_to_be_open(feconf.DATASTORE_EMULATOR_PORT)
+
         exports = subprocess.check_output(
-            [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init'])
+            [common.GCLOUD_PATH, 'beta', 'emulators', 'datastore', 'env-init',
+             '--data-dir', common.DATASTORE_EMULATOR_DATA_DIR, '--quiet'])
         emulator_environ = {'DATASTORE_USE_PROJECT_ID_AS_APP_ID': 'true'}
         emulator_environ.update(
             m.group(1, 2) for m in re.finditer(r'export (\w*)=(.*)', exports))
         os.environ.update(emulator_environ)
 
-        @stack.callback
+        @exit_stack.callback
         def tear_down_emulator_environ(): # pylint: disable=unused-variable
             """Tears down the emulator-specific environment variables."""
             for var_name in emulator_environ:
                 del os.environ[var_name]
 
-        common.wait_for_port_to_be_open(feconf.DATASTORE_EMULATOR_PORT)
-
-        return stack.pop_all()
+        return exit_stack.pop_all()

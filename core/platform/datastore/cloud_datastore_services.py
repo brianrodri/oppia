@@ -21,7 +21,9 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import contextlib
 import datetime
+import threading
 
+import contextlib2
 import python_utils
 
 from google.cloud import ndb
@@ -109,6 +111,10 @@ def transaction(callback):
     return ndb.transaction(callback, xg=True)
 
 
+def query_everything():
+    return ndb.Query()
+
+
 def all_of(*nodes):
     """Returns a query node which performs a boolean AND on their conditions.
 
@@ -192,7 +198,7 @@ def fetch_multiple_entities_by_ids_and_models(ids_and_models):
     return all_models_grouped_by_model_type
 
 
-def make_consistency_policy():
+def make_globally_consistent_hr_policy():
     """Returns a policy that always gives the same sequence of consistency
     decisions.
 
@@ -255,6 +261,18 @@ def mock_datetime_for_datastore(mocked_now):
         setattr(datetime, 'datetime', old_datetime)
 
 
-def get_ndb_client():
-    """Returns a client for interacting with NDB models."""
-    return ndb.Client()
+_NDB_CLIENT = ndb.Client()
+
+
+def get_context(namespace=None):
+    """Returns a context for interacting with NDB models."""
+    curr_context = ndb.get_context(raise_context_error=False)
+    if curr_context is None:
+        return _NDB_CLIENT.context(namespace=namespace)
+
+    curr_namespace = curr_context.get_namespace()
+    if curr_namespace == namespace:
+        # Re-entering a context with the same namespace is not an error.
+        return contextlib2.nullcontext()
+
+    raise Exception('Already in a context with namespace: %r' % curr_namespace)

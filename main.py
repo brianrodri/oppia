@@ -847,9 +847,6 @@ for subject in feconf.AVAILABLE_LANDING_PAGES:
 # 404 error handler (Needs to be at the end of the URLS list).
 URLS.append(get_redirect_route(r'/<:.*>', base.Error404Handler))
 
-ndb_client = datastore_services.get_ndb_client()  # pylint: disable=invalid-name
-app_context = ndb_client.context() if ndb_client else contextlib2.nullcontext()  # pylint: disable=invalid-name
-
-with app_context:
+with datastore_services.get_context():
     app = transaction_services.toplevel_wrapper(  # pylint: disable=invalid-name
         webapp2.WSGIApplication(URLS, debug=feconf.DEBUG))

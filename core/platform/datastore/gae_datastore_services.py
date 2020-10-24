@@ -23,6 +23,7 @@ import contextlib
 import datetime
 import functools
 
+import contextlib2
 import python_utils
 
 from google.appengine.api import datastore_types
@@ -126,6 +127,10 @@ def transaction(callback):
     """
     return ndb.transaction(
         callback, xg=True, propagation=ndb.TransactionOptions.ALLOWED)
+
+
+def query_everything():
+    return ndb.Query()
 
 
 def all_of(*nodes):
@@ -286,6 +291,6 @@ def mock_datetime_for_datastore(mocked_now):
         setattr(datetime, 'datetime', old_datetime_type)
 
 
-def get_ndb_client():
-    """Returns a client for interacting with NDB models."""
-    return None
+def get_context(namespace=None): # pylint: disable=unused-args
+    """Returns a context for interacting with NDB models."""
+    return contextlib2.nullcontext()

@@ -23,7 +23,6 @@ import ast
 import collections
 import contextlib
 import copy
-import datetime
 import hashlib
 import inspect
 import itertools
@@ -71,11 +70,12 @@ from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import mail
 from google.appengine.api import urlfetch_stub
 from google.appengine.api.app_identity import app_identity_stub
+from google.appengine.ext import deferred
 from google.appengine.ext import testbed
 import requests
 import webtest
 
-(exp_models, question_models, skill_models, story_models, topic_models,) = (
+exp_models, question_models, skill_models, story_models, topic_models = (
     models.Registry.import_models([
         models.NAMES.exploration, models.NAMES.question, models.NAMES.skill,
         models.NAMES.story, models.NAMES.topic]))
@@ -124,6 +124,9 @@ def get_filepath_from_filename(filename, rootdir):
 
     Returns:
         str | None. The path of the file if file is found otherwise None.
+
+    Raises:
+        Exception. There are multiple files with the same name.
     """
     # The file we want to serve is named error-page.mainpage.html, but the test
     # app appends a status code to the file when searching. We remove the error
@@ -148,8 +151,8 @@ def mock_load_template(filename):
     file from the source directory instead.
 
     Args:
-        filename: str. The name of the file for which template is
-            to be returned.
+        filename: str. The name of the file for which template is to be
+            returned.
 
     Returns:
         str. The contents of the given file.
@@ -169,10 +172,7 @@ def check_image_png_or_webp(image_string):
     Returns:
         boolean. Returns true if image is in WebP format.
     """
-    if (image_string.startswith('data:image/png') or
-            image_string.startswith('data:image/webp')):
-        return True
-    return False
+    return image_string.startswith(('data:image/png', 'data:image/webp'))
 
 
 class TaskqueueServicesStub(python_utils.OBJECT):
@@ -203,10 +203,8 @@ class TaskqueueServicesStub(python_utils.OBJECT):
         """
         headers = {
             'X-Appengine-QueueName': python_utils.convert_to_bytes(queue_name),
-            'X-Appengine-TaskName': (
-                task_name
-                if task_name else python_utils.convert_to_bytes('None')),
-            'X-AppEngine-Fake-Is-Admin': python_utils.convert_to_bytes('1')
+            'X-Appengine-TaskName': task_name if task_name else b'None',
+            'X-AppEngine-Fake-Is-Admin': b'1',
         }
         csrf_token = self.test_base.get_new_csrf_token()
         self.test_base.post_task(
@@ -227,12 +225,10 @@ class TaskqueueServicesStub(python_utils.OBJECT):
                 time to execute the task. Pass in None for immediate execution.
             task_name: str|None. Optional. The name of the task.
         """
-        # Causes the task to execute immediately by setting the scheduled_for
-        # time to 0. If we allow scheduled_for to be non-zero, then tests that
-        # rely on the actions made by the task will become unreliable.
-        scheduled_for = 0
+        # Setting scheduled_for to 0 causes the task to execute immediately. Any
+        # other non-zero value is unreliable.
         self.client.create_task(
-            queue_name, url, payload, scheduled_for=scheduled_for,
+            queue_name, url, payload, scheduled_for=(scheduled_for or 0),
             task_name=task_name)
 
     def count_jobs_in_taskqueue(self, queue_name=None):
@@ -281,7 +277,7 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
     layer, namely the platform.cache cache services API.
     """
 
-    cache_dict = collections.defaultdict()
+    CACHE_DICT = collections.defaultdict()
 
     def get_memory_cache_stats(self):
         """Returns a mock profile of the cache dictionary. This mock does not
@@ -292,16 +288,11 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
             MemoryCacheStats. MemoryCacheStats object containing the total
             number of keys in the cache dictionary.
         """
-        memory_stats = caching_domain.MemoryCacheStats(
-            0,
-            0,
-            len(self.cache_dict))
-
-        return memory_stats
+        return caching_domain.MemoryCacheStats(0, 0, len(self.CACHE_DICT))
 
     def flush_cache(self):
         """Wipes the cache dictionary clean."""
-        self.cache_dict = collections.defaultdict()
+        self.CACHE_DICT.clear()
 
     def get_multi(self, keys):
         """Looks up a list of keys in cache dictionary.
@@ -313,11 +304,7 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
             list(str). A list of values in the cache dictionary corresponding to
             the keys that are passed in.
         """
-        assert isinstance(keys, list)
-        cache_list = [
-            (self.cache_dict[key] if key in self.cache_dict else None)
-            for key in keys]
-        return cache_list
+        return [self.CACHE_DICT.get(key, None) for key in keys]
 
     def set_multi(self, key_value_mapping):
         """Sets multiple keys' values at once in the cache dictionary.
@@ -330,9 +317,7 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
         Returns:
             bool. Whether the set action succeeded.
         """
-        assert isinstance(key_value_mapping, dict)
-        for key, value in key_value_mapping.items():
-            self.cache_dict[key] = value
+        self.CACHE_DICT.update(key_value_mapping)
         return True
 
     def delete_multi(self, keys):
@@ -344,13 +329,10 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
         Returns:
             int. Number of successfully deleted keys.
         """
-        number_of_deleted_keys = 0
-        for key in keys:
-            assert isinstance(key, python_utils.BASESTRING)
-            if key in self.cache_dict:
-                del self.cache_dict[key]
-                number_of_deleted_keys += 1
-        return number_of_deleted_keys
+        keys_in_cache = [key for key in keys if key in self.CACHE_DICT]
+        for key in keys_in_cache:
+            del self.CACHE_DICT[key]
+        return len(keys_in_cache)
 
 
 class TestBase(unittest.TestCase):
@@ -784,9 +766,7 @@ tags: []
             item.validate()
 
     def signup_superadmin_user(self):
-        """Signs up a superadmin user. Should be called at the end of
-        setUp().
-        """
+        """Signs up a superadmin user; should be called at the end of setUp."""
         self.signup(self.SUPER_ADMIN_EMAIL, 'tmpsuperadm1n')
 
     def log_line(self, line):
@@ -803,10 +783,15 @@ tags: []
         Args:
             email: str. The email of the user who is to be logged in.
             is_super_admin: bool. Whether the user is a super admin.
-       """
+
+        Returns:
+            str. The GAE ID of the logged in user.
+        """
+        user_id = self.get_gae_id_from_email(email)
         os.environ['USER_EMAIL'] = email
-        os.environ['USER_ID'] = self.get_gae_id_from_email(email)
+        os.environ['USER_ID'] = user_id
         os.environ['USER_IS_ADMIN'] = '1' if is_super_admin else '0'
+        return user_id
 
     def logout(self):
         """Simulates a logout by resetting the environment variables."""
@@ -835,14 +820,14 @@ tags: []
             webtest.TestResponse. The test response.
         """
         if params is not None:
-            self.assertTrue(isinstance(params, dict))
+            self.assertIsInstance(params, dict)
 
         expect_errors = expected_status_int >= 400
 
         # This swap ensures that the templates are fetched from the source
         # directory rather than from webpack_bundles. The webpack_bundles
         # directory is only available after webpack compilation, but we don't
-        # run the build during backend tests.
+        # build it during backend tests.
         with self.swap(base, 'load_template', mock_load_template):
             response = self.testapp.get(
                 url, params, expect_errors=expect_errors,
@@ -851,8 +836,7 @@ tags: []
         # The testapp uses the status parameter to verify the response. However,
         # the return code is only verified when expect_errors=False. Since we
         # want to verify the error codes anyway, we must do so explicitly.
-        # Reference:
-        # https://github.com/Pylons/webtest/blob/bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119 # pylint: disable=line-too-long
+        # Reference: https://github.com/Pylons/webtest/blob/bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119. # pylint: disable=line-too-long
         self.assertEqual(response.status_int, expected_status_int)
         if expect_errors:
             self.assertTrue(response.status_int >= 400)
@@ -906,29 +890,26 @@ tags: []
 
     def get_response_without_checking_for_errors(
             self, url, expected_status_int_list, params=None):
-        """Get a response, transformed to a Python object and
-        checks for a list of status codes.
+        """Get a response, transformed to a Python object and checks for a list
+        of status codes.
 
         Args:
             url: str. The URL to fetch the response.
-            expected_status_int_list: list(int). A list of integer status
-                code to expect.
+            expected_status_int_list: list(int). A list of integer status codes
+                to expect.
             params: dict. A dictionary that will be encoded into a query string.
 
         Returns:
             webtest.TestResponse. The test response.
         """
         if params is not None:
-            self.assertTrue(
-                isinstance(params, dict),
-                msg='Expected params to be a dict, received %s' % params)
+            self.assertIsInstance(params, dict)
 
         # This swap is required to ensure that the templates are fetched from
         # source directory instead of webpack_bundles since webpack_bundles
         # is only produced after webpack compilation which is not performed
         # during backend tests.
-        with self.swap(
-            base, 'load_template', mock_load_template):
+        with self.swap(base, 'load_template', mock_load_template):
             response = self.testapp.get(url, params, expect_errors=True)
 
         self.assertIn(response.status_int, expected_status_int_list)
@@ -937,14 +918,11 @@ tags: []
 
     def _parse_json_response(self, json_response, expect_errors):
         """Convert a JSON server response to an object (such as a dict)."""
-        if not expect_errors:
-            self.assertTrue(
-                json_response.status_int >= 200 and
-                json_response.status_int < 400)
-        else:
+        if expect_errors:
             self.assertTrue(json_response.status_int >= 400)
-        self.assertEqual(
-            json_response.content_type, 'application/json')
+        else:
+            self.assertTrue(200 <= json_response.status_int < 400)
+        self.assertEqual(json_response.content_type, 'application/json')
         self.assertTrue(json_response.body.startswith(feconf.XSSI_PREFIX))
 
         return json.loads(json_response.body[len(feconf.XSSI_PREFIX):])
@@ -952,11 +930,9 @@ tags: []
     def get_json(self, url, params=None, expected_status_int=200):
         """Get a JSON response, transformed to a Python object."""
         if params is not None:
-            self.assertTrue(isinstance(params, dict))
+            self.assertIsInstance(params, dict)
 
-        expect_errors = False
-        if expected_status_int >= 400:
-            expect_errors = True
+        expect_errors = expected_status_int >= 400
 
         json_response = self.testapp.get(
             url, params, expect_errors=expect_errors,
@@ -966,9 +942,7 @@ tags: []
         # the response. However this expected status is verified only when
         # expect_errors=False. For other situations we need to explicitly check
         # the status.
-        # Reference URL:
-        # https://github.com/Pylons/webtest/blob/
-        # bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119 .
+        # Reference URL: https://github.com/Pylons/webtest/blob/bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119. # pylint: disable=line-too-long
         self.assertEqual(json_response.status_int, expected_status_int)
         return self._parse_json_response(json_response, expect_errors)
 
@@ -980,21 +954,15 @@ tags: []
         if csrf_token:
             data['csrf_token'] = csrf_token
 
-        expect_errors = False
-        if expected_status_int >= 400:
-            expect_errors = True
+        expect_errors = expected_status_int >= 400
         json_response = self._send_post_request(
-            self.testapp, url, data,
-            expect_errors,
-            expected_status_int=expected_status_int,
-            upload_files=upload_files)
+            self.testapp, url, data, expect_errors,
+            expected_status_int=expected_status_int, upload_files=upload_files)
         # Testapp takes in a status parameter which is the expected status of
         # the response. However this expected status is verified only when
         # expect_errors=False. For other situations we need to explicitly check
         # the status.
-        # Reference URL:
-        # https://github.com/Pylons/webtest/blob/
-        # bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119 .
+        # Reference URL: https://github.com/Pylons/webtest/blob/bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119. # pylint: disable=line-too-long
 
         self.assertEqual(json_response.status_int, expected_status_int)
         return self._parse_json_response(json_response, expect_errors)
@@ -1002,13 +970,9 @@ tags: []
     def delete_json(self, url, params='', expected_status_int=200):
         """Delete object on the server using a JSON call."""
         if params:
-            self.assertTrue(
-                isinstance(params, dict),
-                msg='Expected params to be a dict, received %s' % params)
+            self.assertIsInstance(params, dict)
 
-        expect_errors = False
-        if expected_status_int >= 400:
-            expect_errors = True
+        expect_errors = expected_status_int >= 400
         json_response = self.testapp.delete(
             url, params, expect_errors=expect_errors,
             status=expected_status_int)
@@ -1017,25 +981,22 @@ tags: []
         # the response. However this expected status is verified only when
         # expect_errors=False. For other situations we need to explicitly check
         # the status.
-        # Reference URL:
-        # https://github.com/Pylons/webtest/blob/
-        # bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119 .
+        # Reference URL: https://github.com/Pylons/webtest/blob/bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119. # pylint: disable=line-too-long
         self.assertEqual(json_response.status_int, expected_status_int)
         return self._parse_json_response(json_response, expect_errors)
 
     def _send_post_request(
-            self, app, url, data, expect_errors,
-            expected_status_int=200,
+            self, app, url, data, expect_errors, expected_status_int=200,
             upload_files=None, headers=None):
         """Sends a post request with the data provided to the url specified.
 
         Args:
-            app: TestApp. The WSGI application which receives the
-                request and produces response.
+            app: TestApp. The WSGI application which receives the request and
+                produces response.
             url: str. The URL to send the POST request to.
             data: *. To be put in the body of the request. If params is an
-                iterator, it will be urlencoded. If it is a string, it will
-                not be encoded, but placed in the body directly. Can be a
+                iterator, it will be urlencoded. If it is a string, it will not
+                be encoded, but placed in the body directly. Can be a
                 collections.OrderedDict with webtest.forms.Upload fields
                 included.
             expect_errors: bool. Whether errors are expected.
@@ -1051,13 +1012,12 @@ tags: []
         # Convert the files to bytes.
         if upload_files is not None:
             upload_files = tuple(
-                tuple(python_utils.convert_to_bytes(
-                    j) for j in i) for i in upload_files)
+                tuple(python_utils.convert_to_bytes(p) for p in file_pieces)
+                for file_pieces in upload_files)
 
         json_response = app.post(
-            url, data, expect_errors=expect_errors,
-            upload_files=upload_files, headers=headers,
-            status=expected_status_int)
+            url, data, expect_errors=expect_errors, upload_files=upload_files,
+            headers=headers, status=expected_status_int)
         return json_response
 
     def post_email(
@@ -1072,15 +1032,14 @@ tags: []
             body: str. The body of the email.
             html_body: str. The HTML body of the email.
             expect_errors: bool. Whether errors are expected.
-            expected_status_int: int. The expected status code of
-                the JSON response.
+            expected_status_int: int. The expected status code of the JSON
+                response.
 
         Returns:
             json. A JSON response generated by _send_post_request function.
         """
         email = mail.EmailMessage(
-            sender=sender_email, to=recipient_email, subject=subject,
-            body=body)
+            sender=sender_email, to=recipient_email, subject=subject, body=body)
         if html_body is not None:
             email.html = html_body
 
@@ -1116,9 +1075,7 @@ tags: []
         if csrf_token:
             data['csrf_token'] = csrf_token
 
-        expect_errors = False
-        if expected_status_int >= 400:
-            expect_errors = True
+        expect_errors = expected_status_int >= 400
         json_response = self.testapp.put(
             python_utils.UNICODE(url), data, expect_errors=expect_errors)
 
@@ -1126,16 +1083,14 @@ tags: []
         # the response. However this expected status is verified only when
         # expect_errors=False. For other situations we need to explicitly check
         # the status.
-        # Reference URL:
-        # https://github.com/Pylons/webtest/blob/
-        # bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119 .
+        # Reference URL: https://github.com/Pylons/webtest/blob/bf77326420b628c9ea5431432c7e171f88c5d874/webtest/app.py#L1119. # pylint: disable=line-too-long
         self.assertEqual(json_response.status_int, expected_status_int)
         return self._parse_json_response(json_response, expect_errors)
 
     def get_new_csrf_token(self):
         """Generates CSRF token for test."""
-        response = self.get_json('/csrfhandler')
-        return response['token']
+        json_response = self.get_json('/csrfhandler')
+        return json_response['token']
 
     def signup(self, email, username):
         """Complete the signup process for the user with the given username.
@@ -1144,19 +1099,21 @@ tags: []
             email: str. Email of the given user.
             username: str. Username of the given user.
         """
-        user_services.create_new_user(self.get_gae_id_from_email(email), email)
-        with self.login_context(email), requests_mock.Mocker() as m:
-            m.get(requests_mock.ANY)
+        with self.login_context(email) as gae_id, requests_mock.Mocker() as m:
+            # Mock out requests to real HTTP services.
+            m.request(requests_mock.ANY, requests_mock.ANY)
 
+            user_services.create_new_user(gae_id, email)
             signup_response = self.get_html_response(feconf.SIGNUP_URL)
             self.assertEqual(signup_response.status_code, 200)
 
-            csrf_token = self.get_new_csrf_token()
-            payload = json.dumps(
-                {'username': username, 'agreed_to_terms': True})
-            data_response = self.testapp.post(
-                feconf.SIGNUP_DATA_URL,
-                params={'csrf_token': csrf_token, 'payload': payload})
+            data_response = self.testapp.post(feconf.SIGNUP_DATA_URL, params={
+                'csrf_token': self.get_new_csrf_token(),
+                'payload': json.dumps({
+                    'username': username,
+                    'agreed_to_terms': True,
+                }),
+            })
             self.assertEqual(data_response.status_int, 200)
 
     def set_config_property(self, config_obj, new_config_value):
@@ -1164,7 +1121,7 @@ tags: []
         using a POST request.
         """
         config_name = config_obj.name
-        with self.login_context(self.SUPER_ADMIN_EMAIL, is_super_admin=True):
+        with self.admin_context():
             self.post_json('/adminhandler', {
                 'action': 'save_config_properties',
                 'new_config_property_values': {config_name: new_config_value},
@@ -1177,7 +1134,7 @@ tags: []
             username: str. Username of the given user.
             user_role: str. Role of the given user.
         """
-        with self.login_context(self.SUPER_ADMIN_EMAIL, is_super_admin=True):
+        with self.admin_context():
             self.post_json(
                 '/adminrolehandler', {'username': username, 'role': user_role},
                 csrf_token=self.get_new_csrf_token())
@@ -1287,12 +1244,9 @@ tags: []
             interaction_id: str. The interaction id to set. Also sets the
                 default customization args for the given interaction id.
         """
-
         # We wrap next_content_id_index in a dict so that modifying it in the
         # inner function modifies the value.
-        next_content_id_index_dict = {
-            'value': state.next_content_id_index,
-        }
+        next_content_id_index_dict = {'value': state.next_content_id_index}
 
         def traverse_schema_and_assign_content_ids(value, schema, contentId):
             """Generates content_id from recursively traversing the schema, and
@@ -1326,11 +1280,10 @@ tags: []
                     traverse_schema_and_assign_content_ids(
                         x[schema_property.name],
                         schema_property['schema'],
-                        '%s_%s' % (contentId, schema_property.name)
-                    )
+                        '%s_%s' % (contentId, schema_property.name))
 
-        interaction = interaction_registry.Registry.get_interaction_by_id(
-            interaction_id)
+        interaction = (
+            interaction_registry.Registry.get_interaction_by_id(interaction_id))
         ca_specs = interaction.customization_arg_specs
         customization_args = {}
 
@@ -1338,10 +1291,7 @@ tags: []
             ca_name = ca_spec.name
             ca_value = ca_spec.default_value
             traverse_schema_and_assign_content_ids(
-                ca_value,
-                ca_spec.schema,
-                'ca_%s' % ca_name
-            )
+                ca_value, ca_spec.schema, 'ca_%s' % ca_name)
             customization_args[ca_name] = {'value': ca_value}
 
         state.update_interaction_id(interaction_id)
@@ -1437,7 +1387,8 @@ tags: []
             self.set_interaction_for_state(
                 from_state, python_utils.NEXT(interaction_ids))
             from_state.interaction.default_outcome.dest = dest_state_name
-        end_state = exploration.states[state_names[-1]]
+        end_state_name = state_names[-1]
+        end_state = exploration.states[end_state_name]
         self.set_interaction_for_state(end_state, 'EndExploration')
         end_state.update_interaction_default_outcome(None)
 
@@ -2115,56 +2066,26 @@ tags: []
         """
         return '/assets%s%s' % (utils.get_asset_dir_prefix(), asset_suffix)
 
-    @contextlib.contextmanager
     def mock_datetime_utcnow(self, mocked_datetime):
         """Mocks response from datetime.datetime.utcnow method.
 
-        Example usage:
-            import datetime
-            mocked_datetime_utcnow = datetime.datetime.utcnow() -
-                datetime.timedelta(days=1)
-            with self.mock_datetime_utcnow(mocked_datetime_utcnow):
-                print datetime.datetime.utcnow() # prints time reduced by 1 day
-            print datetime.datetime.utcnow()  # prints current time.
+        Example:
+            >>> import datetime
+            >>> mocked_datetime_utcnow = (
+            >>>     datetime.datetime.utcnow() - datetime.timedelta(days=1))
+            >>> with self.mock_datetime_utcnow(mocked_datetime_utcnow):
+            >>>     python_utils.PRINT(datetime.datetime.utcnow()) # Yesterday.
+            >>> python_utils.PRINT(datetime.datetime.utcnow()) # Today.
 
         Args:
             mocked_datetime: datetime.datetime. The datetime which will be used
                 instead of the current UTC datetime.
 
-        Yields:
-            None. Empty yield statement.
+        Returns:
+            Context manager. A context manager that causes utcnow to always
+            return the mocked time.
         """
-        if not isinstance(mocked_datetime, datetime.datetime):
-            raise utils.ValidationError(
-                'Expected mocked_datetime to be datetime.datetime, got %s' % (
-                    type(mocked_datetime)))
-
-        original_datetime_type = datetime.datetime
-
-        class PatchedDatetimeType(type):
-            """Validates the datetime instances."""
-
-            def __instancecheck__(cls, other):
-                """Validates whether the given instance is datetime
-                instance.
-                """
-                return isinstance(other, original_datetime_type)
-
-        class MockDatetime( # pylint: disable=inherit-non-class
-                python_utils.with_metaclass(
-                    PatchedDatetimeType, datetime.datetime)):
-            @classmethod
-            def utcnow(cls):
-                """Returns the mocked datetime."""
-
-                return mocked_datetime
-
-        setattr(datetime, 'datetime', MockDatetime)
-
-        try:
-            yield
-        finally:
-            setattr(datetime, 'datetime', original_datetime_type)
+        return datastore_services.mock_datetime_for_datastore(mocked_datetime)
 
     @contextlib.contextmanager
     def swap(self, obj, attr, newvalue):
@@ -2172,20 +2093,19 @@ tags: []
         'with' statement. The object can be anything that supports
         getattr and setattr, such as class instances, modules, ...
 
-        Example usage:
-
-            import math
-            with self.swap(math, 'sqrt', lambda x: 42):
-                print math.sqrt(16.0)  # prints 42
-            print math.sqrt(16.0)  # prints 4 as expected.
+        Example:
+            >>> import math
+            >>> with self.swap(math, 'sqrt', lambda x: 42):
+            >>>     python_utils.PRINT(math.sqrt(16.0)) # 42.
+            >>> python_utils.PRINT(math.sqrt(16.0)) # 4.
 
         Note that this does not work directly for classmethods. In this case,
         you will need to import the 'types' module, as follows:
 
-            import types
-            with self.swap(
-                SomePythonClass, 'some_classmethod',
-                types.MethodType(new_classmethod, SomePythonClass)):
+            >>> import types
+            >>> with self.swap(
+            >>>     SomePythonClass, 'some_classmethod',
+            >>>     types.MethodType(new_classmethod, SomePythonClass)):
 
         NOTE: self.swap and other context managers that are created using
         contextlib.contextmanager use generators that yield exactly once. This
@@ -2293,7 +2213,7 @@ tags: []
 
     @contextlib.contextmanager
     def login_context(self, email, is_super_admin=False):
-        """Log in with the given email under the context of a 'with' statement.
+        """Logs in with the given email under the context of a 'with' statement.
 
         Args:
             email: str. An email associated to a user account.
@@ -2303,13 +2223,15 @@ tags: []
             str. The id of the user associated to the given email, who is now
             'logged in'.
         """
-        initial_user_env = os.environ.copy()
-        self.login(email, is_super_admin=is_super_admin)
+        user_id = self.login(email, is_super_admin=is_super_admin)
         try:
-            yield self.get_user_id_from_email(email)
+            yield user_id
         finally:
             self.logout()
-            os.environ.update(initial_user_env)
+
+    def admin_context(self):
+        """Logs in as an admin under the context of a 'with' statement."""
+        return self.login_context(self.SUPER_ADMIN_EMAIL, is_super_admin=True)
 
     def assertRaises(self, exc, fun, *args, **kwds):
         raise NotImplementedError(
@@ -2336,13 +2258,48 @@ class AppEngineTestBase(TestBase):
     def namespace(self):
         """Returns a unique identifier for the current test."""
         return hashlib.md5(self.id()).hexdigest()
+    def __init__(self, *args, **kwargs):
+        super(AppEngineTestBase, self).__init__(*args, **kwargs)
+        # We can't instantiate these stubs in setUp() because run() requires the
+        # memory cache stub, but setUp() is called *by* run().
+        self.taskqueue_services_stub = TaskqueueServicesStub(self)
+        self.memory_cache_services_stub = MemoryCacheServicesStub()
+
+    def run(self, result=None):
+        """Enforces swap contexts for test methods to mock out cache services.
+
+        Subclasses will have core.platform.memory_cache_services mocked out with
+        the MemoryCacheServicesStub class.
+
+        Args:
+            result: unittest.TestResult|None. Optional result object that, when
+                provided, collects the results of the test. If result is omitted
+                or None, a temporary result object is created and used instead.
+        """
+        with contextlib2.ExitStack() as stack:
+            stack.enter_context(self.swap(
+                platform_taskqueue_services, 'create_http_task',
+                self.taskqueue_services_stub.create_http_task))
+            stack.enter_context(self.swap(
+                memory_cache_services, 'flush_cache',
+                self.memory_cache_services_stub.flush_cache))
+            stack.enter_context(self.swap(
+                memory_cache_services, 'get_multi',
+                self.memory_cache_services_stub.get_multi))
+            stack.enter_context(self.swap(
+                memory_cache_services, 'set_multi',
+                self.memory_cache_services_stub.set_multi))
+            stack.enter_context(self.swap(
+                memory_cache_services, 'get_memory_cache_stats',
+                self.memory_cache_services_stub.get_memory_cache_stats))
+            stack.enter_context(self.swap(
+                memory_cache_services, 'delete_multi',
+                self.memory_cache_services_stub.delete_multi))
+
+            super(AppEngineTestBase, self).run(result=result)
 
     def setUp(self):
         empty_environ()
-
-        self.taskqueue_services_stub = TaskqueueServicesStub(self)
-        self.memory_cache_services_stub = MemoryCacheServicesStub()
-        self.memory_cache_services_stub.flush_cache()
 
         self.testbed = testbed.Testbed()
         self.testbed.activate()
@@ -2352,54 +2309,22 @@ class AppEngineTestBase(TestBase):
         self.testbed.init_app_identity_stub()
         self.testbed.init_memcache_stub()
         self.testbed.init_datastore_v3_stub(
-            consistency_policy=datastore_services.make_consistency_policy())
+            consistency_policy=(
+                datastore_services.make_globally_consistent_hr_policy()))
         self.testbed.init_blobstore_stub()
         self.testbed.init_urlfetch_stub()
         self.testbed.init_files_stub()
         self.testbed.init_search_stub()
 
         # The root path tells the testbed where to find the queue.yaml file.
-        self.testbed.init_taskqueue_stub(enable=True, root_path=os.getcwd())
+        self.testbed.init_taskqueue_stub(root_path=os.getcwd())
         self.mapreduce_taskqueue_stub = (
             self.testbed.get_stub(testbed.TASKQUEUE_SERVICE_NAME))
-
-        # See: https://stackoverflow.com/a/51227333/4859885.
-        apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
-        apiproxy_stub_map.apiproxy.RegisterStub(
-            'urlfetch', urlfetch_stub.URLFetchServiceStub())
-        apiproxy_stub_map.apiproxy.RegisterStub(
-            'app_identity_service', app_identity_stub.AppIdentityServiceStub())
 
         # Set up the app to be tested.
         self.testapp = webtest.TestApp(main.app)
 
-        with contextlib2.ExitStack() as new_context_stack:
-            self.ndb_client = datastore_services.get_ndb_client()
-            if self.ndb_client:
-                new_context_stack.callback(
-                    requests.post, 'http://%s/reset' % self.ndb_client.host)
-                new_context_stack.enter_context(
-                    self.ndb_client.context(namespace=self.namespace))
-            new_context_stack.enter_context(self.swap(
-                platform_taskqueue_services, 'create_http_task',
-                self.taskqueue_services_stub.create_http_task))
-            new_context_stack.enter_context(self.swap(
-                memory_cache_services, 'flush_cache',
-                self.memory_cache_services_stub.flush_cache))
-            new_context_stack.enter_context(self.swap(
-                memory_cache_services, 'get_multi',
-                self.memory_cache_services_stub.get_multi))
-            new_context_stack.enter_context(self.swap(
-                memory_cache_services, 'set_multi',
-                self.memory_cache_services_stub.set_multi))
-            new_context_stack.enter_context(self.swap(
-                memory_cache_services, 'get_memory_cache_stats',
-                self.memory_cache_services_stub.get_memory_cache_stats))
-            new_context_stack.enter_context(self.swap(
-                memory_cache_services, 'delete_multi',
-                self.memory_cache_services_stub.delete_multi))
-            self.signup_superadmin_user()
-            self._context_stack = new_context_stack.pop_all()
+        self.signup_superadmin_user()
 
     def tearDown(self):
         with self._context_stack:
@@ -2407,6 +2332,8 @@ class AppEngineTestBase(TestBase):
             # Allow the stack to unwind, which invokes each of the callbacks and
             # exits it has collected.
         self.logout()
+        datastore_services.delete_multi(
+            datastore_services.query_everything().iter(keys_only=True))
         self.testbed.deactivate()
 
     def _get_all_queue_names(self):
@@ -2484,29 +2411,28 @@ class AppEngineTestBase(TestBase):
         """
         for task in tasks:
             if task.url == '/_ah/queue/deferred':
-                from google.appengine.ext import deferred
                 deferred.run(task.payload)
-            else:
-                # All other tasks are expected to be mapreduce ones, or
-                # Oppia-taskqueue-related ones.
-                headers = {
-                    key: python_utils.convert_to_bytes(
-                        val) for key, val in task.headers.items()
-                }
-                headers['Content-Length'] = python_utils.convert_to_bytes(
-                    len(task.payload or ''))
+                continue
 
-                app = (
-                    webtest.TestApp(main_taskqueue.app)
-                    if task.url.startswith('/task')
-                    else self.testapp)
-                response = app.post(
-                    url=python_utils.UNICODE(
-                        task.url), params=(task.payload or ''),
-                    headers=headers, expect_errors=True)
-                if response.status_code != 200:
-                    raise RuntimeError(
-                        'MapReduce task to URL %s failed' % task.url)
+            # All other tasks are expected to be mapreduce or related to the
+            # oppia-taskqueue.
+            payload = task.payload or b''
+            headers = {
+                'Content-Length': python_utils.convert_to_bytes(len(payload)),
+            }
+            headers.update(
+                (key, python_utils.convert_to_bytes(val))
+                for key, val in task.headers.items())
+
+            app = (
+                webtest.TestApp(main_taskqueue.app)
+                if task.url.startswith('/task') else self.testapp)
+            response = app.post(
+                url=python_utils.UNICODE(task.url), params=payload,
+                headers=headers, expect_errors=True)
+            if response.status_code != 200:
+                raise RuntimeError(
+                    'MapReduce task to URL %s failed' % task.url)
 
     def process_and_flush_pending_mapreduce_tasks(self, queue_name=None):
         """Runs and flushes pending mapreduce tasks. If queue_name is None, does
@@ -2522,15 +2448,13 @@ class AppEngineTestBase(TestBase):
 
         tasks = self.mapreduce_taskqueue_stub.get_filtered_tasks(
             queue_names=queue_names)
-        for queue in queue_names:
-            self.mapreduce_taskqueue_stub.FlushQueue(queue)
 
         while tasks:
+            for queue in queue_names:
+                self.mapreduce_taskqueue_stub.FlushQueue(queue)
             self._execute_mapreduce_tasks(tasks)
             tasks = self.mapreduce_taskqueue_stub.get_filtered_tasks(
                 queue_names=queue_names)
-            for queue in queue_names:
-                self.mapreduce_taskqueue_stub.FlushQueue(queue)
 
     def run_but_do_not_flush_pending_mapreduce_tasks(self):
         """"Runs but not flushes mapreduce pending tasks."""
@@ -2745,24 +2669,17 @@ class GenericEmailTestBase(GenericTestBase):
 
     emails_dict = collections.defaultdict(list)
 
-    def run(self, result=None):
-        """Adds a context swap on top of the test_utils.run() method so that
-        test classes extending GenericEmailTestBase will automatically have
-        a mailgun api key, mailgun domain name and mocked version of
-        send_email_to_recipients().
-        """
-        with self.swap(
-            email_services, 'send_email_to_recipients',
-            self._send_email_to_recipients):
-            super(EmailTestBase, self).run(result=result)
-
     def setUp(self):
         super(GenericEmailTestBase, self).setUp()
-        self._wipe_emails_dict()
-
-    def _wipe_emails_dict(self):
-        """Reset email dictionary for a new test."""
         self.emails_dict = collections.defaultdict(list)
+        self._mock_send_email_to_recipients_context = self.swap(
+            email_services, 'send_email_to_recipients',
+            self._send_email_to_recipients)
+        self._mock_send_email_to_recipients_context.__enter__()
+
+    def tearDown(self):
+        self._mock_send_email_to_recipients_context.__exit__(None, None, None)
+        super(GenericEmailTestBase, self).tearDown()
 
     def _send_email_to_recipients(
             self, sender_email, recipient_emails, subject, plaintext_body,
@@ -2800,16 +2717,12 @@ class GenericEmailTestBase(GenericTestBase):
         Returns:
             bool. Whether the emails are sent successfully.
         """
-        bcc_emails = None
-
-        if bcc:
-            bcc_emails = bcc[0] if len(bcc) == 1 else bcc
+        bcc_emails = bcc and (bcc[0] if len(bcc) == 1 else bcc)
 
         new_email = EmailMessageMock(
             sender_email, recipient_emails, subject, plaintext_body, html_body,
-            bcc=bcc_emails, reply_to=(reply_to if reply_to else None),
-            recipient_variables=(
-                recipient_variables if (recipient_variables) else None))
+            bcc=bcc_emails, reply_to=reply_to,
+            recipient_variables=recipient_variables)
         for recipient_email in recipient_emails:
             self.emails_dict[recipient_email].append(new_email)
         return True
@@ -2943,7 +2856,7 @@ class FailingFunction(FunctionWrapper):
     exception. It can be set to succeed after a given number of calls.
     """
 
-    INFINITY = 'infinity'
+    INFINITY = object()
 
     def __init__(self, f, exception, num_tries_before_success):
         """Create a new Failing function.
@@ -2959,11 +2872,10 @@ class FailingFunction(FunctionWrapper):
         super(FailingFunction, self).__init__(f)
         self._exception = exception
         self._num_tries_before_success = num_tries_before_success
-        self._always_fail = (
-            self._num_tries_before_success == FailingFunction.INFINITY)
+        self._always_fail = num_tries_before_success == self.INFINITY
         self._times_called = 0
 
-        if not (self._num_tries_before_success >= 0 or self._always_fail):
+        if self._num_tries_before_success < 0 and not self._always_fail:
             raise ValueError(
                 'num_tries_before_success should either be an '
                 'integer greater than or equal to 0, '
@@ -2978,7 +2890,6 @@ class FailingFunction(FunctionWrapper):
             args: list(*). Set of arguments this function accepts.
         """
         self._times_called += 1
-        call_should_fail = (
-            self._num_tries_before_success >= self._times_called)
-        if call_should_fail or self._always_fail:
+        call_should_fail = self._num_tries_before_success < self._times_called
+        if self._always_fail or call_should_fail:
             raise self._exception

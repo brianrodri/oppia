@@ -71,6 +71,7 @@ def main(args=None):
     delete_file('tsc_output_log.txt')
     delete_file('dev_output.txt')
     delete_file('.viminfo')
+    delete_directory_tree('.config/')
 
     for filename in os.listdir(CURR_DIR):
         if filename.startswith('tmpcompiledjs'):

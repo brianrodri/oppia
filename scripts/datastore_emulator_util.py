@@ -38,6 +38,8 @@ def emulator_context():
         os.makedirs(common.DATASTORE_EMULATOR_DATA_DIR)
 
     with contextlib2.ExitStack() as exit_stack:
+        devnull = exit_stack.enter_context(open(os.devnull, 'w'))
+
         emulator_host_port = '%s:%d' % (
             feconf.DATASTORE_EMULATOR_HOST, feconf.DATASTORE_EMULATOR_PORT)
         emulator_process = subprocess.Popen(
@@ -45,7 +47,8 @@ def emulator_context():
              '--data-dir', common.DATASTORE_EMULATOR_DATA_DIR,
              '--project', feconf.OPPIA_PROJECT_ID,
              '--host-port', emulator_host_port,
-             '--no-store-on-disk', '--consistency=1.0', '--quiet'])
+             '--no-store-on-disk', '--consistency=1.0', '--quiet'],
+            stdout=devnull, stderr=devnull)
 
         @exit_stack.callback
         def tear_down_emulator_process(): # pylint: disable=unused-variable

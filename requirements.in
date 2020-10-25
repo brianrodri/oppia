@@ -11,10 +11,11 @@ contextlib2==0.6.0.post1
 future==0.18.2
 google-cloud-ndb==1.7.0
 google-cloud-tasks==1.5.0
-googleapis_common_protos==1.52.0
+googleapis_common_protos==1.6.0
 GoogleAppEngineCloudStorageClient==1.9.22.1
 GoogleAppEngineMapReduce==1.9.22.0
 GoogleAppEnginePipeline==1.9.22.1
+googledatastore>=6.0.0
 Graphy==1.0.0
 html5lib==1.0.1
 mutagen==1.43.0
@@ -24,8 +25,6 @@ pylatexenc==2.6
 redis==3.5.3
 requests-mock==1.5.2
 requests-toolbelt==0.9.1
-google-cloud-tasks==1.5.0
-googleapis_common_protos==1.52.0
 requests==2.24.0
 simplejson==3.17.0
 six==1.15.0

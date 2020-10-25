@@ -35,6 +35,7 @@ DateTimeProperty = ndb.DateTimeProperty
 FloatProperty = ndb.FloatProperty
 IntegerProperty = ndb.IntegerProperty
 JsonProperty = ndb.JsonProperty
+MetaModel = ndb.MetaModel
 StringProperty = ndb.StringProperty
 TextProperty = ndb.TextProperty
 UserProperty = ndb.UserProperty

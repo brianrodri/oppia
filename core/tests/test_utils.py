@@ -66,10 +66,12 @@ import requests_mock
 import schema_utils
 import utils
 
+from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import mail
 from google.appengine.api import urlfetch_stub
 from google.appengine.api.app_identity import app_identity_stub
+from google.appengine.datastore import cloud_datastore_v1_stub
 from google.appengine.ext import deferred
 from google.appengine.ext import testbed
 import webtest
@@ -2329,6 +2331,11 @@ class AppEngineTestBase(TestBase):
             'urlfetch', urlfetch_stub.URLFetchServiceStub())
         apiproxy_stub_map.apiproxy.RegisterStub(
             'app_identity_service', app_identity_stub.AppIdentityServiceStub())
+
+        apiproxy_stub_map.apiproxy.RegisterStub(
+            cloud_datastore_v1_stub.SERVICE_NAME,
+            cloud_datastore_v1_stub.CloudDatastoreV1Stub(
+                feconf.OPPIA_PROJECT_ID))
 
         # Set up the app to be tested.
         self.testapp = webtest.TestApp(main.app)

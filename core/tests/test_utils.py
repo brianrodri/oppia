@@ -66,7 +66,6 @@ import schema_utils
 import utils
 
 import contextlib2
-from google.appengine.api import app_identity
 from google.appengine.api import mail
 from google.appengine.ext import deferred
 from google.appengine.ext import testbed
@@ -86,23 +85,6 @@ platform_taskqueue_services = models.Registry.import_taskqueue_services()
 # Prefix to append to all lines printed by tests to the console.
 # We are using the b' prefix as all the stdouts are in bytes.
 LOG_LINE_PREFIX = b'LOG_INFO_TEST: '
-
-
-def get_default_version_hostname():
-    """Returns the DEFAULT_VERSION_HOSTNAME value for GAE taskqueue services.
-
-    This value is not always set by testbed, see:
-    https://github.com/GoogleCloudPlatform/python-compat-runtime/issues/118#issuecomment-311952878
-
-    Returns:
-        str. The value of DEFAULT_VERSION_HOSTNAME.
-    """
-    return (
-        app_identity.get_default_version_hostname() or
-        # Try to read from environment.
-        os.environ.get('GAE_APPENGINE_HOSTNAME', None) or
-        # Otherwise, there's no choice but to return a fake value.
-        'localhost:8080')
 
 
 def get_filepath_from_filename(filename, rootdir):
@@ -607,6 +589,13 @@ class AppEngineTestBase(TestBase):
     # app_identity.get_application_id() is called during tests.
     EXPECTED_TEST_APP_ID = 'dummy-cloudsdk-project-id'
 
+    # Environment values our tests assume to have.
+    AUTH_DOMAIN = 'example.com'
+    HTTP_HOST = 'localhost'
+    SERVER_NAME = 'localhost'
+    SERVER_PORT = '8080'
+    DEFAULT_VERSION_HOSTNAME = '%s:%s' % (HTTP_HOST, SERVER_PORT)
+
     SUPER_ADMIN_EMAIL = 'tmpsuperadmin@example.com'
     SUPER_ADMIN_USERNAME = 'tmpsuperadm1n'
 
@@ -878,146 +867,146 @@ class AppEngineTestBase(TestBase):
     # If evaluating differences in YAML, conversion to dict form via
     # utils.dict_from_yaml can isolate differences quickly.
 
-    SAMPLE_YAML_CONTENT = '\n'.join([
-        'author_notes: ""',
-        'auto_tts_enabled: true',
-        'blurb: ""',
-        'category: Category',
-        'correctness_feedback_enabled: false',
-        'init_state_name: %s',
-        'language_code: en',
-        'objective: ""',
-        'param_changes: []',
-        'param_specs: {}',
-        'schema_version: %d',
-        'states:',
-        '  %s:',
-        '    classifier_model_id: null',
-        '    content:',
-        '      content_id: content',
-        '      html: ""',
-        '    interaction:',
-        '      answer_groups: []',
-        '      confirmed_unclassified_answers: []',
-        '      customization_args: {}',
-        '      default_outcome:',
-        '        dest: %s',
-        '        feedback:',
-        '          content_id: default_outcome',
-        '          html: ""',
-        '        labelled_as_correct: false',
-        '        missing_prerequisite_skill_id: null',
-        '        param_changes: []',
-        '        refresher_exploration_id: null',
-        '      hints: []',
-        '      id: null',
-        '      solution: null',
-        '    next_content_id_index: 0',
-        '    param_changes: []',
-        '    recorded_voiceovers:',
-        '      voiceovers_mapping:',
-        '        content: {}',
-        '        default_outcome: {}',
-        '    solicit_answer_details: false',
-        '    written_translations:',
-        '      translations_mapping:',
-        '        content: {}',
-        '        default_outcome: {}',
-        '  New state:',
-        '    classifier_model_id: null',
-        '    content:',
-        '      content_id: content',
-        '      html: ""',
-        '    interaction:',
-        '      answer_groups: []',
-        '      confirmed_unclassified_answers: []',
-        '      customization_args: {}',
-        '      default_outcome:',
-        '        dest: New state',
-        '        feedback:',
-        '          content_id: default_outcome',
-        '          html: ""',
-        '        labelled_as_correct: false',
-        '        missing_prerequisite_skill_id: null',
-        '        param_changes: []',
-        '        refresher_exploration_id: null',
-        '      hints: []',
-        '      id: null',
-        '      solution: null',
-        '    next_content_id_index: 0',
-        '    param_changes: []',
-        '    recorded_voiceovers:',
-        '      voiceovers_mapping:',
-        '        content: {}',
-        '        default_outcome: {}',
-        '    solicit_answer_details: false',
-        '    written_translations:',
-        '      translations_mapping:',
-        '        content: {}',
-        '        default_outcome: {}',
-        'states_schema_version: %d',
-        'tags: []',
-        'title: Title',
-    ]) % (
-        feconf.DEFAULT_INIT_STATE_NAME,
-        exp_domain.Exploration.CURRENT_EXP_SCHEMA_VERSION,
-        feconf.DEFAULT_INIT_STATE_NAME, feconf.DEFAULT_INIT_STATE_NAME,
-        feconf.CURRENT_STATE_SCHEMA_VERSION)
+    SAMPLE_YAML_CONTENT = (
+        """author_notes: ''
+auto_tts_enabled: true
+blurb: ''
+category: Category
+correctness_feedback_enabled: false
+init_state_name: %s
+language_code: en
+objective: ''
+param_changes: []
+param_specs: {}
+schema_version: %d
+states:
+  %s:
+    classifier_model_id: null
+    content:
+      content_id: content
+      html: ''
+    interaction:
+      answer_groups: []
+      confirmed_unclassified_answers: []
+      customization_args: {}
+      default_outcome:
+        dest: %s
+        feedback:
+          content_id: default_outcome
+          html: ''
+        labelled_as_correct: false
+        missing_prerequisite_skill_id: null
+        param_changes: []
+        refresher_exploration_id: null
+      hints: []
+      id: null
+      solution: null
+    next_content_id_index: 0
+    param_changes: []
+    recorded_voiceovers:
+      voiceovers_mapping:
+        content: {}
+        default_outcome: {}
+    solicit_answer_details: false
+    written_translations:
+      translations_mapping:
+        content: {}
+        default_outcome: {}
+  New state:
+    classifier_model_id: null
+    content:
+      content_id: content
+      html: ''
+    interaction:
+      answer_groups: []
+      confirmed_unclassified_answers: []
+      customization_args: {}
+      default_outcome:
+        dest: New state
+        feedback:
+          content_id: default_outcome
+          html: ''
+        labelled_as_correct: false
+        missing_prerequisite_skill_id: null
+        param_changes: []
+        refresher_exploration_id: null
+      hints: []
+      id: null
+      solution: null
+    next_content_id_index: 0
+    param_changes: []
+    recorded_voiceovers:
+      voiceovers_mapping:
+        content: {}
+        default_outcome: {}
+    solicit_answer_details: false
+    written_translations:
+      translations_mapping:
+        content: {}
+        default_outcome: {}
+states_schema_version: %d
+tags: []
+title: Title
+""") % (
+    feconf.DEFAULT_INIT_STATE_NAME,
+    exp_domain.Exploration.CURRENT_EXP_SCHEMA_VERSION,
+    feconf.DEFAULT_INIT_STATE_NAME, feconf.DEFAULT_INIT_STATE_NAME,
+    feconf.CURRENT_STATE_SCHEMA_VERSION)
 
-    SAMPLE_UNTITLED_YAML_CONTENT = '\n'.join([
-        'author_notes: ""',
-        'blurb: ""',
-        'default_skin: conversation_v1',
-        'init_state_name: %s',
-        'language_code: en',
-        'objective: ""',
-        'param_changes: []',
-        'param_specs: {}',
-        'schema_version: %d',
-        'states:',
-        '  %s:',
-        '    content:',
-        '    - type: text',
-        '      value: ""',
-        '    interaction:',
-        '      answer_groups: []',
-        '      confirmed_unclassified_answers: []',
-        '      customization_args: {}',
-        '      default_outcome:',
-        '        dest: %s',
-        '        feedback: []',
-        '        labelled_as_correct: false',
-        '        missing_prerequisite_skill_id: null',
-        '        param_changes: []',
-        '        refresher_exploration_id: null',
-        '      fallbacks: []',
-        '      id: null',
-        '    param_changes: []',
-        '  New state:',
-        '    content:',
-        '    - type: text',
-        '      value: ""',
-        '    interaction:',
-        '      answer_groups: []',
-        '      confirmed_unclassified_answers: []',
-        '      customization_args: {}',
-        '      default_outcome:',
-        '        dest: New state',
-        '        feedback: []',
-        '        labelled_as_correct: false',
-        '        missing_prerequisite_skill_id: null',
-        '        param_changes: []',
-        '        refresher_exploration_id: null',
-        '      fallbacks: []',
-        '      id: null',
-        '    param_changes: []',
-        'states_schema_version: %d',
-        'tags: []',
-    ]) % (
-        feconf.DEFAULT_INIT_STATE_NAME,
-        exp_domain.Exploration.LAST_UNTITLED_SCHEMA_VERSION,
-        feconf.DEFAULT_INIT_STATE_NAME, feconf.DEFAULT_INIT_STATE_NAME,
-        feconf.CURRENT_STATE_SCHEMA_VERSION)
+    SAMPLE_UNTITLED_YAML_CONTENT = (
+        """author_notes: ''
+blurb: ''
+default_skin: conversation_v1
+init_state_name: %s
+language_code: en
+objective: ''
+param_changes: []
+param_specs: {}
+schema_version: %d
+states:
+  %s:
+    content:
+    - type: text
+      value: ''
+    interaction:
+      answer_groups: []
+      confirmed_unclassified_answers: []
+      customization_args: {}
+      default_outcome:
+        dest: %s
+        feedback: []
+        labelled_as_correct: false
+        missing_prerequisite_skill_id: null
+        param_changes: []
+        refresher_exploration_id: null
+      fallbacks: []
+      id: null
+    param_changes: []
+  New state:
+    content:
+    - type: text
+      value: ''
+    interaction:
+      answer_groups: []
+      confirmed_unclassified_answers: []
+      customization_args: {}
+      default_outcome:
+        dest: New state
+        feedback: []
+        labelled_as_correct: false
+        missing_prerequisite_skill_id: null
+        param_changes: []
+        refresher_exploration_id: null
+      fallbacks: []
+      id: null
+    param_changes: []
+states_schema_version: %d
+tags: []
+""") % (
+    feconf.DEFAULT_INIT_STATE_NAME,
+    exp_domain.Exploration.LAST_UNTITLED_SCHEMA_VERSION,
+    feconf.DEFAULT_INIT_STATE_NAME, feconf.DEFAULT_INIT_STATE_NAME,
+    feconf.CURRENT_STATE_SCHEMA_VERSION)
 
     def __init__(self, *args, **kwargs):
         super(AppEngineTestBase, self).__init__(*args, **kwargs)
@@ -1069,14 +1058,20 @@ class AppEngineTestBase(TestBase):
         self.testbed = testbed.Testbed()
         self.testbed.activate(use_datastore_emulator=True)
 
+        self.testbed.setup_env(
+            overwrite=True, auth_domain=self.AUTH_DOMAIN,
+            http_host=self.HTTP_HOST, server_name=self.SERVER_NAME,
+            server_port=self.SERVER_PORT,
+            default_version_hostname=self.DEFAULT_VERSION_HOSTNAME)
+
         # Declare any relevant App Engine service stubs here.
-        self.testbed.init_user_stub()
         self.testbed.init_app_identity_stub()
-        self.testbed.init_memcache_stub()
         self.testbed.init_blobstore_stub()
-        self.testbed.init_urlfetch_stub()
         self.testbed.init_files_stub()
+        self.testbed.init_memcache_stub()
         self.testbed.init_search_stub()
+        self.testbed.init_urlfetch_stub()
+        self.testbed.init_user_stub()
 
         policy = (
             datastore_services.make_instantaneous_global_consistency_policy())
@@ -1091,10 +1086,6 @@ class AppEngineTestBase(TestBase):
         self.testapp = webtest.TestApp(main.app)
         self.taskqueue_testapp = webtest.TestApp(main_taskqueue.app)
         self.mail_testapp = webtest.TestApp(main_mail.app)
-
-        self.testbed.setup_env(
-            overwrite=True,
-            default_version_hostname=get_default_version_hostname())
 
         self.signup_superadmin_user()
 
@@ -1138,9 +1129,17 @@ class AppEngineTestBase(TestBase):
         finally:
             self.logout()
 
-    def superadmin_context(self):
-        """Log in as a global admin under the context of a 'with' statement."""
-        return self.login_context(self.SUPER_ADMIN_EMAIL, is_super_admin=True)
+    @contextlib.contextmanager
+    def super_admin_context(self):
+        """Log in as a global admin under the context of a 'with' statement.
+
+        Yields:
+            str. The id of the user associated to the given email, who is now
+            'logged in'.
+        """
+        email = self.SUPER_ADMIN_EMAIL
+        with self.login_context(email, is_super_admin=True) as user_id:
+            yield user_id
 
     def signup(self, email, username):
         """Complete the signup process for the user with the given username.
@@ -1174,7 +1173,7 @@ class AppEngineTestBase(TestBase):
         """Sets a given configuration object's value to the new value specified
         using a POST request.
         """
-        with self.superadmin_context():
+        with self.super_admin_context():
             self.post_json('/adminhandler', {
                 'action': 'save_config_properties',
                 'new_config_property_values': {
@@ -1189,7 +1188,7 @@ class AppEngineTestBase(TestBase):
             username: str. Username of the given user.
             user_role: str. Role of the given user.
         """
-        with self.superadmin_context():
+        with self.super_admin_context():
             self.post_json('/adminrolehandler', {
                 'username': username,
                 'role': user_role,

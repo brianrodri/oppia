@@ -409,36 +409,8 @@ class TestBase(unittest.TestCase):
         Yields:
             None. Empty yield statement.
         """
-        if not isinstance(mocked_datetime, datetime.datetime):
-            raise utils.ValidationError(
-                'Expected mocked_datetime to be datetime.datetime, got %s' % (
-                    type(mocked_datetime)))
-
-        original_datetime_type = datetime.datetime
-
-        class MockDatetimeType(type):
-            """Validates the datetime instances."""
-
-            def __instancecheck__(cls, other):
-                """Validates whether the given instance is datetime instance."""
-                return isinstance(other, original_datetime_type)
-
-        mock_datetime_type = (
-            python_utils.with_metaclass(MockDatetimeType, datetime.datetime))
-
-        class MockDatetime(mock_datetime_type): # pylint: disable=inherit-non-class
-            @classmethod
-            def utcnow(cls):
-                """Returns the mocked datetime."""
-
-                return mocked_datetime
-
-        setattr(datetime, 'datetime', MockDatetime)
-
-        try:
+        with datastore_services.mocked_datetime_utcnow(mocked_datetime):
             yield
-        finally:
-            setattr(datetime, 'datetime', original_datetime_type)
 
     @contextlib.contextmanager
     def swap(self, obj, attr, newvalue):

@@ -408,7 +408,7 @@ class TestBase(unittest.TestCase):
         Yields:
             None. Empty yield statement.
         """
-        with datastore_services.mocked_datetime_utcnow(mocked_datetime):
+        with datastore_services.mock_datetime_for_datastore(mocked_datetime):
             yield
 
     @contextlib.contextmanager

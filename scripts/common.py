@@ -114,6 +114,8 @@ REDIS_SERVER_PATH = os.path.join(
 REDIS_CLI_PATH = os.path.join(
     OPPIA_TOOLS_DIR, 'redis-cli-%s' % REDIS_CLI_VERSION,
     'src', 'redis-cli')
+DATASTORE_EMULATOR_DATA_DIR = (
+    os.path.join(CURR_DIR, '.config', 'gcloud', 'emulators', 'datastore'))
 
 RELEASE_BRANCH_REGEX = r'release-(\d+\.\d+\.\d+)$'
 RELEASE_MAINTENANCE_BRANCH_REGEX = r'release-maintenance-(\d+\.\d+\.\d+)$'
@@ -138,6 +140,14 @@ COMPILED_REQUIREMENTS_FILE_PATH = os.path.join(CURR_DIR, 'requirements.txt')
 # "requirements.txt" file so that all installations using "requirements.txt"
 # will be identical.
 REQUIREMENTS_FILE_PATH = os.path.join(CURR_DIR, 'requirements.in')
+
+PIP_REQUIREMENT_RE = re.compile(
+    r'(?P<library_name>[\w\.-]*(\[.*?\])?)==(?P<version>\S*)')
+# Pip can interpret requirements that refer to specific GitHub repositories. We
+# take advantage of this to install our patched libraries.
+# For details, see: https://pip.pypa.io/en/stable/reference/pip_install/#git.
+GIT_REQUIREMENT_RE = re.compile(
+    r'git\+https://.*@v(?P<version>.*)#egg=(?P<library_name>[\w\.-]*)')
 
 
 def is_windows_os():

@@ -664,46 +664,6 @@ def inplace_replace_file(filename, regex_pattern, replacement_string):
         raise
 
 
-def start_redis_server():
-    """Start the redis server with the daemonize argument to prevent
-    the redis-server from exiting on its own.
-    """
-    if is_windows_os():
-        raise Exception(
-            'The redis command line interface is not installed because your '
-            'machine is on the Windows operating system. The redis server '
-            'cannot start.')
-
-    # Check if a redis dump file currently exists. This file contains residual
-    # data from a previous run of the redis server. If it exists, removes the
-    # dump file so that the redis server starts with a clean slate.
-    if os.path.exists(REDIS_DUMP_PATH):
-        os.remove(REDIS_DUMP_PATH)
-
-    # Redis-cli is only required in a development environment.
-    python_utils.PRINT('Starting Redis development server.')
-    # Start the redis local development server. Redis doesn't run on
-    # Windows machines.
-    subprocess.call([
-        REDIS_SERVER_PATH, REDIS_CONF_PATH,
-        '--daemonize', 'yes'
-    ])
-    wait_for_port_to_be_open(feconf.REDISPORT)
-
-
-def stop_redis_server():
-    """Stops the redis server by shutting it down."""
-    if is_windows_os():
-        raise Exception(
-            'The redis command line interface is not installed because your '
-            'machine is on the Windows operating system. There is no redis '
-            'server to shutdown.')
-
-    python_utils.PRINT('Cleaning up the redis_servers.')
-    # Shutdown the redis server before exiting.
-    subprocess.call([REDIS_CLI_PATH, 'shutdown'])
-
-
 def fix_third_party_imports():
     """Sets up up the environment variables and corrects the system paths so
     that the backend tests and imports work correctly.
@@ -813,10 +773,9 @@ def managed_redis_server():
     if os.path.exists(REDIS_DUMP_PATH):
         os.remove(REDIS_DUMP_PATH)
 
-    server_args = [REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'yes']
-    with managed_process(server_args, shell=True) as server_proc:
-        try:
-            yield server_proc
-        finally:
-            subprocess.call([REDIS_CLI_PATH, 'shutdown'])
-            server_proc.wait()
+    subprocess.call([REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'yes'])
+    wait_for_port_to_be_open(feconf.REDISPORT)
+    try:
+        yield
+    finally:
+        subprocess.call([REDIS_CLI_PATH, 'shutdown'])

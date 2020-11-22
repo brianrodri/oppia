@@ -143,7 +143,6 @@ def main(args=None):
 
         python_utils.PRINT('Starting Redis development server...')
         server_stack.enter_context(common.managed_redis_server())
-        common.wait_for_port_to_be_open(feconf.REDISPORT)
 
         python_utils.PRINT('Starting GAE development server...')
         dev_appserver_path = os.path.join(

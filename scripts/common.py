@@ -22,11 +22,12 @@ import getpass
 import os
 import platform
 import re
+import select
 import shutil
 import socket
 import subprocess
 import sys
-import time
+import threading
 
 import constants
 import feconf
@@ -119,6 +120,7 @@ RELEASE_BRANCH_REGEX = r'release-(\d+\.\d+\.\d+)$'
 RELEASE_MAINTENANCE_BRANCH_REGEX = r'release-maintenance-(\d+\.\d+\.\d+)$'
 HOTFIX_BRANCH_REGEX = r'release-(\d+\.\d+\.\d+)-hotfix-[1-9]+$'
 TEST_BRANCH_REGEX = r'test-[A-Za-z0-9-]*$'
+VIRTUALBOX_REGEX = re.compile('.*VBOX.*')
 USER_PREFERENCES = {'open_new_tab_in_browser': None}
 
 FECONF_PATH = os.path.join('feconf.py')
@@ -155,6 +157,13 @@ def is_linux_os():
     return OS_NAME == 'Linux'
 
 
+def is_virtualbox_os():
+    """Check if the running system is under a virtualbox environment."""
+    return (
+        is_linux_os() and
+        any(VIRTUALBOX_REGEX.match(d) for d in os.listdir('/dev/disk/by-id/')))
+
+
 def is_x64_architecture():
     """Check if the architecture is on X64."""
     # https://docs.python.org/2/library/platform.html#platform.architecture
@@ -181,6 +190,25 @@ def run_cmd(cmd_tokens):
         str. The output of the command.
     """
     return subprocess.check_output(cmd_tokens).strip()
+
+
+def make_browser_context_to_port(port_number):
+    """Returns an un-entered context manager for navigating to the given port.
+
+    Args:
+        port_number: int. The port number to open. Host is assumed to be
+            localhost.
+
+    Returns:
+        context manager or None. If the browser can be opened, returns a context
+        manager for opening and closing it. Otherwise, return None.
+    """
+    host = 'http://localhost:%d/' % port_number
+    if is_linux_os() and not is_virtualbox_os():
+        return managed_process(['xdg-open', host])
+    elif is_mac_os():
+        return managed_process(['open', host])
+    return None
 
 
 def ensure_directory_exists(d):
@@ -352,18 +380,47 @@ def verify_current_branch_name(expected_branch_name):
             expected_branch_name)
 
 
-def is_port_open(port):
+def is_port_open(port_number):
     """Checks if a process is listening to the port.
 
     Args:
-        port: int. The port number.
+        port_number: int. The port number.
 
     Returns:
         bool. True if port is open else False.
     """
-    with contextlib.closing(
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        return bool(not s.connect_ex(('localhost', port)))
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    with contextlib.closing(sock):
+        return sock.connect_ex(('localhost', port_number)) == 0
+
+
+def wait_for_port_to_be_open(
+        port_number, timeout=MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
+    """Wait until the port is open and exit if port isn't open after a timeout.
+
+    Args:
+        port_number: int. The port number to wait.
+        timeout: int. Number of seconds to wait for the port.
+
+    Raises:
+        IOError: The port didn't accept a connection before the timeout expired.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    with contextlib.closing(sock):
+        sock.setblocking(0)
+        sock.connect_ex(('localhost', port_number))
+        _, writable_list, _ = select.select([], [sock], [], timeout)
+    if not writable_list:
+        raise IOError('Failed to find server on port %d' % port_number)
+
+
+def wait_for_port_to_close(port_number):
+    """Wait until the port is closed."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    with contextlib.closing(sock):
+        sock.setblocking(0)
+        sock.connect_ex(('localhost', port_number))
+        select.select([], [], [sock])
 
 
 def recursive_chown(path, uid, gid):
@@ -406,6 +463,14 @@ def print_each_string_after_two_new_lines(strings):
     """
     for string in strings:
         python_utils.PRINT('%s\n' % string)
+
+
+def print_warning_message(message):
+    """Prints the given message with a warning-emphasized color."""
+    # \033[1m is the ANSI escape sequences for bold text.
+    # \033[93m is the ANSI escape sequences for the yellow color.
+    # \033[0m is the ANSI escape sequences for resetting formatting.
+    python_utils.PRINT('\033[1m\033[93m%s\033[0m' % message)
 
 
 def install_npm_library(library_name, version, path):
@@ -600,26 +665,6 @@ def inplace_replace_file(filename, regex_pattern, replacement_string):
         raise
 
 
-def wait_for_port_to_be_open(port_number):
-    """Wait until the port is open and exit if port isn't open after
-    1000 seconds.
-
-    Args:
-        port_number: int. The port number to wait.
-    """
-    waited_seconds = 0
-    while (not is_port_open(port_number)
-           and waited_seconds < MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
-        time.sleep(1)
-        waited_seconds += 1
-    if (waited_seconds == MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS
-            and not is_port_open(port_number)):
-        python_utils.PRINT(
-            'Failed to start server on port %s, exiting ...' %
-            port_number)
-        sys.exit(1)
-
-
 def start_redis_server():
     """Start the redis server with the daemonize argument to prevent
     the redis-server from exiting on its own.
@@ -707,3 +752,74 @@ class CD(python_utils.OBJECT):
 
     def __exit__(self, etype, value, traceback):
         os.chdir(self.saved_path)
+
+
+@contextlib.contextmanager
+def managed_process(args, shell=False, **kwargs):
+    """Context manager for starting and stopping a process gracefully.
+
+    Args:
+        args: list(*). A sequence of program arguments. The program to execute
+            is the first item. Every item is converted to a string before usage.
+        shell: bool. Whether the command should be run inside of its own shell.
+        **kwargs: Same as `subprocess.Popen`.
+    """
+    if PSUTIL_DIR not in sys.path:
+        sys.path.insert(1, PSUTIL_DIR)
+    import psutil
+
+    str_args = (python_utils.UNICODE(a).strip() for a in args)
+    nonempty_args = (a for a in str_args if a)
+    popen_args = ' '.join(nonempty_args) if shell else list(nonempty_args)
+
+    root_proc = psutil.Popen(popen_args, shell=shell, **kwargs)
+
+    try:
+        yield root_proc
+    finally:
+        # If the process doesn't need to be terminated, return immediately.
+        if not root_proc.is_running():
+            return
+
+        # Terminate the children first to prevent them from becoming zombies.
+        child_procs = root_proc.children(recursive=True)
+        for proc in child_procs:
+            proc.terminate()
+
+        # If any children are still running after 5 seconds, kill them instead.
+        _, procs_still_running = psutil.wait_procs(child_procs, timeout=5)
+        for proc in procs_still_running:
+            proc.kill()
+
+        # Now, the root process can be safely terminated.
+        root_proc.terminate()
+        try:
+            # The process is given 5 seconds to terminate gracefully.
+            root_proc.wait(timeout=5)
+        except psutil.TimeoutExpired:
+            # Otherwise, it is killed.
+            root_proc.kill()
+
+
+@contextlib.contextmanager
+def managed_redis_server():
+    """Context manager for starting and stopping a daemonized redis server."""
+    if is_windows_os():
+        raise Exception(
+            'The redis command line interface is not installed because your '
+            'machine is on the Windows operating system. The redis server '
+            'cannot start.')
+
+    # Delete the redis dump file if it exists. It contains residual data from
+    # previous runs of the server; deleting it ensures the server begins in a
+    # pristine state.
+    if os.path.exists(REDIS_DUMP_PATH):
+        os.remove(REDIS_DUMP_PATH)
+
+    server_args = [REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'yes']
+    with managed_process(server_args, shell=True) as server_proc:
+        try:
+            yield
+        finally:
+            subprocess.call([REDIS_CLI_PATH, 'shutdown'])
+            server_proc.wait()

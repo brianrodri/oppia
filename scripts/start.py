@@ -22,7 +22,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import argparse
 import os
-import re
 import time
 
 from . import install_third_party_libs
@@ -30,11 +29,11 @@ from . import install_third_party_libs
 # libraries that use the builtins python module (e.g. build, python_utils).
 install_third_party_libs.main()
 
-import contextlib2
+import contextlib2 # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
 from . import build # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 from . import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
-import feconf
+import feconf # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 import python_utils # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
 _PARSER = argparse.ArgumentParser(

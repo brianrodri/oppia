@@ -27,7 +27,6 @@ import shutil
 import socket
 import subprocess
 import sys
-import threading
 
 import constants
 import feconf
@@ -403,7 +402,7 @@ def wait_for_port_to_be_open(
         timeout: int. Number of seconds to wait for the port.
 
     Raises:
-        IOError: The port didn't accept a connection before the timeout expired.
+        IOError. The port didn't accept a connection before the timeout expired.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     with contextlib.closing(sock):
@@ -762,7 +761,10 @@ def managed_process(args, shell=False, **kwargs):
         args: list(*). A sequence of program arguments. The program to execute
             is the first item. Every item is converted to a string before usage.
         shell: bool. Whether the command should be run inside of its own shell.
-        **kwargs: Same as `subprocess.Popen`.
+        **kwargs: dict(str: *). Same as `subprocess.Popen`.
+
+    Yields:
+        psutil.Process. The process managed by the context manager.
     """
     if PSUTIL_DIR not in sys.path:
         sys.path.insert(1, PSUTIL_DIR)
@@ -772,33 +774,28 @@ def managed_process(args, shell=False, **kwargs):
     nonempty_args = (a for a in str_args if a)
     popen_args = ' '.join(nonempty_args) if shell else list(nonempty_args)
 
-    root_proc = psutil.Popen(popen_args, shell=shell, **kwargs)
+    parent_proc = psutil.Popen(popen_args, shell=shell, **kwargs)
 
     try:
-        yield root_proc
+        yield parent_proc
     finally:
-        # If the process doesn't need to be terminated, return immediately.
-        if not root_proc.is_running():
-            return
+        if parent_proc.is_running():
+            # Terminate the child processes first, because terminating a parent
+            # process does not guarantee its decendants will be terminated too.
+            # https://stackoverflow.com/a/27034438/4859885.
+            child_procs = parent_proc.children(recursive=True)
+            for proc in child_procs:
+                proc.terminate()
 
-        # Terminate the children first to prevent them from becoming zombies.
-        child_procs = root_proc.children(recursive=True)
-        for proc in child_procs:
-            proc.terminate()
+            _, procs_still_running = psutil.wait_procs(child_procs, timeout=5)
+            for proc in procs_still_running:
+                proc.kill()
 
-        # If any children are still running after 5 seconds, kill them instead.
-        _, procs_still_running = psutil.wait_procs(child_procs, timeout=5)
-        for proc in procs_still_running:
-            proc.kill()
-
-        # Now, the root process can be safely terminated.
-        root_proc.terminate()
-        try:
-            # The process is given 5 seconds to terminate gracefully.
-            root_proc.wait(timeout=5)
-        except psutil.TimeoutExpired:
-            # Otherwise, it is killed.
-            root_proc.kill()
+            parent_proc.terminate()
+            try:
+                parent_proc.wait(timeout=5)
+            except psutil.TimeoutExpired:
+                parent_proc.kill()
 
 
 @contextlib.contextmanager
@@ -819,7 +816,7 @@ def managed_redis_server():
     server_args = [REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'yes']
     with managed_process(server_args, shell=True) as server_proc:
         try:
-            yield
+            yield server_proc
         finally:
             subprocess.call([REDIS_CLI_PATH, 'shutdown'])
             server_proc.wait()

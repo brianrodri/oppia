@@ -554,6 +554,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             sock.bind(('localhost', 0))
             sock.listen(1)
             _, port_number = sock.getsockname()
+            # Close port before waiting for it.
+
         with self.assertRaisesRegexp(IOError, 'Failed to find server'):
             common.wait_for_port_to_be_open(port_number, timeout=5)
 

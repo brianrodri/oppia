@@ -370,7 +370,7 @@ def is_port_open(port):
 
 def wait_for_port_to_be_open(
         port_number, timeout=MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
-    """Wait until the port is open and exit if port isn't open after a timeout.
+    """Wait until the port is open before the timeout expires.
 
     Args:
         port_number: int. The port number to wait.

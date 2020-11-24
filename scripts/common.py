@@ -22,6 +22,7 @@ import getpass
 import os
 import platform
 import re
+import select
 import shutil
 import socket
 import subprocess
@@ -363,9 +364,27 @@ def is_port_open(port):
     Returns:
         bool. True if port is open else False.
     """
-    with contextlib.closing(
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        return bool(not s.connect_ex(('localhost', port)))
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    with contextlib.closing(sock):
+        return sock.connect_ex(('localhost', port)) == 0
+
+
+def wait_for_port_to_be_open(
+        port_number, timeout=MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
+    """Wait until the port is open and exit if port isn't open after a timeout.
+    Args:
+        port_number: int. The port number to wait.
+        timeout: int. Number of seconds to wait for the port.
+    Raises:
+        IOError. The port didn't accept a connection before the timeout expired.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    with contextlib.closing(sock):
+        sock.setblocking(0)
+        sock.connect_ex(('localhost', port_number))
+        _, writable_list, _ = select.select([], [sock], [], timeout)
+    if not writable_list:
+        raise IOError('Failed to find server on port %d' % port_number)
 
 
 def recursive_chown(path, uid, gid):
@@ -600,26 +619,6 @@ def inplace_replace_file(filename, regex_pattern, replacement_string):
         os.remove(filename)
         shutil.move(backup_filename, filename)
         raise
-
-
-def wait_for_port_to_be_open(port_number):
-    """Wait until the port is open and exit if port isn't open after
-    1000 seconds.
-
-    Args:
-        port_number: int. The port number to wait.
-    """
-    waited_seconds = 0
-    while (not is_port_open(port_number)
-           and waited_seconds < MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
-        time.sleep(1)
-        waited_seconds += 1
-    if (waited_seconds == MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS
-            and not is_port_open(port_number)):
-        python_utils.PRINT(
-            'Failed to start server on port %s, exiting ...' %
-            port_number)
-        sys.exit(1)
 
 
 def start_redis_server():

@@ -383,6 +383,7 @@ def wait_for_port_to_be_open(
     with contextlib.closing(sock):
         sock.setblocking(0)
         sock.connect_ex(('localhost', port_number))
+        # Block efficiently until the socket can be connected to.
         _, writable_list, _ = select.select([], [sock], [], timeout)
     if not writable_list:
         raise IOError('Failed to find server on port %d' % port_number)

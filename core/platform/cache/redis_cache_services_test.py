@@ -33,13 +33,13 @@ class RedisCacheServicesUnitTests(test_utils.TestBase):
 
     @classmethod
     def setUpClass(cls):
-        common.start_redis_server()
         super(RedisCacheServicesUnitTests, cls).setUpClass()
+        common.start_redis_server()
 
     @classmethod
     def tearDownClass(cls):
-        super(RedisCacheServicesUnitTests, cls).tearDownClass()
         common.stop_redis_server()
+        super(RedisCacheServicesUnitTests, cls).tearDownClass()
 
     def test_memory_stats_returns_dict(self):
         memory_stats = redis_cache_services.get_memory_cache_stats()

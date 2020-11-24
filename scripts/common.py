@@ -16,6 +16,7 @@
 
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
+from __future__ import print_function
 
 import contextlib
 import getpass
@@ -383,10 +384,13 @@ def wait_for_port_to_be_open(
     with contextlib.closing(sock):
         sock.setblocking(0)
         sock.connect_ex(('localhost', port_number))
-        # Block efficiently until the socket can be connected to.
+        # Block efficiently until the socket is ready for connection.
         _, writable_list, _ = select.select([], [sock], [], timeout)
     if not writable_list:
         raise IOError('Failed to find server on port %d' % port_number)
+    # Ensure a connection can actually be made before returning.
+    while not is_port_open(port_number):
+        continue
 
 
 def recursive_chown(path, uid, gid):

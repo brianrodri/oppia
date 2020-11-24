@@ -548,8 +548,14 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 common.wait_for_port_to_be_open(port_number)
 
     def test_wait_for_port_to_be_open_when_port_failed_to_open(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        with contextlib.closing(sock):
+            # If port is 0, OS acquires an unused port for the socket.
+            sock.bind(('localhost', 0))
+            sock.listen(1)
+            _, port_number = sock.getsockname()
         with self.assertRaisesRegexp(IOError, 'Failed to find server'):
-            common.wait_for_port_to_be_open(1)
+            common.wait_for_port_to_be_open(port_number, timeout=5)
 
     def test_run_webpack_compilation_success(self):
         def mock_isdir(unused_dirname):

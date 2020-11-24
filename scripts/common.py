@@ -385,8 +385,9 @@ def wait_for_port_to_be_open(
         sock.setblocking(0)
         sock.connect_ex(('localhost', port_number))
         # Block efficiently until the socket is ready for connection.
-        if not any(select.select([], [sock], [], timeout)):
-            raise IOError('Failed to find server on port %d' % port_number)
+        _, writables, errors = select.select([], [sock], [sock], timeout)
+    if not writables or errors or not is_port_open(port_number):
+        raise IOError('Failed to find server on port %d' % port_number)
 
 
 def recursive_chown(path, uid, gid):

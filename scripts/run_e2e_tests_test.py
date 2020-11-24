@@ -541,7 +541,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         with contextlib.closing(sock):
             # If port is 0, OS acquires an unused port for the socket.
             sock.bind(('localhost', 0))
-            sock.listen(1)
+            sock.listen(2)
             _, port_number = sock.getsockname()
 
             with common.managed_thread(target=sock.accept):
@@ -552,7 +552,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         with contextlib.closing(sock):
             # If port is 0, OS acquires an unused port for the socket.
             sock.bind(('localhost', 0))
-            sock.listen(1)
+            sock.listen(2)
             _, port_number = sock.getsockname()
             # Close port before waiting for it.
 

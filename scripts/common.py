@@ -141,14 +141,6 @@ COMPILED_REQUIREMENTS_FILE_PATH = os.path.join(CURR_DIR, 'requirements.txt')
 # will be identical.
 REQUIREMENTS_FILE_PATH = os.path.join(CURR_DIR, 'requirements.in')
 
-PIP_REQUIREMENT_RE = re.compile(
-    r'(?P<library_name>[\w\.-]*(\[.*?\])?)==(?P<version>\S*)')
-# Pip can interpret requirements that refer to specific GitHub repositories. We
-# take advantage of this to install our patched libraries.
-# For details, see: https://pip.pypa.io/en/stable/reference/pip_install/#git.
-GIT_REQUIREMENT_RE = re.compile(
-    r'git\+https://.*@v(?P<version>.*)#egg=(?P<library_name>[\w\.-]*)')
-
 
 def is_windows_os():
     """Check if the running system is Windows."""
@@ -766,11 +758,11 @@ def managed_process(args, shell=False, **kwargs):
 
 def managed_datastore_emulator():
     """Sets up the Google Cloud Datastore emulator and returns an ExitStack to
-    tear it down upon exiting the stack's context.
+    tear it down upon exiting its context.
 
     Returns:
-        ExitStack. An unentered exit stack that cleans up the datastore emulator
-        and the environment after it's context is exited.
+        ExitStack. An un-entered ExitStack that cleans up the datastore emulator
+        and environment upon exiting its context.
     """
     import contextlib2
 

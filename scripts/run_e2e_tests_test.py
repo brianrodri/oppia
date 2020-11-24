@@ -26,7 +26,6 @@ import signal
 import socket
 import subprocess
 import sys
-import threading
 import types
 
 from core.tests import test_utils

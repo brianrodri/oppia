@@ -27,6 +27,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 
 import constants
 import feconf
@@ -713,6 +714,17 @@ class CD(python_utils.OBJECT):
 
     def __exit__(self, etype, value, traceback):
         os.chdir(self.saved_path)
+
+
+@contextlib.contextmanager
+def managed_thread(**kwargs):
+    """Context manager for starting and joining a thread."""
+    thread = threading.Thread(**kwargs)
+    thread.start()
+    try:
+        yield
+    finally:
+        thread.join()
 
 
 @contextlib.contextmanager

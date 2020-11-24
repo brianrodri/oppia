@@ -545,12 +545,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             sock.listen(1)
             _, port_number = sock.getsockname()
 
-            t = threading.Thread(target=sock.accept)
-            t.start()
-
-            common.wait_for_port_to_be_open(port_number)
-
-            t.join()
+            with common.managed_thread(target=sock.accept):
+                common.wait_for_port_to_be_open(port_number)
 
     def test_wait_for_port_to_be_open_when_port_failed_to_open(self):
         with self.assertRaisesRegexp(IOError, 'Failed to find server'):

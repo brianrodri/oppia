@@ -415,9 +415,6 @@ MAILGUN_DOMAIN_NAME = None
 REDISHOST = 'localhost'
 REDISPORT = 6379
 
-DATASTORE_EMULATOR_HOST = 'localhost'
-DATASTORE_EMULATOR_PORT = 8089
-
 # NOTE TO RELEASE COORDINATORS: Replace this project id with the correct oppia
 # project id when switching to the prod server.
 OPPIA_PROJECT_ID = 'dev-project-id'

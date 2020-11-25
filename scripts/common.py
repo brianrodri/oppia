@@ -390,7 +390,7 @@ def wait_for_port_to_be_open(
         sock.setblocking(0)
         if sock.connect_ex(('localhost', port_number)) == 0:
             return
-        _, writables, _ = select.select([], [sock], [])
+        _, writables, _ = select.select([], [sock], [], timeout)
     if not writables:
         raise IOError('Failed to find server on port %d' % port_number)
 

@@ -781,12 +781,14 @@ def managed_process(args, shell=False, **kwargs):
             _, procs_still_running = psutil.wait_procs(child_procs, timeout=5)
             for proc in procs_still_running:
                 proc.kill()
+                proc.wait()
 
             parent_proc.terminate()
             try:
                 parent_proc.wait(timeout=5)
             except psutil.TimeoutExpired:
                 parent_proc.kill()
+                parent_proc.wait()
 
 
 @contextlib.contextmanager

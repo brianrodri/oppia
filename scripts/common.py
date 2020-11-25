@@ -158,6 +158,13 @@ def is_linux_os():
     return OS_NAME == 'Linux'
 
 
+def is_virtualbox_os():
+    """Check if the running system is under a virtualbox environment."""
+    return (
+        is_linux_os() and
+        any(re.match('.*VBOX.*', d) for d in os.listdir('/dev/disk/by-id/')))
+
+
 def is_x64_architecture():
     """Check if the architecture is on X64."""
     # https://docs.python.org/2/library/platform.html#platform.architecture
@@ -355,23 +362,23 @@ def verify_current_branch_name(expected_branch_name):
             expected_branch_name)
 
 
-def is_port_open(port):
+def is_port_open(port_number):
     """Checks if a process is listening to the port.
 
     Args:
-        port: int. The port number.
+        port_number: int. The port number.
 
     Returns:
         bool. True if port is open else False.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     with contextlib.closing(sock):
-        return sock.connect_ex(('localhost', port)) == 0
+        return sock.connect_ex(('localhost', port_number)) == 0
 
 
 def wait_for_port_to_be_open(
         port_number, timeout=MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
-    """Wait until the port is open until the timeout expires.
+    """Wait until the port is open and exit if port isn't open after a timeout.
 
     Args:
         port_number: int. The port number to wait.
@@ -384,10 +391,18 @@ def wait_for_port_to_be_open(
     with contextlib.closing(sock):
         sock.setblocking(0)
         sock.connect_ex(('localhost', port_number))
-        # Block efficiently until the socket is ready for connection.
-        _, writables, errors = select.select([], [sock], [sock], timeout)
-    if not writables or errors or not is_port_open(port_number):
+        _, writable_list, _ = select.select([], [sock], [], timeout)
+    if not writable_list:
         raise IOError('Failed to find server on port %d' % port_number)
+
+
+def wait_for_port_to_close(port_number):
+    """Wait until the port is closed."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    with contextlib.closing(sock):
+        sock.setblocking(0)
+        sock.connect_ex(('localhost', port_number))
+        select.select([], [], [sock])
 
 
 def recursive_chown(path, uid, gid):
@@ -430,6 +445,14 @@ def print_each_string_after_two_new_lines(strings):
     """
     for string in strings:
         python_utils.PRINT('%s\n' % string)
+
+
+def print_warning_message(message):
+    """Prints the given message with a warning-emphasized color."""
+    # \033[1m is the ANSI escape sequences for bold text.
+    # \033[93m is the ANSI escape sequences for the yellow color.
+    # \033[0m is the ANSI escape sequences for resetting formatting.
+    python_utils.PRINT('\033[1m\033[93m%s\033[0m' % message)
 
 
 def install_npm_library(library_name, version, path):
@@ -767,3 +790,45 @@ def managed_process(args, shell=False, **kwargs):
                 parent_proc.wait(timeout=5)
             except psutil.TimeoutExpired:
                 parent_proc.kill()
+
+
+@contextlib.contextmanager
+def managed_redis_server():
+    """Context manager for starting and stopping a daemonized redis server."""
+    if is_windows_os():
+        raise Exception(
+            'The redis command line interface is not installed because your '
+            'machine is on the Windows operating system. The redis server '
+            'cannot start.')
+
+    # Delete the redis dump file if it exists. It contains residual data from
+    # previous runs of the server; deleting it ensures the server begins in a
+    # pristine state.
+    if os.path.exists(REDIS_DUMP_PATH):
+        os.remove(REDIS_DUMP_PATH)
+
+    subprocess.call([REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'yes'])
+    wait_for_port_to_be_open(feconf.REDISPORT)
+    try:
+        yield
+    finally:
+        subprocess.call([REDIS_CLI_PATH, 'shutdown'])
+
+
+def make_browser_context_to_port(port_number):
+    """Returns an un-entered context manager for navigating to the given port.
+
+    Args:
+        port_number: int. The port number to open. Host is assumed to be
+            localhost.
+
+    Returns:
+        context manager or None. If the browser can be opened, returns a context
+        manager for opening and closing it. Otherwise, return None.
+    """
+    target = 'http://localhost:%d/' % port_number
+    if is_linux_os() and not is_virtualbox_os():
+        return managed_process(['xdg-open', target])
+    elif is_mac_os():
+        return managed_process(['open', target])
+    return None

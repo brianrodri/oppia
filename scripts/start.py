@@ -21,10 +21,7 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import argparse
-import atexit
 import os
-import re
-import subprocess
 import time
 
 from . import install_third_party_libs
@@ -32,9 +29,10 @@ from . import install_third_party_libs
 # libraries that use the builtins python module (e.g. build, python_utils).
 install_third_party_libs.main()
 
+import contextlib2 # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
+
 from . import build # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 from . import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
-
 import python_utils # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
 _PARSER = argparse.ArgumentParser(
@@ -80,141 +78,112 @@ _PARSER.add_argument(
     action='store_true')
 _PARSER.add_argument(
     '--source_maps',
-    help=(
-        'optional; if specified, build webpack with source maps.'),
+    help='optional; if specified, build webpack with source maps.',
     action='store_true')
 
 PORT_NUMBER_FOR_GAE_SERVER = 8181
-
-
-def cleanup():
-    """Wait for the servers to go down and set constants back to default
-    values.
-    """
-    common.print_each_string_after_two_new_lines([
-        'INFORMATION',
-        'Cleaning up the servers.'])
-    while common.is_port_open(PORT_NUMBER_FOR_GAE_SERVER):
-        time.sleep(1)
-    build.set_constants_to_default()
-    common.stop_redis_server()
 
 
 def main(args=None):
     """Starts up a development server running Oppia."""
     parsed_args = _PARSER.parse_args(args=args)
 
-    # Runs cleanup function on exit.
-    atexit.register(cleanup)
-
     # Check that there isn't a server already running.
     if common.is_port_open(PORT_NUMBER_FOR_GAE_SERVER):
         common.print_each_string_after_two_new_lines([
             'WARNING',
-            'Could not start new server. There is already an existing server',
-            'running at port %s.'
-            % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)])
+            'Could not start new server.',
+            'There is already an existing server running at port %d.' % (
+                PORT_NUMBER_FOR_GAE_SERVER),
+        ])
+        return
 
-    clear_datastore_arg = (
-        '' if parsed_args.save_datastore else '--clear_datastore=true')
-    enable_console_arg = (
-        '--enable_console=true' if parsed_args.enable_console else '')
-    disable_host_checking_arg = (
-        '--enable_host_checking=false'
-        if parsed_args.disable_host_checking else '')
-    no_auto_restart = (
-        '--automatic_restart=no' if parsed_args.no_auto_restart else '')
+    clear_datastore_arg = 'false' if parsed_args.save_datastore else 'true'
+    enable_console_arg = 'true' if parsed_args.enable_console else 'false'
+    enable_host_checking_arg = (
+        'false' if parsed_args.disable_host_checking else 'true')
+    automatic_restart_arg = 'no' if parsed_args.no_auto_restart else 'yes'
 
-    build_args = ['--prod_env'] if parsed_args.prod_env else []
+    build_args = []
+    if parsed_args.prod_env:
+        build_args.append('--prod_env')
     if parsed_args.maintenance_mode:
         build_args.append('--maintenance_mode')
     if parsed_args.source_maps:
         build_args.append('--source_maps')
-    build.main(args=build_args)
-    app_yaml_filepath = 'app.yaml' if parsed_args.prod_env else 'app_dev.yaml'
 
-    # Set up a local dev instance.
-    # TODO(sll): Do this in a new shell.
-    # To turn emailing on, add the option '--enable_sendmail=yes' and change the
-    # relevant settings in feconf.py. Be careful with this -- you do not want to
-    # spam people accidentally.
-    background_processes = []
-    if not parsed_args.prod_env:
-        # In prod mode webpack is launched through scripts/build.py
-        python_utils.PRINT('Compiling webpack...')
-        webpack_config_file = (
-            build.WEBPACK_DEV_SOURCE_MAPS_CONFIG if parsed_args.source_maps
-            else build.WEBPACK_DEV_CONFIG)
-        background_processes.append(subprocess.Popen([
-            common.NODE_BIN_PATH,
-            os.path.join(
-                common.NODE_MODULES_PATH, 'webpack', 'bin', 'webpack.js'),
-            '--config', webpack_config_file, '--watch']))
+    with contextlib2.ExitStack() as wrapper_stack:
+        wrapper_stack.callback(python_utils.PRINT, '\n\nDone!\n')
+        server_stack = wrapper_stack.enter_context(contextlib2.ExitStack())
+        # Before shutting down, ask developers to wait patiently.
+        wrapper_stack.callback(
+            common.print_warning_message,
+            '\n\nIMPORTANT: Please wait for servers to shutdown gracefully!\n')
 
-        # Give webpack few seconds to do the initial compilation.
-        time.sleep(10)
+        build.main(args=build_args)
+        server_stack.callback(build.set_constants_to_default)
 
-    common.start_redis_server()
+        if not parsed_args.prod_env:
+            # In prod mode webpack is launched through scripts/build.py
+            python_utils.PRINT('Compiling webpack...')
 
-    python_utils.PRINT('Starting GAE development server')
-    background_processes.append(subprocess.Popen(
-        'python %s/dev_appserver.py %s %s %s --admin_host 0.0.0.0 '
-        '--admin_port 8000 --host 0.0.0.0 --port %s %s --skip_sdk_update_check '
-        'true %s' % (
-            common.GOOGLE_APP_ENGINE_SDK_HOME, clear_datastore_arg,
-            enable_console_arg, disable_host_checking_arg, no_auto_restart,
-            python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER),
-            app_yaml_filepath), shell=True))
+            webpack_bin_path = os.path.join(
+                common.NODE_MODULES_PATH, 'webpack', 'bin', 'webpack.js')
+            webpack_config_file = (
+                build.WEBPACK_DEV_SOURCE_MAPS_CONFIG
+                if parsed_args.source_maps else build.WEBPACK_DEV_CONFIG)
 
-    # Wait for the servers to come up.
-    while not common.is_port_open(PORT_NUMBER_FOR_GAE_SERVER):
-        time.sleep(1)
+            server_stack.enter_context(common.managed_process([
+                common.NODE_BIN_PATH, webpack_bin_path, '--watch',
+                '--config', webpack_config_file,
+            ], shell=True))
 
-    # Launch a browser window.
-    if common.is_linux_os() and not parsed_args.no_browser:
-        detect_virtualbox_pattern = re.compile('.*VBOX.*')
-        if list(filter(
-                detect_virtualbox_pattern.match,
-                os.listdir('/dev/disk/by-id/'))):
+            # Give webpack few seconds to do the initial compilation.
+            time.sleep(10)
+
+        python_utils.PRINT('Starting Redis development server...')
+        server_stack.enter_context(common.managed_redis_server())
+
+        python_utils.PRINT('Starting GAE development server...')
+        dev_appserver_path = (
+            os.path.join(common.GOOGLE_APP_ENGINE_SDK_HOME, 'dev_appserver.py'))
+        app_yaml_filepath = (
+            'app.yaml' if parsed_args.prod_env else 'app_dev.yaml')
+        # To turn emailing on, add the option '--enable_sendmail=yes' and change
+        # the relevant settings in feconf.py. Be careful with this -- you do not
+        # want to spam people accidentally.
+        server_stack.enter_context(common.managed_process([
+            'python', dev_appserver_path, app_yaml_filepath,
+            '--admin_host', '0.0.0.0', '--admin_port', 8000,
+            '--host', '0.0.0.0', '--port', PORT_NUMBER_FOR_GAE_SERVER,
+            '--skip_sdk_update_check', 'true',
+            '--automatic_restart', automatic_restart_arg,
+            '--enable_console', enable_console_arg,
+            '--clear_datastore', clear_datastore_arg,
+            '--enable_host_checking', enable_host_checking_arg,
+        ], shell=True))
+        common.wait_for_port_to_be_open(PORT_NUMBER_FOR_GAE_SERVER)
+
+        browser_context = (
+            common.make_browser_context_to_port(PORT_NUMBER_FOR_GAE_SERVER))
+        if browser_context is not None:
             common.print_each_string_after_two_new_lines([
                 'INFORMATION',
-                'Setting up a local development server. You can access this '
-                'server',
-                'by navigating to localhost:%s in a browser window.'
-                % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)])
+                'Local development server is ready at http://localhost:%s/' % (
+                    PORT_NUMBER_FOR_GAE_SERVER),
+                'Opening a default browser window pointing to this server...',
+            ])
+            time.sleep(5)
+            server_stack.enter_context(browser_context)
         else:
             common.print_each_string_after_two_new_lines([
                 'INFORMATION',
-                'Setting up a local development server at localhost:%s. '
-                % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER),
-                'Opening a default browser window pointing to this server'])
-            time.sleep(5)
-            background_processes.append(
-                subprocess.Popen([
-                    'xdg-open', 'http://localhost:%s/'
-                    % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)]))
-    elif common.is_mac_os() and not parsed_args.no_browser:
-        common.print_each_string_after_two_new_lines([
-            'INFORMATION',
-            'Setting up a local development server at localhost:%s. '
-            % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER),
-            'Opening a default browser window pointing to this server.'])
-        time.sleep(5)
-        background_processes.append(
-            subprocess.Popen([
-                'open', 'http://localhost:%s/'
-                % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)]))
-    else:
-        common.print_each_string_after_two_new_lines([
-            'INFORMATION',
-            'Setting up a local development server. You can access this server',
-            'by navigating to localhost:%s in a browser window.'
-            % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)])
+                'Local development server is ready! You can access this server '
+                'by navigating to http://localhost:%s/ with a web browser' % (
+                    PORT_NUMBER_FOR_GAE_SERVER),
+            ])
 
-    python_utils.PRINT('Done!')
-
-    for process in background_processes:
-        process.wait()
+        common.wait_for_port_to_close(PORT_NUMBER_FOR_GAE_SERVER)
 
 
 if __name__ == '__main__':

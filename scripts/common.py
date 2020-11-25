@@ -387,11 +387,12 @@ def wait_for_port_to_be_open(
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     with contextlib.closing(sock):
-        sock.settimeout(timeout)
-        try:
-            sock.connect(('localhost', port_number))
-        except:
-            raise IOError('Failed to find server on port %d' % port_number)
+        sock.setblocking(0)
+        if sock.connect_ex(('localhost', port_number)) == 0:
+            return
+        _, writables, _ = select.select([], [sock], [])
+    if not writables:
+        raise IOError('Failed to find server on port %d' % port_number)
 
 
 def wait_for_port_to_close(port_number):
@@ -665,11 +666,9 @@ def start_redis_server():
     python_utils.PRINT('Starting Redis development server.')
     # Start the redis local development server. Redis doesn't run on
     # Windows machines.
-    subprocess.call([
-        REDIS_SERVER_PATH, REDIS_CONF_PATH,
-        '--daemonize', 'yes'
-    ])
+    subprocess.call([REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'yes'])
     wait_for_port_to_be_open(feconf.REDISPORT)
+    subprocess.call([REDIS_CLI_PATH, 'ping'])
 
 
 def stop_redis_server():

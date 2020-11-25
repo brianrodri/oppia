@@ -387,11 +387,11 @@ def wait_for_port_to_be_open(
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     with contextlib.closing(sock):
-        sock.setblocking(0)
-        sock.connect_ex(('localhost', port_number))
-        _, writable_list, _ = select.select([], [sock], [], timeout)
-    if not writable_list:
-        raise IOError('Failed to find server on port %d' % port_number)
+        sock.settimeout(timeout)
+        try:
+            sock.connect(('localhost', port_number))
+        except:
+            raise IOError('Failed to find server on port %d' % port_number)
 
 
 def wait_for_port_to_close(port_number):

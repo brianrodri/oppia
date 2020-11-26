@@ -657,7 +657,6 @@ def start_redis_server():
     # Windows machines.
     subprocess.call([REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'yes'])
     wait_for_port_to_be_open(feconf.REDISPORT)
-    subprocess.call([REDIS_CLI_PATH, 'ping'])
 
 
 def stop_redis_server():

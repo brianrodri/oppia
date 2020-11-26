@@ -23,9 +23,9 @@ import functools
 import os
 import re
 import signal
-import socket
 import subprocess
 import sys
+import time
 import types
 
 from core.tests import test_utils
@@ -537,27 +537,47 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             self.assertTrue(result)
 
     def test_wait_for_port_to_be_open_when_port_successfully_opened(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        with contextlib.closing(sock):
-            # If port is 0, OS acquires an unused port for the socket.
-            sock.bind(('localhost', 0))
-            sock.listen(2)
-            _, port_number = sock.getsockname()
+        def mock_is_port_open(unused_port):
+            mock_is_port_open.wait_time += 1
+            if mock_is_port_open.wait_time > 10:
+                return True
+            return False
+        mock_is_port_open.wait_time = 0
 
-            with common.managed_thread(target=sock.accept):
-                common.wait_for_port_to_be_open(port_number)
+        def mock_sleep(unused_time):
+            mock_sleep.called_times += 1
+            return
+        mock_sleep.called_times = 0
+
+        is_port_open_swap = self.swap_with_checks(
+            common, 'is_port_open', mock_is_port_open)
+        sleep_swap = self.swap_with_checks(time, 'sleep', mock_sleep)
+
+        with is_port_open_swap, sleep_swap:
+            common.wait_for_port_to_be_open(1)
+        self.assertEqual(mock_is_port_open.wait_time, 11)
+        self.assertEqual(mock_sleep.called_times, 10)
 
     def test_wait_for_port_to_be_open_when_port_failed_to_open(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        with contextlib.closing(sock):
-            # If port is 0, OS acquires an unused port for the socket.
-            sock.bind(('localhost', 0))
-            sock.listen(2)
-            _, port_number = sock.getsockname()
-            # Close port before waiting for it.
+        def mock_is_port_open(unused_port):
+            return False
 
-        with self.assertRaisesRegexp(IOError, 'Failed to find server'):
-            common.wait_for_port_to_be_open(port_number, timeout=5)
+        def mock_sleep(unused_time):
+            mock_sleep.sleep_time += 1
+
+        def mock_exit(unused_exit_code):
+            return
+
+        mock_sleep.sleep_time = 0
+
+        is_port_open_swap = self.swap(common, 'is_port_open', mock_is_port_open)
+        sleep_swap = self.swap_with_checks(time, 'sleep', mock_sleep)
+        exit_swap = self.swap_with_checks(sys, 'exit', mock_exit)
+        with is_port_open_swap, sleep_swap, exit_swap:
+            common.wait_for_port_to_be_open(1)
+        self.assertEqual(
+            mock_sleep.sleep_time,
+            common.MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS)
 
     def test_run_webpack_compilation_success(self):
         def mock_isdir(unused_dirname):

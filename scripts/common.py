@@ -22,12 +22,11 @@ import getpass
 import os
 import platform
 import re
-import select
 import shutil
 import socket
 import subprocess
 import sys
-import threading
+import time
 
 import constants
 import feconf
@@ -360,48 +359,18 @@ def verify_current_branch_name(expected_branch_name):
             expected_branch_name)
 
 
-def is_port_open(port_number):
+def is_port_open(port):
     """Checks if a process is listening to the port.
 
     Args:
-        port_number: int. The port number.
+        port: int. The port number.
 
     Returns:
         bool. True if port is open else False.
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    with contextlib.closing(sock):
-        return sock.connect_ex(('localhost', port_number)) == 0
-
-
-def wait_for_port_to_be_open(
-        port_number, timeout=MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
-    """Wait until the port is open and exit if port isn't open after a timeout.
-
-    Args:
-        port_number: int. The port number to wait.
-        timeout: int. Number of seconds to wait for the port.
-
-    Raises:
-        IOError. The port didn't accept a connection before the timeout expired.
-    """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    with contextlib.closing(sock):
-        sock.setblocking(0)
-        if sock.connect_ex(('localhost', port_number)) == 0:
-            return
-        _, writables, _ = select.select([], [sock], [], timeout)
-    if not writables:
-        raise IOError('Failed to find server on port %d' % port_number)
-
-
-def wait_for_port_to_close(port_number):
-    """Wait until the port is closed."""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    with contextlib.closing(sock):
-        sock.setblocking(0)
-        sock.connect_ex(('localhost', port_number))
-        select.select([], [], [sock])
+    with contextlib.closing(
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        return bool(not s.connect_ex(('localhost', port)))
 
 
 def recursive_chown(path, uid, gid):
@@ -646,6 +615,26 @@ def inplace_replace_file(filename, regex_pattern, replacement_string):
         raise
 
 
+def wait_for_port_to_be_open(port_number):
+    """Wait until the port is open and exit if port isn't open after
+    1000 seconds.
+
+    Args:
+        port_number: int. The port number to wait.
+    """
+    waited_seconds = 0
+    while (not is_port_open(port_number)
+           and waited_seconds < MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS):
+        time.sleep(1)
+        waited_seconds += 1
+    if (waited_seconds == MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS
+            and not is_port_open(port_number)):
+        python_utils.PRINT(
+            'Failed to start server on port %s, exiting ...' %
+            port_number)
+        sys.exit(1)
+
+
 def start_redis_server():
     """Start the redis server with the daemonize argument to prevent
     the redis-server from exiting on its own.
@@ -734,17 +723,6 @@ class CD(python_utils.OBJECT):
 
 
 @contextlib.contextmanager
-def managed_thread(**kwargs):
-    """Context manager for starting and joining a thread."""
-    thread = threading.Thread(**kwargs)
-    thread.start()
-    try:
-        yield
-    finally:
-        thread.join()
-
-
-@contextlib.contextmanager
 def managed_process(args, shell=False, **kwargs):
     """Context manager for starting and stopping a process gracefully.
 
@@ -807,7 +785,7 @@ def managed_redis_server():
         os.remove(REDIS_DUMP_PATH)
 
     subprocess.call([REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'yes'])
-    wait_for_port_to_be_open(feconf.REDISPORT)
+    subprocess.call([REDIS_CLI_PATH, 'ping'])
     try:
         yield
     finally:

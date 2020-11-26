@@ -152,7 +152,7 @@ def main(args=None):
         # To turn emailing on, add the option '--enable_sendmail=yes' and change
         # the relevant settings in feconf.py. Be careful with this -- you do not
         # want to spam people accidentally.
-        server_stack.enter_context(common.managed_process([
+        gae_server = server_stack.enter_context(common.managed_process([
             'python', dev_appserver_path, app_yaml_filepath,
             '--admin_host', '0.0.0.0', '--admin_port', 8000,
             '--host', '0.0.0.0', '--port', PORT_NUMBER_FOR_GAE_SERVER,
@@ -183,7 +183,7 @@ def main(args=None):
                     PORT_NUMBER_FOR_GAE_SERVER),
             ])
 
-        common.wait_for_port_to_close(PORT_NUMBER_FOR_GAE_SERVER)
+        gae_server.wait()
 
 
 if __name__ == '__main__':

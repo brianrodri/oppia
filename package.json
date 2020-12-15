@@ -120,6 +120,7 @@
     "@angular/upgrade": "^10.2.0",
     "@ng-bootstrap/ng-bootstrap": "^7.0.0",
     "@types/angular-translate": "^2.16.2",
+    "acorn": "6.4.2",
     "angular": "^1.8.2",
     "angular-cookies": "^1.8.2",
     "angular-route": "^1.8.2",

@@ -21,6 +21,7 @@
 import { UpgradedServices } from 'services/UpgradedServices';
 // ^^^ This block is to be removed.
 
+import { AlertsService } from 'services/alerts.service';
 import { TranslatorProviderForTests } from 'tests/test.extras';
 
 require('pages/signup-page/signup-page.component.ts');
@@ -32,13 +33,14 @@ describe('Signup page', function() {
   var $q = null;
   var $rootScope = null;
   var $uibModal = null;
-  var AlertsService = null;
+  var AlertsService: AlertsService = null;
   var CsrfService = null;
   var LoaderService = null;
   var SiteAnalyticsService = null;
   var UrlService = null;
+  var addWarningSpy = null;
+  var clearWarningsSpy = null;
 
-  var alertsServiceSpy = null;
   var loadingMessage;
   var subscriptions = [];
   var mockWindow = {
@@ -79,8 +81,8 @@ describe('Signup page', function() {
 
     spyOn(CsrfService, 'getTokenAsync').and.returnValue(
       $q.resolve('sample-csrf-token'));
-
-    alertsServiceSpy = spyOnAllFunctions(AlertsService);
+    addWarningSpy = spyOn(AlertsService, 'addWarning');
+    clearWarningsSpy = spyOn(AlertsService, 'clearWarnings');
 
     ctrl = $componentController('signupPage', {
       $rootScope: $rootScope,
@@ -198,7 +200,7 @@ describe('Signup page', function() {
 
     it('should show warning when user has not agreed to terms', function() {
       ctrl.submitPrerequisitesForm(false, null);
-      expect(alertsServiceSpy.addWarning).toHaveBeenCalledWith(
+      expect(addWarningSpy).toHaveBeenCalledWith(
         'I18N_SIGNUP_ERROR_MUST_AGREE_TO_TERMS');
     });
 
@@ -218,7 +220,7 @@ describe('Signup page', function() {
         $httpBackend.flush();
         ctrl.onUsernameInputFormBlur();
 
-        expect(alertsServiceSpy.clearWarnings).not.toHaveBeenCalled();
+        expect(clearWarningsSpy).not.toHaveBeenCalled();
         expect(ctrl.blurredAtLeastOnce).toBe(false);
         expect(ctrl.warningI18nCode).toEqual('');
         $httpBackend.verifyNoOutstandingExpectation();
@@ -282,7 +284,7 @@ describe('Signup page', function() {
     ctrl.onUsernameInputFormBlur('myUsername');
     $httpBackend.flush();
 
-    expect(alertsServiceSpy.clearWarnings).toHaveBeenCalled();
+    expect(clearWarningsSpy).toHaveBeenCalled();
     expect(ctrl.blurredAtLeastOnce).toBe(true);
     expect(ctrl.warningI18nCode).toEqual('I18N_SIGNUP_ERROR_USERNAME_TAKEN');
   });
@@ -295,7 +297,7 @@ describe('Signup page', function() {
       ctrl.onUsernameInputFormBlur('myUsername');
       $httpBackend.flush();
 
-      expect(alertsServiceSpy.clearWarnings).toHaveBeenCalled();
+      expect(clearWarningsSpy).toHaveBeenCalled();
       expect(ctrl.blurredAtLeastOnce).toBe(true);
       expect(ctrl.warningI18nCode).toEqual('');
     });

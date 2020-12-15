@@ -16,6 +16,7 @@
     "paths": {
       "app.constants": ["../../core/templates/app.constants"],
       "assets/constants": ["../../assets/constants.ts"],
+      "assets/rich_text_components_definitions": ["../../assets/rich_text_components_definitions.ts"],
       "app-type.constants": ["../../core/templates/app-type.constants"],
       "components/*": ["../../core/templates/components/*"],
       "domain/*": ["../../core/templates/domain/*"],
@@ -29,5 +30,9 @@
       "tests/*": ["../../core/templates/tests/*"]
     }
   },
+  "files": [
+    "../../assets/constants.ts",
+    "../../assets/rich_text_components_definitions.ts"
+  ],
   "include": ["../."]
 }

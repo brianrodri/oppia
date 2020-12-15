@@ -26,7 +26,7 @@ import { InteractionCustomizationArgs } from
 import { InteractionObjectFactory } from
   'domain/exploration/InteractionObjectFactory';
 
-const INTERACTION_SPECS = require('interactions/interaction_specs.json');
+import * as INTERACTION_SPECS from 'interactions/interaction_specs.json';
 
 @Injectable({
   providedIn: 'root'

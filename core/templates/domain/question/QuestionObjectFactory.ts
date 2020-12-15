@@ -21,7 +21,7 @@ import { downgradeInjectable } from '@angular/upgrade/static';
 import { Injectable } from '@angular/core';
 import { State, StateBackendDict, StateObjectFactory }
   from 'domain/state/StateObjectFactory';
-import INTERACTION_SPECS from 'interactions/interaction_specs.json';
+import * as INTERACTION_SPECS from 'interactions/interaction_specs.json';
 import constants from 'assets/constants';
 
 export interface QuestionBackendDict {

@@ -38,7 +38,7 @@ import { SolutionVerificationService } from 'pages/exploration-editor-page/edito
 import { StateInteractionIdService } from 'components/state-editor/state-editor-properties-services/state-interaction-id.service';
 import { StateSolutionService } from 'components/state-editor/state-editor-properties-services/state-solution.service';
 
-import INTERACTION_SPECS from 'interactions/interaction_specs.json';
+import * as INTERACTION_SPECS from 'interactions/interaction_specs.json';
 
 @Injectable({
   providedIn: 'root',

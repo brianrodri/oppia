@@ -33,7 +33,7 @@ import { InteractionCustomizationArgs } from
 import { Hint } from 'domain/exploration/HintObjectFactory';
 import { Solution } from 'domain/exploration/SolutionObjectFactory';
 
-import INTERACTION_SPECS from 'interactions/interaction_specs.json';
+import * as INTERACTION_SPECS from 'interactions/interaction_specs.json';
 
 export interface InputResponsePair {
   learnerInput: string,

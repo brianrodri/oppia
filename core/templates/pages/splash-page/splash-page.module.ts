@@ -19,6 +19,7 @@
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { APP_INITIALIZER, NgModule, StaticProvider } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { downgradeComponent, downgradeModule } from '@angular/upgrade/static';
 import { OppiaAngularRootComponent } from 'components/oppia-angular-root.component';
@@ -26,29 +27,33 @@ import { SharedComponentsModule } from 'components/shared-component.module';
 import { platformFeatureInitFactory, PlatformFeatureService } from 'services/platform-feature.service';
 import { RequestInterceptor } from 'services/request-interceptor.service';
 
-import { AppConstants } from 'app.constants';
 import { AngularFireModule } from '@angular/fire';
 import { AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
-import { firebase, firebaseui, FirebaseUIModule } from 'firebaseui-angular';
+import { FirebaseUIModule, firebase, firebaseui } from 'firebaseui-angular';
+import { AppConstants } from 'app.constants';
 
-const firebaseUiAuthConfig: firebaseui.auth.Config = {
+const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
   signInFlow: 'popup',
   signInOptions: [
-    firebase.auth.GoogleAuthProvider.PROVIDER_ID
+    {
+      provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+      requireDisplayName: false
+    }
   ],
-  tosUrl: '/terms',
   privacyPolicyUrl: '/privacy-policy',
+  signInSuccessUrl: '/signup',
+  tosUrl: '/terms',
 };
 
 @NgModule({
   imports: [
     BrowserModule,
+    FormsModule,
     HttpClientModule,
     SharedComponentsModule,
-    FirebaseUIModule,
     AngularFireModule.initializeApp(AppConstants.FIREBASE_ENVIRONMENT.config),
     AngularFireAuthModule,
-    FirebaseUIModule.forRoot(firebaseUiAuthConfig),
+    FirebaseUIModule.forRoot(FIREBASE_UI_AUTH_CONFIG),
   ],
   declarations: [
     OppiaAngularRootComponent
@@ -74,7 +79,10 @@ const firebaseUiAuthConfig: firebaseui.auth.Config = {
       deps: [PlatformFeatureService],
       multi: true
     }
-  ]
+  ],
+  exports: [
+    FirebaseUIModule
+  ],
 })
 class SplashPageModule {
   // Empty placeholder method to satisfy the `Compiler`.

@@ -5329,6 +5329,21 @@ export default {
   "ANALYTICS_ID": "",
   "SITE_NAME_FOR_ANALYTICS": "",
 
+  // Data required for Firebase Authentication.
+  "FIREBASE_ENVIRONMENT": {
+    "production": false,
+    "config": {
+      "apiKey": "TODO",
+      "authDomain": "TODO",
+      "databaseURL": "TODO",
+      "projectId": "TODO",
+      "storageBucket": "TODO",
+      "messagingSenderId": "TODO",
+      "appId": "TODO",
+      "measurementId": "TODO"
+    }
+  },
+
   "ALLOW_YAML_FILE_UPLOAD": false,
 
   // A regular expression for tags.

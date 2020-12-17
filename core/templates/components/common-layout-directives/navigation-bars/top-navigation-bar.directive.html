@@ -258,15 +258,7 @@
       </div>
       <ul uib-dropdown-menu class="uib-dropdown-menu oppia-navbar-dropdown oppia-navbar-dropdown-menu">
         <li class="nav-item">
-          <a href="" ng-click="$ctrl.onLoginButtonClicked()"
-             class="nav-link oppia-nav-link">
-            <div class="oppia-signin-google">
-              <div class="oppia-signin-g-icon">
-                <img ng-src="<[$ctrl.googleSignInIconUrl]>" alt="Google signin icon">
-              </div>
-              <span class="oppia-signin-text" translate="I18N_TOPNAV_SIGN_IN_WITH_GOOGLE"></span>
-            </div>
-          </a>
+          <firebase-ui></firebase-ui>
         </li>
       </ul>
     </li>

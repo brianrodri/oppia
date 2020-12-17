@@ -5333,12 +5333,12 @@ export default {
   "FIREBASE_ENVIRONMENT": {
     "production": false,
     "config": {
-      "apiKey": "TODO",
-      "authDomain": "TODO",
-      "projectId": "TODO",
-      "storageBucket": "TODO",
-      "messagingSenderId": "TODO",
-      "appId": "TODO"
+      "apiKey": "",
+      "authDomain": "",
+      "projectId": "",
+      "storageBucket": "",
+      "messagingSenderId": "",
+      "appId": ""
     }
   },
 

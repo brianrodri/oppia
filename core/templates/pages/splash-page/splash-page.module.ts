@@ -16,44 +16,23 @@
  * @fileoverview Module for the splash page.
  */
 
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { APP_INITIALIZER, NgModule, StaticProvider } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { downgradeComponent, downgradeModule } from '@angular/upgrade/static';
-import { OppiaAngularRootComponent } from 'components/oppia-angular-root.component';
-import { SharedComponentsModule } from 'components/shared-component.module';
-import { platformFeatureInitFactory, PlatformFeatureService } from 'services/platform-feature.service';
+import { downgradeComponent } from '@angular/upgrade/static';
+import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { RequestInterceptor } from 'services/request-interceptor.service';
-
-import { AngularFireModule } from '@angular/fire';
-import { AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
-import { FirebaseUIModule, firebase, firebaseui } from 'firebaseui-angular';
-import { AppConstants } from 'app.constants';
-
-const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
-  signInFlow: 'popup',
-  signInOptions: [
-    {
-      provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-      requireDisplayName: false
-    }
-  ],
-  privacyPolicyUrl: '/privacy-policy',
-  signInSuccessUrl: '/signup',
-  tosUrl: '/terms',
-};
+import { SharedComponentsModule } from 'components/shared-component.module';
+import { OppiaAngularRootComponent } from
+  'components/oppia-angular-root.component';
+import { platformFeatureInitFactory, PlatformFeatureService } from
+  'services/platform-feature.service';
 
 @NgModule({
   imports: [
     BrowserModule,
-    FormsModule,
     HttpClientModule,
-    SharedComponentsModule,
-    AngularFireModule.initializeApp(AppConstants.FIREBASE_ENVIRONMENT.config),
-    AngularFireAuthModule,
-    FirebaseUIModule.forRoot(FIREBASE_UI_AUTH_CONFIG),
+    SharedComponentsModule
   ],
   declarations: [
     OppiaAngularRootComponent
@@ -62,12 +41,6 @@ const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
     OppiaAngularRootComponent
   ],
   providers: [
-    {
-      provide: USE_EMULATOR,
-      useValue: (
-        AppConstants.FIREBASE_ENVIRONMENT.production ? undefined :
-        ['localhost', 9099])
-    },
     {
       provide: HTTP_INTERCEPTORS,
       useClass: RequestInterceptor,
@@ -79,15 +52,15 @@ const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
       deps: [PlatformFeatureService],
       multi: true
     }
-  ],
-  exports: [
-    FirebaseUIModule
-  ],
+  ]
 })
 class SplashPageModule {
   // Empty placeholder method to satisfy the `Compiler`.
   ngDoBootstrap() {}
 }
+
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { downgradeModule } from '@angular/upgrade/static';
 
 const bootstrapFn = (extraProviders: StaticProvider[]) => {
   const platformRef = platformBrowserDynamic(extraProviders);

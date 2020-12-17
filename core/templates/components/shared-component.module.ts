@@ -20,8 +20,14 @@ import 'zone.js';
 
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AngularFireModule } from '@angular/fire';
+import { AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
 import { FormsModule } from '@angular/forms';
+import { BrowserModule } from '@angular/platform-browser';
 
+import { FirebaseUIModule, firebase, firebaseui, FirebaseuiAngularLibraryComponent } from 'firebaseui-angular';
+
+import { AppConstants } from 'app.constants';
 import { BackgroundBannerComponent } from
   './common-layout-directives/common-elements/background-banner.component';
 import { AttributionGuideComponent } from
@@ -53,10 +59,34 @@ import { ProfileLinkImageComponent } from
   'components/profile-link-directives/profile-link-image.component';
 import { ProfileLinkTextComponent } from
   'components/profile-link-directives/profile-link-text.component';
+import { downgradeComponent } from '@angular/upgrade/static';
 
+const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
+  signInFlow: 'popup',
+  signInOptions: [
+    {
+      provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+      requireDisplayName: false
+    }
+  ],
+  privacyPolicyUrl: '/privacy-policy',
+  signInSuccessUrl: '/signup',
+  tosUrl: '/terms',
+};
 
 @NgModule({
-  imports: [CommonModule, MaterialModule, NgbModalModule, FormsModule],
+  imports: [
+    BrowserModule,
+    CommonModule,
+    MaterialModule,
+    NgbModalModule,
+    FormsModule,
+    AngularFireModule.initializeApp(
+      AppConstants.FIREBASE_ENVIRONMENT.production ?
+      AppConstants.FIREBASE_ENVIRONMENT.config : {projectId: 'dev-project-id'}),
+    AngularFireAuthModule,
+    FirebaseUIModule.forRoot(FIREBASE_UI_AUTH_CONFIG),
+  ],
 
   declarations: [
     AttributionGuideComponent,
@@ -86,7 +116,17 @@ import { ProfileLinkTextComponent } from
     ExplorationEmbedButtonModalComponent,
     KeyboardShortcutHelpModalComponent,
     SkillMasteryViewerComponent,
-    SocialButtonsComponent
+    SocialButtonsComponent,
+    FirebaseuiAngularLibraryComponent
+  ],
+
+  providers: [
+    {
+      provide: USE_EMULATOR,
+      useValue: (
+        AppConstants.FIREBASE_ENVIRONMENT.production ? undefined :
+        ['localhost', 9099])
+    },
   ],
 
   exports: [
@@ -96,6 +136,7 @@ import { ProfileLinkTextComponent } from
     // Components, directives, and pipes.
     BackgroundBannerComponent,
     ExplorationSummaryTileDirective,
+    FirebaseuiAngularLibraryComponent,
     SharingLinksComponent,
     StorySummaryTileDirective,
     SubtopicSummaryTileDirective,
@@ -104,3 +145,6 @@ import { ProfileLinkTextComponent } from
 })
 
 export class SharedComponentsModule { }
+
+angular.module('oppia').directive('firebaseUi', downgradeComponent(
+  {component: FirebaseuiAngularLibraryComponent}) as angular.IDirectiveFactory);

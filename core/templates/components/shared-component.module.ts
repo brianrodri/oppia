@@ -81,9 +81,7 @@ const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
     MaterialModule,
     NgbModalModule,
     FormsModule,
-    AngularFireModule.initializeApp(
-      AppConstants.FIREBASE_ENVIRONMENT.production ?
-      AppConstants.FIREBASE_ENVIRONMENT.config : {projectId: 'dev-project-id'}),
+    AngularFireModule.initializeApp(AppConstants.FIREBASE_ENVIRONMENT.config),
     AngularFireAuthModule,
     FirebaseUIModule.forRoot(FIREBASE_UI_AUTH_CONFIG),
   ],
@@ -124,7 +122,7 @@ const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
     {
       provide: USE_EMULATOR,
       useValue: (
-        AppConstants.FIREBASE_ENVIRONMENT.production ? undefined :
+        AppConstants.FIREBASE_ENVIRONMENT.useEmulator ? undefined :
         ['localhost', 9099])
     },
   ],

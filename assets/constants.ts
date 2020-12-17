@@ -5330,12 +5330,16 @@ export default {
   "SITE_NAME_FOR_ANALYTICS": "",
 
   // Data required for Firebase Authentication.
+  //
+  // NOTE TO RELEASE COORDINATORS: Update this object with the correct values
+  // when switching to the prod server. For instructions on how to acquire the
+  // values, see: https://support.google.com/firebase/answer/7015592.
   "FIREBASE_ENVIRONMENT": {
-    "production": false,
+    "useEmulator": false,
     "config": {
-      "apiKey": "",
+      "apiKey": "dev-api-key",
       "authDomain": "",
-      "projectId": "",
+      "projectId": "dev-project-id",
       "storageBucket": "",
       "messagingSenderId": "",
       "appId": ""

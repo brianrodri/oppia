@@ -227,6 +227,11 @@
 /main_taskqueue.py @vojtechjelinek
 
 
+# Firebase authentication configurations
+/.firebaserc
+/firebase.json
+
+
 # Global components and filters.
 /core/templates/components/button-directives/* @srijanreddy98
 /core/templates/components/common-layout-directives/common-elements/alert-message.directive.ts @srijanreddy98

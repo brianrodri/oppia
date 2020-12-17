@@ -228,8 +228,8 @@
 
 
 # Firebase authentication configurations
-/.firebaserc
-/firebase.json
+/.firebaserc @brianrodri
+/firebase.json @brianrodri
 
 
 # Global components and filters.

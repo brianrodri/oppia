@@ -1,6 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import {FormsModule} from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 // import {firebase, firebaseui, FirebaseUIModule} from 'firebaseui-angular';
 // import {AngularFireModule} from '@angular/fire';
 // import {AngularFireAuthModule} from '@angular/fire/auth';
@@ -38,17 +38,9 @@ import { LoginPageComponent } from './login-page.component';
 // };
 
 @NgModule({
-  declarations: [
-    LoginPageComponent
-  ],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    // AngularFireModule.initializeApp(environment.firebaseConfig),
-    // AngularFireAuthModule,
-    // FirebaseUIModule.forRoot(firebaseUiAuthConfig)
-  ],
+  declarations: [LoginPageComponent],
+  imports: [BrowserModule, FormsModule],
   providers: [],
-  bootstrap: [LoginPageComponent]
+  bootstrap: [LoginPageComponent],
 })
-export class LoginPageModule { }
+export class LoginPageModule {}

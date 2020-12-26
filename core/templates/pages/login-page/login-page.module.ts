@@ -1,41 +1,27 @@
+// Copyright 2020 The Oppia Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS-IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @fileoverview TODO.
+ */
+
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-// import {firebase, firebaseui, FirebaseUIModule} from 'firebaseui-angular';
-// import {AngularFireModule} from '@angular/fire';
-// import {AngularFireAuthModule} from '@angular/fire/auth';
 
 import { LoginPageComponent } from './login-page.component';
 
-// const firebaseUiAuthConfig: firebaseui.auth.Config = {
-//   signInFlow: 'popup',
-//   signInOptions: [
-//     firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-//     {
-//       scopes: [
-//         'public_profile',
-//         'email',
-//         'user_likes',
-//         'user_friends'
-//       ],
-//       customParameters: {
-//         auth_type: 'reauthenticate'
-//       },
-//       provider: firebase.auth.FacebookAuthProvider.PROVIDER_ID
-//     },
-//     firebase.auth.TwitterAuthProvider.PROVIDER_ID,
-//     firebase.auth.GithubAuthProvider.PROVIDER_ID,
-//     {
-//       requireDisplayName: false,
-//       provider: firebase.auth.EmailAuthProvider.PROVIDER_ID
-//     },
-//     firebase.auth.PhoneAuthProvider.PROVIDER_ID,
-//     firebaseui.auth.AnonymousAuthProvider.PROVIDER_ID
-//   ],
-//   tosUrl: '<your-tos-link>',
-//   privacyPolicyUrl: '<your-privacyPolicyUrl-link>',
-//   credentialHelper: firebaseui.auth.CredentialHelper.GOOGLE_YOLO
-// };
 
 @NgModule({
   declarations: [LoginPageComponent],

@@ -523,6 +523,7 @@ def run_tests(args):
     managed_dev_appserver = common.managed_dev_appserver(
         'app_dev.yaml' if dev_mode else 'app.yaml',
         port=GOOGLE_APP_ENGINE_PORT, log_level=args.server_log_level,
+        skip_sdk_update_check=True,
         env={'PORTSERVER_ADDRESS': PORTSERVER_SOCKET_FILEPATH})
 
     with managed_dev_appserver:

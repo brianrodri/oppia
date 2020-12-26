@@ -906,11 +906,7 @@ class ManagedProcessTests(test_utils.TestBase):
             time.sleep(30)
             sys.exit()
 
-        if common.PSUTIL_DIR not in sys.path:
-            sys.path.insert(1, common.PSUTIL_DIR)
-        import psutil as target_psutil
-
-        with self.swap(target_psutil, 'Popen', popen_mock):
+        with self.swap(psutil, 'Popen', popen_mock):
             yield popen_calls
 
     def test_concats_command_args_when_shell_is_true(self):

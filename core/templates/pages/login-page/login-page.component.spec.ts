@@ -23,7 +23,7 @@ import { LoginPageComponent } from 'pages/login-page/login-page.component';
 let component: LoginPageComponent;
 let fixture: ComponentFixture<LoginPageComponent>;
 
-fdescribe('Maintenance page', () => {
+describe('Maintenance page', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       declarations: [LoginPageComponent],

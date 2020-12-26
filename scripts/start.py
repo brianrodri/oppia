@@ -115,16 +115,6 @@ def main(args=None):
             'running at port %s.'
             % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)])
 
-    clear_datastore_arg = (
-        '' if parsed_args.save_datastore else '--clear_datastore=true')
-    enable_console_arg = (
-        '--enable_console=true' if parsed_args.enable_console else '')
-    disable_host_checking_arg = (
-        '--enable_host_checking=false'
-        if parsed_args.disable_host_checking else '')
-    no_auto_restart = (
-        '--automatic_restart=no' if parsed_args.no_auto_restart else '')
-
     build_args = ['--prod_env'] if parsed_args.prod_env else []
     if parsed_args.maintenance_mode:
         build_args.append('--maintenance_mode')

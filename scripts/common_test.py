@@ -35,10 +35,10 @@ import time
 
 import constants
 from core.tests import test_utils
+import python_utils
 
 import contextlib2
 import psutil
-import python_utils
 
 from . import common
 

@@ -95,6 +95,7 @@ class WarmupPage(base.BaseHandler):
         """Handles GET warmup requests."""
         pass
 
+
 class LoginPage(base.BaseHandler):
     """Handles the login route."""
 
@@ -111,6 +112,8 @@ class LoginPage(base.BaseHandler):
                 self.redirect(feconf.LEARNER_DASHBOARD_URL)
         else:
             self.render_template('login-page.mainpage.html')
+
+
 class HomePageRedirectPage(base.BaseHandler):
     """When a request is made to '/', check the user's login status, and
     redirect them appropriately.

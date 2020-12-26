@@ -119,12 +119,12 @@ angular.module('oppia').directive('outcomeDestinationEditor', [
                   if (lastComputedArrangement.hasOwnProperty(stateName)) {
                     allStateScores[stateName] = (
                       lastComputedArrangement[stateName].depth *
-                    (maxOffset + 1) +
-                    lastComputedArrangement[stateName].offset);
+                      (maxOffset + 1) +
+                      lastComputedArrangement[stateName].offset);
                   } else {
-                  // States that have just been added in the rule 'create new'
-                  // modal are not yet included as part of
-                  // lastComputedArrangement so we account for them here.
+                    // States that have just been added in the rule 'create new'
+                    // modal are not yet included as part of
+                    // lastComputedArrangement so we account for them here.
                     allStateScores[stateName] = (
                       (maxDepth + 1) * (maxOffset + 1) + unarrangedStateCount);
                     unarrangedStateCount++;

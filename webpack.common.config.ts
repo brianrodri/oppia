@@ -97,6 +97,8 @@ module.exports = {
     landing:
       commonPrefix + '/pages/landing-pages/topic-landing-page/' +
       'topic-landing-page.import.ts',
+    login:
+      commonPrefix + '/pages/login-page/login-page.main.ts',
     learner_dashboard:
       commonPrefix + '/pages/learner-dashboard-page/' +
       'learner-dashboard-page.import.ts',
@@ -411,6 +413,15 @@ module.exports = {
       template:
         commonPrefix + '/pages/learner-dashboard-page/' +
         'learner-dashboard-page.mainpage.html',
+      minify: htmlMinifyConfig,
+      inject: false
+    }),
+    new HtmlWebpackPlugin({
+      chunks: ['login'],
+      filename: 'login-page.mainpage.html',
+      meta: defaultMeta,
+      template:
+        commonPrefix + '/pages/login-page/login-page.mainpage.html',
       minify: htmlMinifyConfig,
       inject: false
     }),

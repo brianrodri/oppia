@@ -113,6 +113,8 @@ PYLINT_QUOTES_PATH = os.path.join(
 NODE_MODULES_PATH = os.path.join(CURR_DIR, 'node_modules')
 FRONTEND_DIR = os.path.join(CURR_DIR, 'core', 'templates')
 YARN_PATH = os.path.join(OPPIA_TOOLS_DIR, 'yarn-%s' % YARN_VERSION)
+FIREBASE_JS_PATH = os.path.join(
+    NODE_MODULES_PATH, 'firebase-tools', 'lib', 'bin', 'firebase.js')
 OS_NAME = platform.system()
 ARCHITECTURE = platform.machine()
 PSUTIL_DIR = os.path.join(OPPIA_TOOLS_DIR, 'psutil-%s' % PSUTIL_VERSION)
@@ -815,4 +817,19 @@ def managed_dev_appserver(
         app_yaml_path
     ]
     with managed_process(dev_appserver_args, shell=True, env=env) as proc:
+        yield proc
+
+
+@contextlib.contextmanager
+def managed_firebase_emulator():
+    """Returns a context manager to start up and shut down a Firebase emulator.
+
+    Yields:
+        psutil.Process. The Firebase emulator process.
+    """
+    emulator_args = [
+        FIREBASE_JS_PATH, 'emulators:start', '--only', 'auth',
+        '--project', feconf.OPPIA_PROJECT_ID
+    ]
+    with managed_process(emulator_args, shell=True) as proc:
         yield proc

@@ -120,7 +120,6 @@
     "@angular/platform-browser-dynamic": "^10.2.2",
     "@angular/router": "^10.2.2",
     "@angular/upgrade": "^10.2.2",
-    "@ctrl/ngx-headroom": "^4.0.0",
     "@ng-bootstrap/ng-bootstrap": "^8.0.0",
     "@types/angular-translate": "^2.16.2",
     "acorn": "6.4.2",

@@ -13,15 +13,22 @@
 // limitations under the License.
 
 /**
- * @fileoverview TODO.
+ * @fileoverview Scripts for the Oppia login page.
  */
-
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { LoginPageModule } from './login-page.module';
 
 import 'core-js/es7/reflect';
 import 'zone.js';
 
+angular.module('oppia', [
+  require('angular-cookies'), 'headroom', 'ngAnimate',
+  'ngMaterial', 'ngSanitize', 'ngTouch', 'pascalprecht.translate',
+  'toastr', 'ui.bootstrap'
+]);
 
-platformBrowserDynamic().bootstrapModule(LoginPageModule)['catch'](
-  err => console.error(err));
+// The module needs to be loaded directly after jquery since it defines the
+// main module the elements are attached to.
+require('pages/login-page/login-page.module.ts');
+require('App.ts');
+require('base-components/oppia-root.directive.ts');
+
+require('pages/login-page/login-page.component.ts');

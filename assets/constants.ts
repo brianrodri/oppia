@@ -5328,6 +5328,19 @@ export default {
     }
   },
 
+  // Data required for Firebase authentication.
+  "FIREBASE_ENVIRONMENT": {
+    "production": false,
+    "config": {
+      "apiKey": "",
+      "authDomain": "",
+      "projectId": "dev-project-id",
+      "storageBucket": "",
+      "messagingSenderId": "",
+      "appId": ""
+    }
+  },
+
   // Data required for Google Analytics.
   "ANALYTICS_ID": "",
   "SITE_NAME_FOR_ANALYTICS": "",

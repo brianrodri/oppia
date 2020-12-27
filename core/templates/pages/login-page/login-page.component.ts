@@ -13,17 +13,14 @@
 // limitations under the License.
 
 /**
- * @fileoverview TODO.
+ * @fileoverview Component for the Oppia login page.
  */
 
-import { Component } from '@angular/core';
+require('base-components/base-content.directive.ts');
 
-
-@Component({
-  selector: 'oppia-login-root',
-  templateUrl: './login-page.component.html',
-  styleUrls: [],
-})
-export class LoginPageComponent {
-  title: string = 'Oppia Login Screen';
-}
+angular.module('oppia').component('loginPage', {
+  template: require('./login-page.component.html'),
+  controller: function() {
+    this.title = 'Login - Oppia';
+  },
+});

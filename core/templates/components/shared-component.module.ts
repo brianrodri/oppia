@@ -15,51 +15,71 @@
 /**
  * @fileoverview Module for the shared components.
  */
+
+import { CommonModule } from '@angular/common';
+import { NgModule } from '@angular/core';
+import { AngularFireModule } from '@angular/fire';
+import { AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
+import { FormsModule } from '@angular/forms';
+import { BrowserModule } from '@angular/platform-browser';
+import { downgradeComponent } from '@angular/upgrade/static';
+import { NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import 'core-js/es7/reflect';
 import 'zone.js';
 
-import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-
-import { BackgroundBannerComponent } from
-  './common-layout-directives/common-elements/background-banner.component';
-import { AttributionGuideComponent } from
-  './common-layout-directives/common-elements/attribution-guide.component';
-import { LazyLoadingComponent } from
-  './common-layout-directives/common-elements/lazy-loading.component';
-import { LoadingDotsComponent } from
-  './common-layout-directives/common-elements/loading-dots.component';
-import { MaterialModule } from './material.module';
+import { AppConstants } from 'app.constants';
+import { ExplorationEmbedButtonModalComponent } from 'components/button-directives/exploration-embed-button-modal.component';
+import { SocialButtonsComponent } from 'components/button-directives/social-buttons.component';
+import { AttributionGuideComponent } from 'components/common-layout-directives/common-elements/attribution-guide.component';
+import { BackgroundBannerComponent } from 'components/common-layout-directives/common-elements/background-banner.component';
+import { LazyLoadingComponent } from 'components/common-layout-directives/common-elements/lazy-loading.component';
+import { LoadingDotsComponent } from 'components/common-layout-directives/common-elements/loading-dots.component';
+import { SharingLinksComponent } from 'components/common-layout-directives/common-elements/sharing-links.component';
+import { KeyboardShortcutHelpModalComponent } from 'components/keyboard-shortcut-help/keyboard-shortcut-help-modal.component';
+import { MaterialModule } from 'components/material.module';
+import { ProfileLinkImageComponent } from 'components/profile-link-directives/profile-link-image.component';
+import { ProfileLinkTextComponent } from 'components/profile-link-directives/profile-link-text.component';
+import { SkillMasteryViewerComponent } from 'components/skill-mastery/skill-mastery.component';
+import { ExplorationSummaryTileDirective } from 'components/summary-tile/exploration-summary-tile.directive';
+import { StorySummaryTileDirective } from 'components/summary-tile/story-summary-tile.directive';
+import { SubtopicSummaryTileDirective } from 'components/summary-tile/subtopic-summary-tile.directive';
 import { TranslatePipe } from 'filters/translate.pipe';
-import { SkillMasteryViewerComponent } from
-  './skill-mastery/skill-mastery.component';
-import { ExplorationEmbedButtonModalComponent } from
-  './button-directives/exploration-embed-button-modal.component';
-import { KeyboardShortcutHelpModalComponent } from
-  'components/keyboard-shortcut-help/keyboard-shortcut-help-modal.component';
-import { SharingLinksComponent } from
-  './common-layout-directives/common-elements/sharing-links.component';
-import { StorySummaryTileDirective } from
-  './summary-tile/story-summary-tile.directive';
-import { SubtopicSummaryTileDirective } from
-  './summary-tile/subtopic-summary-tile.directive';
-import { SocialButtonsComponent } from
-  'components/button-directives/social-buttons.component';
-import { NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
-import { ExplorationSummaryTileDirective } from
-  './summary-tile/exploration-summary-tile.directive';
-import { ProfileLinkImageComponent } from
-  'components/profile-link-directives/profile-link-image.component';
-import { ProfileLinkTextComponent } from
-  'components/profile-link-directives/profile-link-text.component';
-import { TakeBreakModalComponent } from
-  'pages/exploration-player-page/templates/take-break-modal.component';
+import { firebase, FirebaseuiAngularLibraryComponent, FirebaseUIModule } from 'firebaseui-angular';
+import { TakeBreakModalComponent } from 'pages/exploration-player-page/templates/take-break-modal.component';
 
+const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
+  signInFlow: 'popup',
+  signInOptions: [
+    {
+      provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+      signInMethod: firebase.auth.EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD
+    }
+  ],
+  queryParameterForSignInSuccessUrl: 'return_url',
+  signInSuccessUrl: '/signup',
+  tosUrl: '/terms',
+  privacyPolicyUrl: '/privacy-policy'
+};
 
 @NgModule({
-  imports: [CommonModule, MaterialModule, NgbModalModule, FormsModule],
-
+  imports: [
+    AngularFireAuthModule,
+    AngularFireModule.initializeApp(AppConstants.FIREBASE_ENVIRONMENT.config),
+    BrowserModule,
+    CommonModule,
+    FirebaseUIModule.forRoot(FIREBASE_UI_AUTH_CONFIG),
+    FormsModule,
+    MaterialModule,
+    NgbModalModule,
+  ],
+  providers: [
+    {
+      provide: USE_EMULATOR,
+      useValue: (
+        AppConstants.FIREBASE_ENVIRONMENT.production ?
+        undefined : ['localhost', 9099])
+    },
+  ],
   declarations: [
     AttributionGuideComponent,
     BackgroundBannerComponent,
@@ -76,9 +96,8 @@ import { TakeBreakModalComponent } from
     SocialButtonsComponent,
     SubtopicSummaryTileDirective,
     TranslatePipe,
-    TakeBreakModalComponent
+    TakeBreakModalComponent,
   ],
-
   entryComponents: [
     BackgroundBannerComponent,
     SharingLinksComponent,
@@ -88,11 +107,11 @@ import { TakeBreakModalComponent } from
     // These elements will remain here even after migration.
     TakeBreakModalComponent,
     ExplorationEmbedButtonModalComponent,
+    FirebaseuiAngularLibraryComponent,
     KeyboardShortcutHelpModalComponent,
     SkillMasteryViewerComponent,
-    SocialButtonsComponent
+    SocialButtonsComponent,
   ],
-
   exports: [
     // Modules.
     FormsModule,
@@ -100,12 +119,16 @@ import { TakeBreakModalComponent } from
     // Components, directives, and pipes.
     BackgroundBannerComponent,
     ExplorationSummaryTileDirective,
+    FirebaseuiAngularLibraryComponent,
     SharingLinksComponent,
     StorySummaryTileDirective,
     SubtopicSummaryTileDirective,
     TakeBreakModalComponent,
-    TranslatePipe
+    TranslatePipe,
   ],
 })
+export class SharedComponentsModule {}
 
-export class SharedComponentsModule { }
+angular.module('oppia').directive(
+  'firebaseUi',
+  downgradeComponent({component: FirebaseuiAngularLibraryComponent}));

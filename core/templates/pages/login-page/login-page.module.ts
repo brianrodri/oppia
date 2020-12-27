@@ -13,20 +13,56 @@
 // limitations under the License.
 
 /**
- * @fileoverview TODO.
+ * @fileoverview Module for the Oppia login page.
  */
 
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { APP_INITIALIZER, DoBootstrap, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { downgradeComponent, downgradeModule } from '@angular/upgrade/static';
 
-import { LoginPageComponent } from './login-page.component';
+import { OppiaAngularRootComponent } from 'components/oppia-angular-root.component';
+import { SharedComponentsModule } from 'components/shared-component.module';
+import { platformFeatureInitFactory, PlatformFeatureService } from 'services/platform-feature.service';
+import { RequestInterceptor } from 'services/request-interceptor.service';
 
 
 @NgModule({
-  declarations: [LoginPageComponent],
-  imports: [BrowserModule, FormsModule],
-  providers: [],
-  bootstrap: [LoginPageComponent],
+  imports: [
+    BrowserModule,
+    HttpClientModule,
+    SharedComponentsModule
+  ],
+  declarations: [
+    OppiaAngularRootComponent
+  ],
+  entryComponents: [
+    OppiaAngularRootComponent
+  ],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: RequestInterceptor,
+      multi: true
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: platformFeatureInitFactory,
+      deps: [PlatformFeatureService],
+      multi: true
+    }
+  ]
 })
-export class LoginPageModule {}
+export class LoginPageModule implements DoBootstrap {
+  ngDoBootstrap(): void {}
+}
+
+angular.module('oppia').requires.push(downgradeModule(
+  extraProviders =>
+    platformBrowserDynamic(extraProviders).bootstrapModule(LoginPageModule)));
+
+// This directive is the downgraded version of the Angular component to
+// bootstrap the Angular 8.
+angular.module('oppia').directive('oppiaAngularRoot', downgradeComponent(
+  {component: OppiaAngularRootComponent}));

@@ -97,12 +97,11 @@ module.exports = {
     landing:
       commonPrefix + '/pages/landing-pages/topic-landing-page/' +
       'topic-landing-page.import.ts',
-    login:
-      commonPrefix + '/pages/login-page/login-page.main.ts',
     learner_dashboard:
       commonPrefix + '/pages/learner-dashboard-page/' +
       'learner-dashboard-page.import.ts',
     library: commonPrefix + '/pages/library-page/library-page.import.ts',
+    login: commonPrefix + '/pages/login-page/login-page.import.ts',
     maintenance:
       commonPrefix + '/pages/maintenance-page/maintenance-page.import.ts',
     moderator:
@@ -417,15 +416,6 @@ module.exports = {
       inject: false
     }),
     new HtmlWebpackPlugin({
-      chunks: ['login'],
-      filename: 'login-page.mainpage.html',
-      meta: defaultMeta,
-      template:
-        commonPrefix + '/pages/login-page/login-page.mainpage.html',
-      minify: htmlMinifyConfig,
-      inject: false
-    }),
-    new HtmlWebpackPlugin({
       chunks: ['library'],
       filename: 'library-page.mainpage.html',
       meta: {
@@ -436,6 +426,17 @@ module.exports = {
           'level you want.'
       },
       template: commonPrefix + '/pages/library-page/library-page.mainpage.html',
+      minify: htmlMinifyConfig,
+      inject: false
+    }),
+    new HtmlWebpackPlugin({
+      chunks: ['login'],
+      filename: 'login-page.mainpage.html',
+      meta: {
+        name: defaultMeta.name,
+        description: 'Sign up for Oppia and begin exploring a new subject.'
+      },
+      template: commonPrefix + '/pages/login-page/login-page.mainpage.html',
       minify: htmlMinifyConfig,
       inject: false
     }),

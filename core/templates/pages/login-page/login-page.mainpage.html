@@ -1,9 +1,28 @@
-<html lang="en">
+<!DOCTYPE html>
+<html ng-app="oppia" lang="<[currentLang]>" itemscope itemtype="http://schema.org/Organization">
   <head>
-    @load('base-components/header.template.html', {"title": "Oppia"})
+    @load('base-components/header.template.html', {"title": "Login - Oppia"})
   </head>
   <body>
-    <oppia-login-root></oppia-login-root>
+    <oppia-root>
+      <div ng-controller="Base">
+        <base-content>
+          <navbar-breadcrumb>
+            <ul class="nav navbar-nav oppia-navbar-breadcrumb">
+              <li>
+                <span class="oppia-navbar-breadcrumb-separator"></span>
+                <span translate="I18N_SIGNUP_REGISTRATION"></span>
+              </li>
+            </ul>
+          </navbar-breadcrumb>
+
+          <content>
+            <login-page></login-page>
+          </content>
+        </base-content>
+      </div>
+
+    </oppia-root>
     @load('pages/footer_js_libs.html')
   </body>
 </html>

@@ -96,6 +96,24 @@ class WarmupPage(base.BaseHandler):
         pass
 
 
+class LoginPage(base.BaseHandler):
+    """Handles the login route."""
+
+    @acl_decorators.open_access
+    def get(self):
+        if self.user_id and user_services.has_fully_registered_account(
+                self.user_id):
+            user_settings = user_services.get_user_settings(
+                self.user_id)
+            default_dashboard = user_settings.default_dashboard
+            if default_dashboard == constants.DASHBOARD_TYPE_CREATOR:
+                self.redirect(feconf.CREATOR_DASHBOARD_URL)
+            else:
+                self.redirect(feconf.LEARNER_DASHBOARD_URL)
+        else:
+            self.render_template('login-page.mainpage.html')
+
+
 class HomePageRedirectPage(base.BaseHandler):
     """When a request is made to '/', check the user's login status, and
     redirect them appropriately.
@@ -203,7 +221,7 @@ URLS = MAPREDUCE_HANDLERS + [
     get_redirect_route(r'/_ah/warmup', WarmupPage),
     get_redirect_route(r'/', HomePageRedirectPage),
     get_redirect_route(r'/splash', SplashRedirectPage),
-
+    get_redirect_route(r'/login', LoginPage),
     get_redirect_route(r'/foundation', pages.FoundationRedirectPage),
     get_redirect_route(r'/credits', pages.AboutRedirectPage),
     get_redirect_route(r'/participate', pages.TeachRedirectPage),

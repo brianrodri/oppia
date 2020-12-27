@@ -91,8 +91,8 @@ const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
     {
       provide: USE_EMULATOR,
       useValue: (
-        AppConstants.FIREBASE_ENVIRONMENT.production ?
-        undefined : ['localhost', 9099])
+        AppConstants.FIREBASE_ENVIRONMENT.useEmulator ?
+        ['localhost', 9099] : undefined)
     },
   ],
   declarations: [

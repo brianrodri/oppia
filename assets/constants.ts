@@ -5330,7 +5330,7 @@ export default {
 
   // Data required for Firebase authentication.
   "FIREBASE_ENVIRONMENT": {
-    "production": false,
+    "useEmulator": true,
     "config": {
       "apiKey": "",
       "authDomain": "",

@@ -18,11 +18,16 @@
 
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
+import { AngularFireModule } from '@angular/fire';
+import { AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
 import { FormsModule } from '@angular/forms';
+import { BrowserModule } from '@angular/platform-browser';
 import { NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
+import { firebase, FirebaseuiAngularLibraryComponent, FirebaseUIModule } from 'firebaseui-angular';
 import 'core-js/es7/reflect';
 import 'zone.js';
 
+import { AppConstants } from 'app.constants';
 import { ExplorationEmbedButtonModalComponent } from 'components/button-directives/exploration-embed-button-modal.component';
 import { SocialButtonsComponent } from 'components/button-directives/social-buttons.component';
 import { AttributionGuideComponent } from 'components/common-layout-directives/common-elements/attribution-guide.component';
@@ -41,12 +46,6 @@ import { SubtopicSummaryTileDirective } from 'components/summary-tile/subtopic-s
 import { TranslatePipe } from 'filters/translate.pipe';
 import { TakeBreakModalComponent } from 'pages/exploration-player-page/templates/take-break-modal.component';
 
-import { firebase, FirebaseuiAngularLibraryComponent, FirebaseUIModule } from 'firebaseui-angular';
-import { AppConstants } from 'app.constants';
-import { AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
-import { AngularFireModule } from '@angular/fire';
-import { BrowserModule } from '@angular/platform-browser';
-
 const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
   signInFlow: 'popup',
   signInOptions: [
@@ -63,14 +62,14 @@ const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
 
 @NgModule({
   imports: [
-    AngularFireModule.initializeApp(AppConstants.FIREBASE_ENVIRONMENT.config),
-    AngularFireAuthModule,
     BrowserModule,
     CommonModule,
-    FirebaseUIModule.forRoot(FIREBASE_UI_AUTH_CONFIG),
-    FormsModule,
     MaterialModule,
     NgbModalModule,
+    FormsModule,
+    AngularFireModule.initializeApp(AppConstants.FIREBASE_ENVIRONMENT.config),
+    AngularFireAuthModule,
+    FirebaseUIModule.forRoot(FIREBASE_UI_AUTH_CONFIG),
   ],
   providers: [
     {
@@ -80,6 +79,7 @@ const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
         ['localhost', 9099] : undefined)
     },
   ],
+
   declarations: [
     AttributionGuideComponent,
     BackgroundBannerComponent,

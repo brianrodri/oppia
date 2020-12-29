@@ -16,11 +16,14 @@
  * @fileoverview Component for the Oppia login page.
  */
 
+import { Component, Input } from '@angular/core';
+
 require('base-components/base-content.directive.ts');
 
-angular.module('oppia').component('loginPage', {
-  template: require('./login-page.component.html'),
-  controller: function() {
-    this.title = 'Login - Oppia';
-  },
-});
+@Component({
+  selector: 'login-page',
+  templateUrl: './login-page.component.html'
+})
+export class LoginPageComponent {
+  @Input() title: string = 'Sign in - Oppia';
+}

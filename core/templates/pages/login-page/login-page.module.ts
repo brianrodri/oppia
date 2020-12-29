@@ -18,12 +18,14 @@
 
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { APP_INITIALIZER, DoBootstrap, NgModule } from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
 import { BrowserModule } from '@angular/platform-browser';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { downgradeComponent, downgradeModule } from '@angular/upgrade/static';
 
 import { OppiaAngularRootComponent } from 'components/oppia-angular-root.component';
 import { SharedComponentsModule } from 'components/shared-component.module';
+import { LoginPageComponent } from 'pages/login-page/login-page.component';
 import { platformFeatureInitFactory, PlatformFeatureService } from 'services/platform-feature.service';
 import { RequestInterceptor } from 'services/request-interceptor.service';
 
@@ -32,12 +34,15 @@ import { RequestInterceptor } from 'services/request-interceptor.service';
   imports: [
     BrowserModule,
     HttpClientModule,
+    MatCardModule,
     SharedComponentsModule
   ],
   declarations: [
+    LoginPageComponent,
     OppiaAngularRootComponent
   ],
   entryComponents: [
+    LoginPageComponent,
     OppiaAngularRootComponent
   ],
   providers: [
@@ -66,3 +71,6 @@ angular.module('oppia').requires.push(downgradeModule(
 // bootstrap the Angular 8.
 angular.module('oppia').directive('oppiaAngularRoot', downgradeComponent(
   {component: OppiaAngularRootComponent}));
+
+angular.module('oppia').directive('loginPage', downgradeComponent(
+  {component: LoginPageComponent}));

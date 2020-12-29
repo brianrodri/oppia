@@ -5334,7 +5334,8 @@ export default {
     "config": {
       "apiKey": "",
       "authDomain": "",
-      "projectId": "dev-project-id",
+      "databaseURL": "",
+      "projectId": "",
       "storageBucket": "",
       "messagingSenderId": "",
       "appId": ""

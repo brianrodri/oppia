@@ -48,16 +48,11 @@ import { TakeBreakModalComponent } from 'pages/exploration-player-page/templates
 
 const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
   signInFlow: 'popup',
-  signInOptions: [
-    {
-      provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-      signInMethod: firebase.auth.EmailAuthProvider.EMAIL_LINK_SIGN_IN_METHOD
-    }
-  ],
+  signInOptions: [{provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID}],
+  privacyPolicyUrl: '/privacy-policy',
   queryParameterForSignInSuccessUrl: 'return_url',
   signInSuccessUrl: '/signup',
   tosUrl: '/terms',
-  privacyPolicyUrl: '/privacy-policy'
 };
 
 @NgModule({
@@ -71,6 +66,7 @@ const FIREBASE_UI_AUTH_CONFIG: firebaseui.auth.Config = {
     AngularFireAuthModule,
     FirebaseUIModule.forRoot(FIREBASE_UI_AUTH_CONFIG),
   ],
+
   providers: [
     {
       provide: USE_EMULATOR,

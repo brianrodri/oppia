@@ -71,6 +71,3 @@ angular.module('oppia').requires.push(downgradeModule(
 // bootstrap the Angular 8.
 angular.module('oppia').directive('oppiaAngularRoot', downgradeComponent(
   {component: OppiaAngularRootComponent}));
-
-angular.module('oppia').directive('loginPage', downgradeComponent(
-  {component: LoginPageComponent}));

@@ -17,6 +17,7 @@
  */
 
 import { Component, Input } from '@angular/core';
+import { downgradeComponent } from '@angular/upgrade/static';
 
 require('base-components/base-content.directive.ts');
 
@@ -27,3 +28,6 @@ require('base-components/base-content.directive.ts');
 export class LoginPageComponent {
   @Input() title: string = 'Sign in - Oppia';
 }
+
+angular.module('oppia').directive('loginPage', downgradeComponent(
+  {component: LoginPageComponent}));

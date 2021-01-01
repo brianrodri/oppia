@@ -45,7 +45,7 @@ export class AuthInterceptor implements HttpInterceptor {
       take(1),
       // Map the token to the passed-in HTTP request, modifying it to include an
       // Authorization header if and only if the token is not null.
-      map(token => !!token ? request : request.clone({
+      map(token => !token === null ? request : request.clone({
         setHeaders: {Authorization: `Bearer ${token}`}
       })),
       // Finally, forward the request to the next HttpHandler, switching the

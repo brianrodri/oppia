@@ -55,10 +55,40 @@ import { ProfileLinkTextComponent } from
   'components/profile-link-directives/profile-link-text.component';
 import { TakeBreakModalComponent } from
   'pages/exploration-player-page/templates/take-break-modal.component';
+import { AngularFireModule } from '@angular/fire';
+import { AngularFireAuth, AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
+import { AppConstants } from 'app.constants';
+import { BrowserModule } from '@angular/platform-browser';
 
 
 @NgModule({
-  imports: [CommonModule, MaterialModule, NgbModalModule, FormsModule],
+  imports: [
+    CommonModule,
+    MaterialModule,
+    NgbModalModule,
+    BrowserModule,
+    FormsModule,
+    AngularFireModule.initializeApp({
+      apiKey: AppConstants.FIREBASE_CONFIG_API_KEY,
+      authDomain: AppConstants.FIREBASE_CONFIG_AUTH_DOMAIN,
+      databaseURL: AppConstants.FIREBASE_CONFIG_DATABASE_URL,
+      projectId: AppConstants.FIREBASE_CONFIG_PROJECT_ID,
+      storageBucket: AppConstants.FIREBASE_CONFIG_STORAGE_BUCKET,
+      messagingSenderId: AppConstants.FIREBASE_CONFIG_MESSAGING_SENDER_ID,
+      appId: AppConstants.FIREBASE_CONFIG_APP_ID,
+    }),
+    AngularFireAuthModule
+  ],
+
+  providers: [
+    AngularFireAuth,
+    {
+      provide: USE_EMULATOR,
+      useValue: (
+        AppConstants.FIREBASE_EMULATOR_ENABLED ? ['localhost', 9099] :
+        undefined)
+    },
+  ],
 
   declarations: [
     AttributionGuideComponent,
@@ -95,6 +125,7 @@ import { TakeBreakModalComponent } from
 
   exports: [
     // Modules.
+    AngularFireAuthModule,
     FormsModule,
     MaterialModule,
     // Components, directives, and pipes.

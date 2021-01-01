@@ -21,6 +21,7 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+import { downgradeInjectable } from '@angular/upgrade/static';
 
 @Injectable({
   providedIn: 'root'
@@ -62,3 +63,6 @@ export class AuthService implements OnDestroy {
     return this.angularFireAuth.signOut();
   }
 }
+
+angular.module('oppia').factory(
+  'AuthService', downgradeInjectable(AuthService));

@@ -18,6 +18,7 @@
 
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { downgradeInjectable } from '@angular/upgrade/static';
 import { Observable } from 'rxjs';
 import { map, switchMap, take } from 'rxjs/operators';
 
@@ -44,7 +45,7 @@ export class AuthInterceptor implements HttpInterceptor {
       take(1),
       // Map the token to the passed-in HTTP request, modifying it to include an
       // Authorization header if and only if the token is not null.
-      map(token => token === null ? request : request.clone({
+      map(token => !!token ? request : request.clone({
         setHeaders: {Authorization: `Bearer ${token}`}
       })),
       // Finally, forward the request to the next HttpHandler, switching the
@@ -54,6 +55,9 @@ export class AuthInterceptor implements HttpInterceptor {
       // Note the different signatures between map and switchMap:
       //    Observable<T> | map(T => U)                   => Observable<U>
       //    Observable<T> | switchMap(T => Observable<U>) => Observable<U>
-      switchMap(request => next.handle(request)));
+      switchMap(req => next.handle(req)));
   }
 }
+
+angular.module('oppia').factory(
+  'AuthInterceptor', downgradeInjectable(AuthInterceptor));

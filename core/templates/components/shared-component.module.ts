@@ -68,13 +68,13 @@ import { AuthService } from 'services/auth.service';
     NgbModalModule,
     BrowserModule,
     FormsModule,
-    AngularFireModule.initializeApp(AuthService.getFirebaseOptions()),
+    AngularFireModule.initializeApp(AuthService.firebaseConfig),
     AngularFireAuthModule
   ],
 
   providers: [
     AngularFireAuth,
-    {provide: USE_EMULATOR, useValue: AuthService.getFirebaseEmulatorConfig()},
+    {provide: USE_EMULATOR, useValue: AuthService.firebaseEmulatorConfig},
   ],
 
   declarations: [

@@ -30,6 +30,10 @@ import { AppConstants } from 'app.constants';
 export class AuthService {
   constructor(private angularFireAuth: AngularFireAuth) {}
 
+  static get emulatorEnabled(): boolean {
+    return AppConstants.FIREBASE_EMULATOR_ENABLED;
+  }
+
   get idToken$(): Observable<string | null> {
     return this.angularFireAuth.idToken;
   }
@@ -38,7 +42,7 @@ export class AuthService {
     return this.angularFireAuth.signOut();
   }
 
-  static getFirebaseOptions(): FirebaseOptions {
+  static get firebaseConfig(): FirebaseOptions {
     return {
       apiKey: AppConstants.FIREBASE_CONFIG_API_KEY,
       authDomain: AppConstants.FIREBASE_CONFIG_AUTH_DOMAIN,
@@ -46,12 +50,11 @@ export class AuthService {
       storageBucket: AppConstants.FIREBASE_CONFIG_STORAGE_BUCKET,
       messagingSenderId: AppConstants.FIREBASE_CONFIG_MESSAGING_SENDER_ID,
       appId: AppConstants.FIREBASE_CONFIG_APP_ID,
-    };
+    } as const;
   }
 
-  static getFirebaseEmulatorConfig(): [string, number] {
-    return (
-      AppConstants.FIREBASE_EMULATOR_ENABLED ? ['localhost', 9099] : undefined);
+  static get firebaseEmulatorConfig(): readonly [string, number] {
+    return AuthService.emulatorEnabled ? ['localhost', 9099] : undefined;
   }
 }
 

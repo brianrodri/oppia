@@ -57,6 +57,10 @@ describe('Auth service', () => {
     await expectAsync(authService.signOutAsync()).toBeRejectedWithError('fail');
   });
 
+  it('should be in emulator mode during unit tests', () => {
+    expect(AuthService.emulatorEnabled).toBeTrue();
+  });
+
   it('should use firebase constants for the config', () => {
     expect(AuthService.firebaseConfig).toEqual({
       apiKey: AppConstants.FIREBASE_CONFIG_API_KEY,

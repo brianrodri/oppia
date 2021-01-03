@@ -37,8 +37,3 @@ def create_login_url(slug):
     return users.create_login_url(
         dest_url=utils.set_url_query_parameter(
             feconf.SIGNUP_URL, 'return_url', slug))
-
-
-def is_current_user_super_admin():
-    """Checks whether the current user owns this app."""
-    return users.is_current_user_admin()

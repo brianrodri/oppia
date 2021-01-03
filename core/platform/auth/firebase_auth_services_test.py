@@ -214,7 +214,21 @@ class AuthenticateRequestTests(test_utils.TestBase):
             auth_claims = firebase_auth_services.authenticate_request(request)
 
         self.assertEqual(
-            auth_claims, auth_domain.AuthClaims('auth_id', 'foo@test.com'))
+            auth_claims,
+            auth_domain.AuthClaims('auth_id', 'foo@test.com', False))
+
+    def test_identifies_user_with_admin_privileges(self):
+        verify_id_token_swap = self.swap_to_always_return(
+            firebase_admin.auth, 'verify_id_token',
+            value={'sub': 'auth_id', 'email': 'foo@test.com', 'role': 'admin'})
+        request = self.make_request(auth_header='Bearer DUMMY_JWT')
+
+        with verify_id_token_swap:
+            auth_claims = firebase_auth_services.authenticate_request(request)
+
+        self.assertEqual(
+            auth_claims,
+            auth_domain.AuthClaims('auth_id', 'foo@test.com', True))
 
     def test_returns_none_when_auth_header_is_missing(self):
         request = self.make_request()

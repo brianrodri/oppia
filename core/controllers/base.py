@@ -166,7 +166,9 @@ class BaseHandler(webapp2.RequestHandler):
             self.payload = None
         self.iframed = False
 
-        self.is_super_admin = user_services.is_current_user_super_admin()
+        auth_claims = user_services.get_auth_claims_from_request(request)
+        self.is_super_admin = auth_claims is not None and auth_claims.is_admin
+
         if feconf.ENABLE_MAINTENANCE_MODE and not self.is_super_admin:
             return
 
@@ -175,7 +177,6 @@ class BaseHandler(webapp2.RequestHandler):
         self.partially_logged_in = False
         self.user_is_scheduled_for_deletion = False
 
-        auth_claims = user_services.get_auth_claims_from_request(request)
         if auth_claims:
             auth_id = auth_claims.auth_id
             user_settings = user_services.get_user_settings_by_auth_id(auth_id)

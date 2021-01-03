@@ -30,15 +30,3 @@ class GaeCurrentUserServicesTests(test_utils.GenericTestBase):
             gae_current_user_services.create_login_url(''),
             'https://www.google.com/accounts/Login'
             '?continue=http%3A//localhost/signup%3Freturn_url%3D')
-
-    def test_is_current_user_super_admin(self):
-        with self.login_context(self.OWNER_EMAIL):
-            self.assertFalse(
-                gae_current_user_services.is_current_user_super_admin())
-
-        with self.login_context(self.ADMIN_EMAIL, is_super_admin=True):
-            self.assertTrue(
-                gae_current_user_services.is_current_user_super_admin())
-
-        self.assertFalse(
-            gae_current_user_services.is_current_user_super_admin())

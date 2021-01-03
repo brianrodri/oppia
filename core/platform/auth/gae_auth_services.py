@@ -38,7 +38,9 @@ def authenticate_request(unused_request):
     """Returns Claims for the user currently signed-in and sending requests."""
     gae_user = users.get_current_user()
     if gae_user is not None:
-        return auth_domain.AuthClaims(gae_user.user_id(), gae_user.email())
+        return auth_domain.AuthClaims(
+            gae_user.user_id(), gae_user.email(),
+            is_admin=users.is_current_user_admin())
     return None
 
 

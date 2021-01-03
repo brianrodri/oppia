@@ -86,8 +86,8 @@ def _acquire_firebase_context():
             firebase_admin.delete_app(app)
 
 
-def authenticate_request(request):
-    """Authenticates the request and returns the user who authorized it, if any.
+def _verify_id_token(auth_header):
+    """Verifies the Authorization header for a valid Firebase-provided ID token.
 
     Oppia follows the OAuth Bearer authentication scheme.
 
@@ -111,27 +111,41 @@ def authenticate_request(request):
             https://openid.net/specs/openid-connect-core-1_0.html#IDToken
 
     Args:
+        auth_header: str. The Authorization header taken from the request.
+
+    Returns:
+        dict(str: *). The Claims embedded into the Authorization header, if
+        valid. Otherwise, returns an empty dict.
+    """
+    scheme, _, token = auth_header.partition(' ')
+    if scheme != 'Bearer':
+        return {}
+    try:
+        with _acquire_firebase_context():
+            return firebase_auth.verify_id_token(token)
+    except (ValueError, firebase_exceptions.FirebaseError) as e:
+        logging.exception(e)
+        return {}
+
+
+def authenticate_request(request):
+    """Authenticates the request and returns the user who authorized it, if any.
+
+    Args:
         request: webapp2.Request. The HTTP request to inspect.
 
     Returns:
         AuthClaims|None. Claims of the user who authorized the request, or None
         if the request could not be authenticated.
     """
-    scheme, _, token = request.headers.get('Authorization', '').partition(' ')
-    if scheme != 'Bearer':
-        return None
-
-    try:
-        with _acquire_firebase_context():
-            claims = firebase_auth.verify_id_token(token)
-    except (ValueError, firebase_exceptions.FirebaseError) as e:
-        logging.exception(e)
-        return None
-
-    auth_id = claims.get('sub', None)
-    email = claims.get('email', None)
+    raw_claims = _verify_id_token(request.headers.get('Authorization', ''))
+    auth_id = raw_claims.get('sub', None)
+    email = raw_claims.get('email', None)
+    is_admin = raw_claims.get('role', None) == 'admin'
     # Auth ID is a required Claim, so return None when it is missing.
-    return None if not auth_id else auth_domain.AuthClaims(auth_id, email)
+    return (
+        None if not auth_id else
+        auth_domain.AuthClaims(auth_id, email, is_admin=is_admin))
 
 
 def delete_auth_associations(user_id):

@@ -49,16 +49,6 @@ def is_current_user_super_admin():
     return users.is_current_user_admin()
 
 
-def get_current_gae_id():
-    """Gets the user_id of current user.
-
-    Returns:
-        str or None. User id for the current user.
-    """
-    user = get_current_user()
-    return user and user.user_id()
-
-
 def get_current_user_email():
     """Get the email for current user.
 

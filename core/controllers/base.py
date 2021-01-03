@@ -170,7 +170,8 @@ class BaseHandler(webapp2.RequestHandler):
         if feconf.ENABLE_MAINTENANCE_MODE and not self.is_super_admin:
             return
 
-        self.gae_id = user_services.get_current_gae_id()
+        auth_claims = user_services.get_auth_claims_from_request(request)
+        self.gae_id = auth_claims.auth_id
         self.user_id = None
         self.username = None
         self.partially_logged_in = False

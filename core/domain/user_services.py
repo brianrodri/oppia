@@ -35,6 +35,7 @@ import utils
 
 import requests
 
+auth_services = models.Registry.import_auth_services()
 current_user_services = models.Registry.import_current_user_services()
 (user_models, audit_models, suggestion_models) = models.Registry.import_models(
     [models.NAMES.user, models.NAMES.audit, models.NAMES.suggestion])
@@ -2815,6 +2816,11 @@ def log_username_change(committer_id, old_username, new_username):
         new_username=new_username).put()
 
 
+def get_auth_claims_from_request(request):
+    """TODO."""
+    return auth_services.authenticate_request(request)
+
+
 def create_login_url(target_url):
     """Creates a login url.
 
@@ -2835,15 +2841,6 @@ def is_current_user_super_admin():
         not logged in False is returned.
     """
     return current_user_services.is_current_user_super_admin()
-
-
-def get_current_gae_id():
-    """Gets the GAE ID of current user.
-
-    Returns:
-        str or None. GAE ID of the current user. None if user is not logged in.
-    """
-    return current_user_services.get_current_gae_id()
 
 
 def get_current_user_email():

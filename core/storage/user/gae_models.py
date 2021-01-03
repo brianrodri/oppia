@@ -2796,23 +2796,23 @@ class UserAuthDetailsModel(base_models.BaseModel):
         return cls.get_by_id(user_id) is not None
 
     @classmethod
-    def get_by_auth_id(cls, auth_issuer, auth_id):
+    def get_by_auth_id(cls, provider_id, auth_id):
         """Fetch a user entry by auth_id of a particular auth service.
 
         Args:
-            auth_issuer: str. Name of the issuer of the auth ID.
+            provider_id: str. Name of the provider of the auth ID.
             auth_id: str. Authentication detail corresponding to the
-                authentication issuer.
+                authentication provider.
 
         Returns:
             UserAuthDetailsModel. The UserAuthDetailsModel instance having a
-            particular user mapped to the given auth_id and the auth issuer
+            particular user mapped to the given auth_id and the auth provider
             if there exists one, else None.
         """
 
-        if auth_issuer == feconf.AUTH_ISSUER_GAE:
+        if provider_id == feconf.GAE_AUTH_PROVIDER_ID:
             return cls.query(cls.gae_id == auth_id).get()
-        elif auth_issuer == feconf.AUTH_ISSUER_FIREBASE:
+        elif provider_id == feconf.FIREBASE_AUTH_PROVIDER_ID:
             return cls.query(cls.firebase_auth_id == auth_id).get()
         return None
 

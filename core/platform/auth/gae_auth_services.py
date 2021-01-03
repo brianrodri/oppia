@@ -29,9 +29,9 @@ from google.appengine.api import users
 user_models, = models.Registry.import_models([models.NAMES.user])
 
 
-def get_issuer():
-    """Returns the name of the issuer for these services."""
-    return feconf.AUTH_ISSUER_GAE
+def get_provider_id():
+    """Returns the name of the provider for these services."""
+    return feconf.GAE_AUTH_PROVIDER_ID
 
 
 def authenticate_request(unused_request):

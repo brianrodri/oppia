@@ -1092,8 +1092,8 @@ AVAILABLE_LANDING_PAGES = {
 CLASSROOM_PAGES = ['math']
 
 # Authentication method using GAE ID (google sign in).
-AUTH_ISSUER_GAE = 'gae'
-AUTH_ISSUER_FIREBASE = 'Firebase'
+GAE_AUTH_PROVIDER_ID = 'gae'
+FIREBASE_AUTH_PROVIDER_ID = 'Firebase'
 
 # TODO(#10501): Once domain objects can be imported by the storage layer, move
 # these back to appropriate places (rights_domain, topic_domain).

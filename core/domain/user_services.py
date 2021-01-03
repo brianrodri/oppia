@@ -443,16 +443,17 @@ class UserAuthDetails(python_utils.OBJECT):
         self.deleted = deleted
 
     @classmethod
-    def from_issuer(
-            cls, issuer_name, user_id, auth_id, parent_user_id=None,
+    def from_provider(
+            cls, provider_id, user_id, auth_id, parent_user_id=None,
             deleted=False):
         """Constructs a UserAuthDetails domain object determining the auth ID
-        kind from the given issuer.
+        kind from the given provider.
 
         Args:
-            issuer_name: str. The name of the issuer of the auth_id.
+            provider_id: str. The name of the provider of the auth_id.
             user_id: str. The unique ID of the user.
-            auth_id: str or None. The ID of the user retrieved from the issuer.
+            auth_id: str or None. The ID of the user retrieved from the
+                provider.
             parent_user_id: str or None. For profile users, the user ID of the
                 full user associated with that profile. None for full users.
             deleted: bool. Whether the user has requested removal of their
@@ -461,19 +462,19 @@ class UserAuthDetails(python_utils.OBJECT):
         Returns:
             UserAuthDetails. A domain object with the proper auth_id assigned.
         """
-        if issuer_name == feconf.AUTH_ISSUER_GAE:
+        if provider_id == feconf.GAE_AUTH_PROVIDER_ID:
             return cls(
                 user_id, gae_id=auth_id,
                 parent_user_id=parent_user_id, deleted=deleted)
-        elif issuer_name == feconf.AUTH_ISSUER_FIREBASE:
+        elif provider_id == feconf.FIREBASE_AUTH_PROVIDER_ID:
             return cls(
                 user_id, firebase_auth_id=auth_id,
                 parent_user_id=parent_user_id, deleted=deleted)
         else:
-            raise utils.ValidationError('Unknown issuer: %s' % issuer_name)
+            raise utils.ValidationError('Unknown provider: %s' % provider_id)
 
     def validate(self):
-        """Checks that user_id, gae_id/firebase_auth_id, and parent_user_id
+        """Checks that user_id, gae_id, firebase_auth_id, and parent_user_id
         fields of this UserAuthDetails domain object are valid.
 
         Raises:
@@ -523,10 +524,11 @@ class UserAuthDetails(python_utils.OBJECT):
         Returns:
             bool. True if user is full user, False otherwise.
         """
-        return (self.gae_id or self.firebase_auth_id) is not None
+        auth_id = self.gae_id or self.firebase_auth_id
+        return auth_id is not None
 
     def to_dict(self):
-        """Returns dict with UserAuthDetailsModel property names as keys."""
+        """Returns a dict matching the properties of UserAuthDetailsModel."""
         return {
             'gae_id': self.gae_id,
             'firebase_auth_id': self.firebase_auth_id,
@@ -1284,8 +1286,8 @@ def _create_new_user_transactional(auth_id, user_settings):
         user_settings: UserSettings. The user settings domain object
             corresponding to the newly created user.
     """
-    _save_user_auth_details(UserAuthDetails.from_issuer(
-        auth_services.get_issuer(), user_settings.user_id, auth_id))
+    _save_user_auth_details(UserAuthDetails.from_provider(
+        auth_services.get_provider_id(), user_settings.user_id, auth_id))
     _save_user_settings(user_settings)
     create_user_contributions(user_settings.user_id, [], [])
     auth_services.associate_auth_id_to_user_id(

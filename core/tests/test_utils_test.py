@@ -585,7 +585,7 @@ class AuthServicesStubTests(test_utils.GenericTestBase):
             self.assertEqual(
                 self.stub.authenticate_request(request),
                 auth_domain.AuthClaims(
-                    self.get_gae_id_from_email(self.EMAIL), self.EMAIL))
+                    self.get_auth_id_from_email(self.EMAIL), self.EMAIL))
 
         self.assertIsNone(self.stub.authenticate_request(request))
 

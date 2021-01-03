@@ -1192,7 +1192,7 @@ class UserAuthDetailsModelValidatorTests(test_utils.AuditJobsTestBase):
 
         self.signup(USER_EMAIL, USER_NAME)
         self.user_id = self.get_user_id_from_email(USER_EMAIL)
-        self.auth_id = self.get_gae_id_from_email(USER_EMAIL)
+        self.auth_id = self.get_auth_id_from_email(USER_EMAIL)
 
         # Note: There will be a total of 2 UserSettingsModels (hence 2
         # UserAuthDetailsModels too) even though only one user signs up in the
@@ -1280,7 +1280,7 @@ class UserIdentifiersModelValidatorTests(test_utils.AuditJobsTestBase):
 
         self.signup(USER_EMAIL, USER_NAME)
         self.user_id = self.get_user_id_from_email(USER_EMAIL)
-        self.auth_id = self.get_gae_id_from_email(USER_EMAIL)
+        self.auth_id = self.get_auth_id_from_email(USER_EMAIL)
 
         # Note: There will be a total of 2 UserSettingsModels (hence 2
         # UserAuthDetailsModels too) even though only one user signs up in the
@@ -1316,7 +1316,7 @@ class UserIdentifiersModelValidatorTests(test_utils.AuditJobsTestBase):
 
     def test_audit_with_last_updated_greater_than_current_time_fails(self):
         user_models.UserIdentifiersModel.get_by_id(
-            self.get_gae_id_from_email('tmpsuperadmin@example.com')
+            self.get_auth_id_from_email('tmpsuperadmin@example.com')
         ).delete()
         expected_output = [(
             u'[u\'failed validation check for current time check of '

@@ -1980,7 +1980,7 @@ class UserSettingsTests(test_utils.GenericTestBase):
         self.modifiable_user_data.display_alias = 'temp_name'
         user_services.update_multiple_users_data([self.modifiable_user_data])
 
-        gae_id = self.get_gae_id_from_email(self.OWNER_EMAIL)
+        gae_id = self.get_auth_id_from_email(self.OWNER_EMAIL)
         profile_pin = '123'
         error_msg = 'Expected display_alias to be a string, received'
         with self.assertRaisesRegexp(utils.ValidationError, error_msg):

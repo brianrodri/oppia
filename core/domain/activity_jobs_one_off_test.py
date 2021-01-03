@@ -1001,8 +1001,8 @@ class AddCommitCmdsUserIdsMetadataJobTests(test_utils.GenericTestBase):
         self.USER_1_ID = self.get_user_id_from_email(self.EMAIL_1)
         self.USER_2_ID = self.get_user_id_from_email(self.EMAIL_2)
 
-        self.USER_GAE_1_ID = self.get_gae_id_from_email(self.EMAIL_1)
-        self.USER_GAE_2_ID = self.get_gae_id_from_email(self.EMAIL_2)
+        self.USER_GAE_1_ID = self.get_auth_id_from_email(self.EMAIL_1)
+        self.USER_GAE_2_ID = self.get_auth_id_from_email(self.EMAIL_2)
 
     def test_add_commit_cmds_user_ids_to_collection_rights_snapshot(self):
         with self.collection_rights_model_swap:

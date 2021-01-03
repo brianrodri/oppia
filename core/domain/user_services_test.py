@@ -376,7 +376,8 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         self.assertEqual(user_settings_model.username, user_settings.username)
 
     def test_get_user_settings_by_auth_id_for_nonexistent_gae_id_is_none(self):
-        self.assertIsNone(user_services.get_user_settings_by_auth_id('gae_id_x'))
+        self.assertIsNone(
+            user_services.get_user_settings_by_auth_id('gae_id_x'))
 
     def test_get_user_settings_by_auth_id_strict_returns_user_settings(self):
         gae_id = 'gae_id'

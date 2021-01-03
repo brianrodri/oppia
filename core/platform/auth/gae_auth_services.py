@@ -21,6 +21,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 from core.domain import auth_domain
 from core.platform import models
+import python_utils
 
 from google.appengine.api import users
 
@@ -35,14 +36,13 @@ def authenticate_request(unused_request):
     return None
 
 
-def delete_auth_associations(user_id):
-    """Deletes associations referring to the given user_id."""
-    del user_id # TODO(brianrodri): Stop silencing lint with del.
+def delete_auth_associations(unused_user_id):
+    """No special action is necessary for deleting Google AppEngine users."""
+    pass
 
 
-def are_auth_associations_deleted(user_id):
-    """Returns whether the Firebase account of the given user ID is deleted."""
-    del user_id # TODO(brianrodri): Stop silencing lint with del.
+def are_auth_associations_deleted(unused_user_id):
+    """No special action is necessary for deleting Google AppEngine users."""
     return True
 
 
@@ -54,14 +54,40 @@ def get_user_id_from_auth_id(auth_id):
 
 def get_multi_user_ids_from_auth_ids(auth_ids):
     """Returns the user IDs associated with the given auth IDs."""
-    return [None for _ in auth_ids]
+    assoc_models = user_models.UserIdentifiersModel.get_multi(auth_ids)
+    return [None if m is None else m.user_id for m in assoc_models]
 
 
 def associate_auth_id_to_user_id(auth_id_user_id_pair):
     """Commits the association between auth ID and user ID."""
-    del auth_id_user_id_pair # TODO(brianrodri): Stop silencing lint with del.
+    auth_id, user_id = auth_id_user_id_pair
+
+    collision = get_user_id_from_auth_id(auth_id)
+    if collision is not None:
+        raise Exception('auth_id=%r is already associated to user_id=%r' % (
+            auth_id, collision))
+
+    assoc_model = user_models.UserIdentifiersModel(id=auth_id, user_id=user_id)
+    assoc_model.update_timestamps()
+    assoc_model.put()
 
 
 def associate_multi_auth_ids_to_user_ids(auth_id_user_id_pairs):
     """Commits the associations between auth IDs and user IDs."""
-    del auth_id_user_id_pairs # TODO(brianrodri): Stop silencing lint with del.
+    # Turn list(pair) to pair(list): https://stackoverflow.com/a/7558990/4859885
+    auth_ids, user_ids = python_utils.ZIP(*auth_id_user_id_pairs)
+
+    collisions = get_multi_user_ids_from_auth_ids(auth_ids)
+    if any(user_id is not None for user_id in collisions):
+        collisions = ', '.join(
+            '{auth_id=%r: user_id=%r}' % (auth_id, user_id)
+            for auth_id, user_id in python_utils.ZIP(auth_ids, collisions)
+            if user_id is not None)
+        raise Exception('already associated: %s' % collisions)
+
+    assoc_models = [
+        user_models.UserIdentifiersModel(id=auth_id, user_id=user_id)
+        for auth_id, user_id in python_utils.ZIP(auth_ids, user_ids)
+    ]
+    user_models.UserIdentifiersModel.update_timestamps_multi(assoc_models)
+    user_models.UserIdentifiersModel.put_multi(assoc_models)

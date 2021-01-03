@@ -272,7 +272,7 @@ class LibraryGroupsTest(exp_services_test.ExplorationServicesUnitTests):
         """
 
         super(LibraryGroupsTest, self).setUp()
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
+        self.login(self.ADMIN_EMAIL)
         csrf_token = self.get_new_csrf_token()
 
         self.post_json(
@@ -343,7 +343,6 @@ class FeaturedExplorationDisplayableSummariesTest(
 
         super(FeaturedExplorationDisplayableSummariesTest, self).setUp()
 
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.ALBERT_EMAIL, self.ALBERT_NAME)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.albert_id = self.get_user_id_from_email(self.ALBERT_EMAIL)
@@ -594,7 +593,6 @@ class TopRatedExplorationDisplayableSummariesTest(
 
         super(TopRatedExplorationDisplayableSummariesTest, self).setUp()
 
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.ALBERT_EMAIL, self.ALBERT_NAME)
         self.signup(self.ALICE_EMAIL, self.ALICE_NAME)
         self.signup(self.BOB_EMAIL, self.BOB_NAME)
@@ -753,7 +751,6 @@ class RecentlyPublishedExplorationDisplayableSummariesTest(
         super(
             RecentlyPublishedExplorationDisplayableSummariesTest, self).setUp()
 
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.ALBERT_EMAIL, self.ALBERT_NAME)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.albert_id = self.get_user_id_from_email(self.ALBERT_EMAIL)

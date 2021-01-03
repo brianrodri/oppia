@@ -983,7 +983,6 @@ class CreationButtonsTests(test_utils.GenericTestBase):
     def setUp(self):
         super(CreationButtonsTests, self).setUp()
         self.signup(self.EDITOR_EMAIL, self.EDITOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
 
     def test_new_exploration_ids(self):
         """Test generation of exploration ids."""
@@ -1013,7 +1012,7 @@ class CreationButtonsTests(test_utils.GenericTestBase):
     def test_can_upload_exploration(self):
         with self.swap(constants, 'ALLOW_YAML_FILE_UPLOAD', True):
             self.set_admins([self.ADMIN_USERNAME])
-            self.login(self.ADMIN_EMAIL, is_super_admin=True)
+            self.login(self.ADMIN_EMAIL)
 
             csrf_token = self.get_new_csrf_token()
             explorations_list = self.get_json(
@@ -1034,7 +1033,7 @@ class CreationButtonsTests(test_utils.GenericTestBase):
     def test_can_not_upload_exploration_when_server_does_not_allow_file_upload(
             self):
         self.set_admins([self.ADMIN_USERNAME])
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
+        self.login(self.ADMIN_EMAIL)
         csrf_token = self.get_new_csrf_token()
         self.post_json(
             '%s?yaml_file=%s' % (

@@ -34,7 +34,6 @@ export interface FetchQuestionBackendResponse {
   'associated_skill_dicts': SkillBackendDict[];
   'is_admin': boolean;
   'is_moderator': boolean;
-  'is_super_admin': boolean;
   'is_topic_manager': boolean;
   'question_dict': QuestionBackendDict;
   'user_email': string;

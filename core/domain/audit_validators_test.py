@@ -44,7 +44,6 @@ class RoleQueryAuditModelValidatorTests(test_utils.AuditJobsTestBase):
     def setUp(self):
         super(RoleQueryAuditModelValidatorTests, self).setUp()
 
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(USER_EMAIL, USER_NAME)
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -140,7 +139,6 @@ class UsernameChangeAuditModelValidatorTests(test_utils.AuditJobsTestBase):
     def setUp(self):
         super(UsernameChangeAuditModelValidatorTests, self).setUp()
 
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(USER_EMAIL, USER_NAME)
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)

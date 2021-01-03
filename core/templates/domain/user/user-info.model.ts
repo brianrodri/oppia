@@ -19,7 +19,6 @@
 export interface UserInfoBackendDict {
   'is_moderator': boolean;
   'is_admin': boolean;
-  'is_super_admin': boolean;
   'is_topic_manager': boolean;
   'can_create_collections': boolean;
   'preferred_site_language_code': string;
@@ -32,7 +31,6 @@ export class UserInfo {
   _isModerator: boolean;
   _isAdmin: boolean;
   _isTopicManager: boolean;
-  _isSuperAdmin: boolean;
   _canCreateCollections: boolean;
   _preferredSiteLanguageCode: string;
   _username: string;
@@ -40,14 +38,12 @@ export class UserInfo {
   _isLoggedIn: boolean;
 
   constructor(
-      isModerator: boolean, isAdmin: boolean, isSuperAdmin: boolean,
-      isTopicManager: boolean, canCreateCollections: boolean,
-      preferredSiteLanguageCode: string, username: string,
-      email: string, isLoggedIn: boolean) {
+      isModerator: boolean, isAdmin: boolean, isTopicManager: boolean,
+      canCreateCollections: boolean, preferredSiteLanguageCode: string,
+      username: string, email: string, isLoggedIn: boolean) {
     this._isModerator = isModerator;
     this._isAdmin = isAdmin;
     this._isTopicManager = isTopicManager;
-    this._isSuperAdmin = isSuperAdmin;
     this._canCreateCollections = canCreateCollections;
     this._preferredSiteLanguageCode = preferredSiteLanguageCode;
     this._username = username;
@@ -58,14 +54,12 @@ export class UserInfo {
   static createFromBackendDict(
       data: UserInfoBackendDict): UserInfo {
     return new UserInfo(
-      data.is_moderator, data.is_admin, data.is_super_admin,
-      data.is_topic_manager, data.can_create_collections,
-      data.preferred_site_language_code, data.username,
-      data.email, data.user_is_logged_in);
+      data.is_moderator, data.is_admin, data.is_topic_manager,
+      data.can_create_collections, data.preferred_site_language_code,
+      data.username, data.email, data.user_is_logged_in);
   }
   static createDefault(): UserInfo {
-    return new UserInfo(
-      false, false, false, false, false, null, null, null, false);
+    return new UserInfo(false, false, false, false, null, null, null, false);
   }
 
   isModerator(): boolean {
@@ -78,10 +72,6 @@ export class UserInfo {
 
   isTopicManager(): boolean {
     return this._isTopicManager;
-  }
-
-  isSuperAdmin(): boolean {
-    return this._isSuperAdmin;
   }
 
   canCreateCollections(): boolean {

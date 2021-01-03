@@ -31,7 +31,6 @@ class ConceptCardDataHandlerTest(test_utils.GenericTestBase):
     def setUp(self):
         """Before each individual test, create a dummy skill."""
         super(ConceptCardDataHandlerTest, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
 

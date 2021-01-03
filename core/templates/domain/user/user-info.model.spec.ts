@@ -22,7 +22,6 @@ describe('User info model', () => {
   var sampleUserInfoBackendObject = {
     is_moderator: true,
     is_admin: false,
-    is_super_admin: false,
     is_topic_manager: false,
     can_create_collections: true,
     preferred_site_language_code: 'en',
@@ -37,7 +36,6 @@ describe('User info model', () => {
 
     expect(userInfo.isModerator()).toBe(true);
     expect(userInfo.isAdmin()).toBe(false);
-    expect(userInfo.isSuperAdmin()).toBe(false);
     expect(userInfo.isTopicManager()).toBe(false);
     expect(userInfo.canCreateCollections()).toBe(true);
     expect(userInfo.getPreferredSiteLanguageCode()).toBe('en');
@@ -50,7 +48,6 @@ describe('User info model', () => {
     var userInfo = UserInfo.createDefault();
     expect(userInfo.isModerator()).toBe(false);
     expect(userInfo.isAdmin()).toBe(false);
-    expect(userInfo.isSuperAdmin()).toBe(false);
     expect(userInfo.isTopicManager()).toBe(false);
     expect(userInfo.canCreateCollections()).toBe(false);
     expect(userInfo.getPreferredSiteLanguageCode()).toBeNull();

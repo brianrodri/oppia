@@ -849,15 +849,14 @@ class AppEngineTestBase(TestBase):
     SERVER_PORT = '8080'
     DEFAULT_VERSION_HOSTNAME = '%s:%s' % (HTTP_HOST, SERVER_PORT)
 
-    SUPER_ADMIN_EMAIL = 'tmpsuperadmin@example.com'
-    SUPER_ADMIN_USERNAME = 'tmpsuperadm1n'
+    # This account is available in every test with admin privalages.
+    ADMIN_EMAIL = 'admin@example.com'
+    ADMIN_USERNAME = 'adm'
 
     # Dummy strings representing user attributes. Note that it is up to the
     # individual test to actually register these users as editors, admins, etc.
-    ADMIN_EMAIL = 'admin@example.com'
     # Usernames containing the string 'admin' are reserved, so we use 'adm'
     # instead.
-    ADMIN_USERNAME = 'adm'
     MODERATOR_EMAIL = 'moderator@example.com'
     MODERATOR_USERNAME = 'moderator'
     OWNER_EMAIL = 'owner@example.com'
@@ -1349,7 +1348,7 @@ tags: []
         self.taskqueue_testapp = webtest.TestApp(main_taskqueue.app)
         self.mail_testapp = webtest.TestApp(main_mail.app)
 
-        self.signup_superadmin_user()
+        self.signup_admin_user()
         self._search_services_stub.reset()
 
     def tearDown(self):
@@ -1357,22 +1356,20 @@ tags: []
             datastore_services.query_everything().iter(keys_only=True))
         self.testbed.deactivate()
 
-    def login(self, email, is_super_admin=False):
+    def login(self, email):
         """Sets the environment variables to simulate a login.
 
         Args:
             email: str. The email of the user who is to be logged in.
-            is_super_admin: bool. Whether the user is a super admin.
         """
         self.testbed.setup_env(
             overwrite=True,
-            user_email=email, user_id=self.get_gae_id_from_email(email),
-            user_is_admin=('1' if is_super_admin else '0'))
+            user_email=email, user_id=self.get_gae_id_from_email(email))
 
     def logout(self):
         """Simulates a logout by resetting the environment variables."""
         self.testbed.setup_env(
-            overwrite=True, user_email='', user_id='', user_is_admin='0')
+            overwrite=True, user_email='', user_id='')
 
     @contextlib.contextmanager
     def mock_datetime_utcnow(self, mocked_datetime):
@@ -1397,43 +1394,44 @@ tags: []
             yield
 
     @contextlib.contextmanager
-    def login_context(self, email, is_super_admin=False):
+    def login_context(self, email):
         """Log in with the given email under the context of a 'with' statement.
 
         Args:
             email: str. An email associated to a user account.
-            is_super_admin: bool. Whether the user is a super admin.
 
         Yields:
             str. The id of the user associated to the given email, who is now
             'logged in'.
         """
-        self.login(email, is_super_admin=is_super_admin)
+        self.login(email)
         try:
             yield self.get_user_id_from_email(email)
         finally:
             self.logout()
 
     @contextlib.contextmanager
-    def super_admin_context(self):
-        """Log in as a global admin under the context of a 'with' statement.
+    def admin_context(self):
+        """Log in with the default admin account within a context manager."""
+        self.login(self.ADMIN_EMAIL)
+        try:
+            yield self.get_user_id_from_email(self.ADMIN_EMAIL)
+        finally:
+            self.logout()
 
-        Yields:
-            str. The id of the user associated to the given email, who is now
-            'logged in'.
-        """
-        email = self.SUPER_ADMIN_EMAIL
-        with self.login_context(email, is_super_admin=True) as user_id:
-            yield user_id
-
-    def signup(self, email, username):
+    def signup(self, email, username, is_admin=False):
         """Complete the signup process for the user with the given username.
 
         Args:
             email: str. Email of the given user.
             username: str. Username of the given user.
+            is_admin: bool. Whether the user should be an admin.
         """
-        user_services.create_new_user(self.get_gae_id_from_email(email), email)
+        role = (
+            feconf.ROLE_ID_ADMIN if is_admin else
+            feconf.ROLE_ID_EXPLORATION_EDITOR)
+        user_services.create_new_user(
+            self.get_gae_id_from_email(email), email, role=role)
 
         with self.login_context(email), requests_mock.Mocker() as m:
             # We mock out all HTTP requests while trying to signup to avoid
@@ -1450,15 +1448,15 @@ tags: []
             })
             self.assertEqual(response.status_int, 200)
 
-    def signup_superadmin_user(self):
-        """Signs up a superadmin user. Must be called at the end of setUp()."""
-        self.signup(self.SUPER_ADMIN_EMAIL, self.SUPER_ADMIN_USERNAME)
+    def signup_admin_user(self):
+        """Signs up a admin user. Must be called at the end of setUp()."""
+        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME, is_admin=True)
 
     def set_config_property(self, config_obj, new_config_value):
         """Sets a given configuration object's value to the new value specified
         using a POST request.
         """
-        with self.super_admin_context():
+        with self.admin_context():
             self.post_json('/adminhandler', {
                 'action': 'save_config_properties',
                 'new_config_property_values': {
@@ -1473,7 +1471,7 @@ tags: []
             username: str. Username of the given user.
             user_role: str. Role of the given user.
         """
-        with self.super_admin_context():
+        with self.admin_context():
             self.post_json('/adminrolehandler', {
                 'username': username,
                 'role': user_role,

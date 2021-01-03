@@ -58,7 +58,6 @@ describe('User Backend Api Service', () => {
     const sampleUserInfoBackendObject = {
       is_moderator: false,
       is_admin: false,
-      is_super_admin: false,
       is_topic_manager: false,
       can_create_collections: true,
       preferred_site_language_code: null,
@@ -71,7 +70,6 @@ describe('User Backend Api Service', () => {
 
     userBackendApiService.getUserInfoAsync().then((userInfo) => {
       expect(userInfo.isAdmin()).toBe(sampleUserInfo.isAdmin());
-      expect(userInfo.isSuperAdmin()).toBe(sampleUserInfo.isSuperAdmin());
       expect(userInfo.isModerator()).toBe(sampleUserInfo.isModerator());
       expect(userInfo.isTopicManager()).toBe(sampleUserInfo.isTopicManager());
       expect(userInfo.isLoggedIn()).toBe(
@@ -96,7 +94,6 @@ describe('User Backend Api Service', () => {
     const sampleUserInfoBackendObject = {
       is_moderator: false,
       is_admin: false,
-      is_super_admin: false,
       is_topic_manager: false,
       can_create_collections: true,
       preferred_site_language_code: null,

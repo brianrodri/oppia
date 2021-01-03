@@ -44,7 +44,6 @@ class ModeratorPageTests(test_utils.GenericTestBase):
         self.logout()
 
         # Try accessing the moderator page after logging in as an admin.
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
         self.login(self.ADMIN_EMAIL)
         self.get_html_response('/moderator')

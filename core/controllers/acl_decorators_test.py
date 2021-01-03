@@ -64,7 +64,6 @@ class PlayExplorationDecoratorTests(test_utils.GenericTestBase):
     def setUp(self):
         super(PlayExplorationDecoratorTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
@@ -144,7 +143,6 @@ class PlayCollectionDecoratorTests(test_utils.GenericTestBase):
     def setUp(self):
         super(PlayCollectionDecoratorTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
@@ -233,7 +231,6 @@ class EditCollectionDecoratorTests(test_utils.GenericTestBase):
     def setUp(self):
         super(EditCollectionDecoratorTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
         self.signup(self.user_email, self.username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
@@ -389,7 +386,6 @@ class CreateCollectionDecoratorTests(test_utils.GenericTestBase):
         super(CreateCollectionDecoratorTests, self).setUp()
         self.signup(self.EDITOR_EMAIL, self.EDITOR_USERNAME)
         self.signup(self.user_email, self.username)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_collection_editors([self.username])
         self.set_admins([self.ADMIN_USERNAME])
         self.mock_testapp = webtest.TestApp(webapp2.WSGIApplication(
@@ -486,7 +482,6 @@ class CommentOnFeedbackThreadTests(test_utils.GenericTestBase):
         super(CommentOnFeedbackThreadTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.viewer_email, self.viewer_username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.set_moderators([self.MODERATOR_USERNAME])
@@ -601,7 +596,6 @@ class CreateFeedbackThreadTests(test_utils.GenericTestBase):
         super(CreateFeedbackThreadTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.viewer_email, self.viewer_username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.set_moderators([self.MODERATOR_USERNAME])
@@ -684,7 +678,6 @@ class ViewFeedbackThreadTests(test_utils.GenericTestBase):
         super(ViewFeedbackThreadTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.viewer_email, self.viewer_username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.set_moderators([self.MODERATOR_USERNAME])
@@ -771,7 +764,6 @@ class ManageEmailDashboardTests(test_utils.GenericTestBase):
     def setUp(self):
 
         super(ManageEmailDashboardTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
         self.set_moderators([self.MODERATOR_USERNAME])
@@ -851,7 +843,6 @@ class AccessModeratorPageTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(AccessModeratorPageTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.set_admins([self.ADMIN_USERNAME])
         self.mock_testapp = webtest.TestApp(webapp2.WSGIApplication(
@@ -958,7 +949,6 @@ class SendModeratorEmailsTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(SendModeratorEmailsTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.set_admins([self.ADMIN_USERNAME])
         self.mock_testapp = webtest.TestApp(webapp2.WSGIApplication(
@@ -1005,7 +995,6 @@ class VoiceoverExplorationTests(test_utils.GenericTestBase):
         super(VoiceoverExplorationTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.signup(self.banned_user_email, self.banned_username)
         self.signup(self.VOICE_ARTIST_EMAIL, self.VOICE_ARTIST_USERNAME)
@@ -1135,7 +1124,6 @@ class EditExplorationTests(test_utils.GenericTestBase):
         super(EditExplorationTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.set_moderators([self.MODERATOR_USERNAME])
@@ -1256,15 +1244,14 @@ class UploadExplorationTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(UploadExplorationTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.EDITOR_EMAIL, self.EDITOR_USERNAME)
         self.mock_testapp = webtest.TestApp(webapp2.WSGIApplication(
             [webapp2.Route('/mock_upload_exploration/', self.MockHandler)],
             debug=feconf.DEBUG,
         ))
 
-    def test_super_admin_can_upload_explorations(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
+    def test_admin_can_upload_explorations(self):
+        self.login(self.ADMIN_EMAIL)
         with self.swap(self, 'testapp', self.mock_testapp):
             self.get_json('/mock_upload_exploration/')
         self.logout()
@@ -1622,7 +1609,6 @@ class PublishExplorationTests(test_utils.GenericTestBase):
         super(PublishExplorationTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_moderators([self.MODERATOR_USERNAME])
         self.set_admins([self.ADMIN_USERNAME])
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
@@ -1696,7 +1682,6 @@ class ModifyExplorationRolesTests(test_utils.GenericTestBase):
         super(ModifyExplorationRolesTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_moderators([self.MODERATOR_USERNAME])
         self.set_admins([self.ADMIN_USERNAME])
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
@@ -1757,7 +1742,6 @@ class CollectionPublishStatusTests(test_utils.GenericTestBase):
     def setUp(self):
         super(CollectionPublishStatusTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
         self.signup(self.user_email, self.username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
@@ -1904,7 +1888,6 @@ class EditTopicDecoratorTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(EditTopicDecoratorTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.manager_email, self.manager_username)
         self.signup(self.viewer_email, self.viewer_username)
         self.set_admins([self.ADMIN_USERNAME])
@@ -1977,7 +1960,6 @@ class EditStoryDecoratorTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(EditStoryDecoratorTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2064,7 +2046,6 @@ class AddStoryToTopicTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(AddStoryToTopicTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.manager_email, self.manager_username)
         self.signup(self.viewer_email, self.viewer_username)
         self.set_admins([self.ADMIN_USERNAME])
@@ -2166,7 +2147,6 @@ class StoryViewerTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(StoryViewerTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2317,7 +2297,6 @@ class SubtopicViewerTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(SubtopicViewerTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2454,7 +2433,6 @@ class TopicViewerTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(TopicViewerTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2557,7 +2535,6 @@ class CreateSkillTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(CreateSkillTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2613,7 +2590,6 @@ class ManageQuestionSkillStatusTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(ManageQuestionSkillStatusTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2678,7 +2654,6 @@ class CreateTopicTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(CreateTopicTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2733,7 +2708,6 @@ class ManageRightsForTopicTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(ManageRightsForTopicTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2793,7 +2767,6 @@ class ChangeTopicPublicationStatusTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(ChangeTopicPublicationStatusTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2867,7 +2840,6 @@ class PerformCronTaskTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(PerformCronTaskTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -2879,8 +2851,8 @@ class PerformCronTaskTests(test_utils.GenericTestBase):
             debug=feconf.DEBUG,
         ))
 
-    def test_super_admin_can_perform_cron_tasks(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
+    def test_admin_can_perform_cron_tasks(self):
+        self.login(self.ADMIN_EMAIL)
         with self.swap(self, 'testapp', self.mock_testapp):
             self.get_json('/mock_perform_cron_task')
         self.logout()
@@ -2917,7 +2889,6 @@ class EditSkillDecoratorTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(EditSkillDecoratorTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.second_admin_email, self.second_admin_username)
         self.signup(self.manager_email, self.manager_username)
         self.signup(self.viewer_email, self.viewer_username)
@@ -2987,7 +2958,6 @@ class EditQuestionDecoratorTests(test_utils.GenericTestBase):
     def setUp(self):
         super(EditQuestionDecoratorTests, self).setUp()
 
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup('a@example.com', 'A')
         self.signup('b@example.com', 'B')
@@ -3108,7 +3078,6 @@ class PlayEntityDecoratorTests(test_utils.GenericTestBase):
     def setUp(self):
         super(PlayEntityDecoratorTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
@@ -3197,7 +3166,6 @@ class EditEntityDecoratorTests(test_utils.GenericTestBase):
         super(EditEntityDecoratorTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -3343,7 +3311,6 @@ class SaveExplorationTests(test_utils.GenericTestBase):
         super(SaveExplorationTests, self).setUp()
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.MODERATOR_EMAIL, self.MODERATOR_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.user_email, self.username)
         self.signup(self.banned_user_email, self.banned_username)
         self.signup(self.VOICE_ARTIST_EMAIL, self.VOICE_ARTIST_USERNAME)

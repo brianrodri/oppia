@@ -1248,12 +1248,13 @@ def get_all_profiles_auth_details_by_parent_user_id(parent_user_id):
     ]
 
 
-def create_new_user(gae_id, email):
+def create_new_user(gae_id, email, role=feconf.ROLE_ID_EXPLORATION_EDITOR):
     """Creates a new user and commits it to the datastore.
 
     Args:
         gae_id: str. The unique GAE user ID of the user.
         email: str. The user email.
+        role: str. The role of the user.
 
     Returns:
         UserSettings. The newly-created user settings domain object.
@@ -1285,7 +1286,7 @@ def create_new_user(gae_id, email):
             % (user_settings.user_id, gae_id))
     user_id = user_models.UserSettingsModel.get_new_id('')
     user_settings = UserSettings(
-        user_id, email, feconf.ROLE_ID_EXPLORATION_EDITOR,
+        user_id, email, role,
         preferred_language_codes=[constants.DEFAULT_LANGUAGE_CODE])
     transaction_services.run_in_transaction(
         _create_new_user_transactional,
@@ -2825,16 +2826,6 @@ def create_login_url(target_url):
         str. The correct login URL that includes the page to redirect to.
     """
     return current_user_services.create_login_url(target_url)
-
-
-def is_current_user_super_admin():
-    """Checks whether the current logged user is super admin.
-
-    Returns:
-        bool. Whether the current logged user is super admin. When the user is
-        not logged in False is returned.
-    """
-    return current_user_services.is_current_user_super_admin()
 
 
 def get_current_gae_id():

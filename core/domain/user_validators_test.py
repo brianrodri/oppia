@@ -68,13 +68,12 @@ class UserSettingsModelValidatorTests(test_utils.AuditJobsTestBase):
         super(UserSettingsModelValidatorTests, self).setUp()
 
         self.signup(USER_EMAIL, USER_NAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.user_id = self.get_user_id_from_email(USER_EMAIL)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
 
         # Note: There will a total of 3 UserSettingsModel even though
-        # only two users signup in the test since superadmin signup
+        # only two users signup in the test since admin signup
         # is also done in test_utils.AuditJobsTestBase.
         self.model_instance_0 = user_models.UserSettingsModel.get_by_id(
             self.user_id)
@@ -187,13 +186,12 @@ class UserNormalizedNameAuditOneOffJobTests(test_utils.AuditJobsTestBase):
         super(UserNormalizedNameAuditOneOffJobTests, self).setUp()
 
         self.signup(USER_EMAIL, USER_NAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.user_id = self.get_user_id_from_email(USER_EMAIL)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
 
         # Note: There will a total of 3 UserSettingsModel even though
-        # only two users signup in the test since superadmin signup
+        # only two users signup in the test since admin signup
         # is also done in test_utils.AuditJobsTestBase.
         self.model_instance_0 = user_models.UserSettingsModel.get_by_id(
             self.user_id)
@@ -1196,7 +1194,7 @@ class UserAuthDetailsModelValidatorTests(test_utils.AuditJobsTestBase):
 
         # Note: There will be a total of 2 UserSettingsModels (hence 2
         # UserAuthDetailsModels too) even though only one user signs up in the
-        # test since superadmin signup is also done in
+        # test since admin signup is also done in
         # test_utils.AuditJobsTestBase.
         self.model_instance = user_models.UserAuthDetailsModel.get_by_id(
             self.user_id)
@@ -1284,7 +1282,7 @@ class UserIdentifiersModelValidatorTests(test_utils.AuditJobsTestBase):
 
         # Note: There will be a total of 2 UserSettingsModels (hence 2
         # UserAuthDetailsModels too) even though only one user signs up in the
-        # test since superadmin signup is also done in
+        # test since admin signup is also done in
         # test_utils.AuditJobsTestBase.
         self.model_instance = user_models.UserIdentifiersModel.get_by_id(
             self.gae_id)
@@ -1592,7 +1590,6 @@ class UserSubscribersModelValidatorTests(test_utils.AuditJobsTestBase):
         super(UserSubscribersModelValidatorTests, self).setUp()
 
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(USER_EMAIL, USER_NAME)
 
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
@@ -2573,7 +2570,6 @@ class UserQueryModelValidatorTests(test_utils.AuditJobsTestBase):
         self.user_id = self.get_user_id_from_email(USER_EMAIL)
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
 
@@ -2742,7 +2738,6 @@ class UserBulkEmailsModelValidatorTests(test_utils.AuditJobsTestBase):
         self.user_id = self.get_user_id_from_email(USER_EMAIL)
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
 

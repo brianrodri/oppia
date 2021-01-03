@@ -824,7 +824,6 @@ class DeleteAccountTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(DeleteAccountTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.EDITOR_EMAIL, self.EDITOR_USERNAME)
         self.editor_id = self.get_user_id_from_email(self.EDITOR_EMAIL)
         self.login(self.EDITOR_EMAIL)
@@ -842,7 +841,7 @@ class DeleteAccountTests(test_utils.GenericTestBase):
             self.assertEqual(data, {'success': True})
 
         self.logout()
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
+        self.login(self.ADMIN_EMAIL)
         with self.testapp_swap_1:
             self.get_html_response('/cron/users/user_deletion')
         self.process_and_flush_pending_mapreduce_tasks()
@@ -1089,7 +1088,6 @@ class UserInfoHandlerTests(test_utils.GenericTestBase):
             'is_moderator': False,
             'is_admin': False,
             'is_topic_manager': False,
-            'is_super_admin': False,
             'can_create_collections': False,
             'preferred_site_language_code': None,
             'username': self.EDITOR_USERNAME,

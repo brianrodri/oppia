@@ -39,7 +39,6 @@ class BaseTopicEditorControllerTests(test_utils.GenericTestBase):
         super(BaseTopicEditorControllerTests, self).setUp()
         self.signup(self.TOPIC_MANAGER_EMAIL, self.TOPIC_MANAGER_USERNAME)
         self.signup(self.NEW_USER_EMAIL, self.NEW_USER_USERNAME)
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.topic_manager_id = self.get_user_id_from_email(
@@ -81,7 +80,7 @@ class BaseTopicEditorControllerTests(test_utils.GenericTestBase):
         topic_services.update_topic_and_subtopic_pages(
             self.admin_id, self.topic_id, changelist, 'Added subtopic.')
 
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
+        self.login(self.ADMIN_EMAIL)
         csrf_token = self.get_new_csrf_token()
         new_config_value = [{
             'name': 'math',

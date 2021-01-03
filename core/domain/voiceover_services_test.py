@@ -45,7 +45,6 @@ class VoiceoverApplicationServicesUnitTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(VoiceoverApplicationServicesUnitTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
         self.signup(self.APPLICANT_EMAIL, self.APPLICANT_USERNAME)
 

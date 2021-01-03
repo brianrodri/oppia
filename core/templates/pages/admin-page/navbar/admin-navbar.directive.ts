@@ -96,12 +96,12 @@ angular.module('oppia').directive('adminNavbar', [
 
             ctrl.username = '';
             ctrl.isModerator = null;
-            ctrl.isSuperAdmin = null;
+            ctrl.isAdmin = null;
             ctrl.profileUrl = '';
             UserService.getUserInfoAsync().then(function(userInfo) {
               ctrl.username = userInfo.getUsername();
               ctrl.isModerator = userInfo.isModerator();
-              ctrl.isSuperAdmin = userInfo.isSuperAdmin();
+              ctrl.isAdmin = userInfo.isAdmin();
 
               ctrl.profileUrl = (
                 UrlInterpolationService.interpolateUrl(PROFILE_URL_TEMPLATE, {

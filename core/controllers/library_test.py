@@ -59,7 +59,6 @@ class LibraryPageTests(test_utils.GenericTestBase):
         self.signup(self.EDITOR_EMAIL, self.EDITOR_USERNAME)
         self.editor_id = self.get_user_id_from_email(self.EDITOR_EMAIL)
 
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.admin = user_services.UserActionsInfo(self.admin_id)
 
@@ -75,7 +74,6 @@ class LibraryPageTests(test_utils.GenericTestBase):
             'is_admin': False,
             'is_topic_manager': False,
             'is_moderator': False,
-            'is_super_admin': False,
             'activity_list': [],
             'search_cursor': None
         }, response_dict)
@@ -131,7 +129,6 @@ class LibraryPageTests(test_utils.GenericTestBase):
         self.assertDictContainsSubset({
             'is_admin': True,
             'is_moderator': True,
-            'is_super_admin': False,
             'activity_list': [],
             'user_email': self.ADMIN_EMAIL,
             'username': self.ADMIN_USERNAME,
@@ -203,7 +200,6 @@ class LibraryPageTests(test_utils.GenericTestBase):
             'is_admin': False,
             'is_topic_manager': False,
             'is_moderator': False,
-            'is_super_admin': False,
             'activity_list': [],
             'search_cursor': None
         }, response_dict)
@@ -444,7 +440,6 @@ class LibraryGroupPageTests(test_utils.GenericTestBase):
         self.assertDictContainsSubset({
             'is_admin': False,
             'is_moderator': False,
-            'is_super_admin': False,
             'activity_list': [],
             'preferred_language_codes': ['en'],
         }, response_dict)
@@ -481,7 +476,6 @@ class LibraryGroupPageTests(test_utils.GenericTestBase):
         self.assertDictContainsSubset({
             'is_admin': False,
             'is_moderator': False,
-            'is_super_admin': False,
             'activity_list': [],
             'preferred_language_codes': ['en'],
         }, response_dict)

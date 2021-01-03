@@ -73,7 +73,6 @@ class CollectionViewerPermissionsTests(test_utils.GenericTestBase):
         self.logout()
 
     def test_unpublished_collections_are_visible_to_admins(self):
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.set_admins([self.ADMIN_USERNAME])
         self.login(self.ADMIN_EMAIL)
         self.get_html_response(

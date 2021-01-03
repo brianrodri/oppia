@@ -551,7 +551,7 @@ def can_access_admin_page(handler):
         is a super admin.
     """
 
-    def test_super_admin(self, **kwargs):
+    def test_admin(self, **kwargs):
         """Checks if the user is logged in and is a super admin.
 
         Args:
@@ -568,13 +568,13 @@ def can_access_admin_page(handler):
         if not self.user_id:
             raise self.NotLoggedInException
 
-        if not user_services.is_current_user_super_admin():
+        if self.role != feconf.ROLE_ID_ADMIN:
             raise self.UnauthorizedUserException(
-                '%s is not a super admin of this application' % self.user_id)
+                '%s is not an admin of this application' % self.user_id)
         return handler(self, **kwargs)
-    test_super_admin.__wrapped__ = True
+    test_admin.__wrapped__ = True
 
-    return test_super_admin
+    return test_admin
 
 
 def can_upload_exploration(handler):
@@ -605,7 +605,7 @@ def can_upload_exploration(handler):
         if not self.user_id:
             raise self.NotLoggedInException
 
-        if not user_services.is_current_user_super_admin():
+        if self.role != feconf.ROLE_ID_ADMIN:
             raise self.UnauthorizedUserException(
                 'You do not have credentials to upload explorations.')
         return handler(self, **kwargs)
@@ -1442,7 +1442,7 @@ def can_modify_exploration_roles(handler):
 
 def can_perform_cron_tasks(handler):
     """Decorator to ensure that the handler is being called by cron or by a
-    superadmin of the application.
+    admin of the application.
 
     Args:
         handler: function. The function to be decorated.
@@ -1450,11 +1450,11 @@ def can_perform_cron_tasks(handler):
     Returns:
         function. The newly decorated function that now also ensures that
         the handler can only be executed if it is called by cron or by
-        a superadmin of the application.
+        a admin of the application.
     """
 
     def test_can_perform(self, **kwargs):
-        """Checks if the handler is called by cron or by a superadmin of the
+        """Checks if the handler is called by cron or by a admin of the
         application.
 
         Args:
@@ -1468,7 +1468,7 @@ def can_perform_cron_tasks(handler):
                 credentials to access the page.
         """
         if (self.request.headers.get('X-AppEngine-Cron') is None and
-                not self.is_super_admin):
+                self.role != feconf.ROLE_ID_ADMIN):
             raise self.UnauthorizedUserException(
                 'You do not have the credentials to access this page.')
         else:

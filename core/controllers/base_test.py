@@ -227,12 +227,10 @@ class BaseHandlerTests(test_utils.GenericTestBase):
                 '<maintenance-page>', response.body)
             self.assertNotIn('<library-page>', response.body)
 
-    def test_maintenance_mode_when_enabled_and_super_admin_html(self):
+    def test_maintenance_mode_when_enabled_and_admin_html(self):
         swap_maintenance_mode = self.swap(
             feconf, 'ENABLE_MAINTENANCE_MODE', True)
-        login_super_admin = self.login_context(
-            self.SUPER_ADMIN_EMAIL, is_super_admin=True)
-        with swap_maintenance_mode, login_super_admin:
+        with swap_maintenance_mode, self.admin_context():
             response = self.get_html_response('/community-library')
             self.assertIn('<library-page>', response.body)
             self.assertNotIn(
@@ -250,12 +248,10 @@ class BaseHandlerTests(test_utils.GenericTestBase):
                 'Oppia is currently being upgraded, and the site should be up '
                 'and running again in a few hours. Thanks for your patience!')
 
-    def test_maintenance_mode_when_enabled_and_super_admin_json(self):
+    def test_maintenance_mode_when_enabled_and_admin_json(self):
         swap_maintenance_mode = self.swap(
             feconf, 'ENABLE_MAINTENANCE_MODE', True)
-        login_super_admin = self.login_context(
-            self.SUPER_ADMIN_EMAIL, is_super_admin=True)
-        with swap_maintenance_mode, login_super_admin:
+        with swap_maintenance_mode, self.admin_context():
             response = self.get_json('/url_handler')
             self.assertIn('login_url', response)
             self.assertIsNone(response['login_url'])
@@ -658,8 +654,7 @@ class EscapingTests(test_utils.GenericTestBase):
         super(EscapingTests, self).setUp()
 
         # Update a config property that shows in all pages.
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
+        self.login(self.ADMIN_EMAIL)
 
         # Modify the testapp to use the fake handler.
         self.testapp = webtest.TestApp(webapp2.WSGIApplication(

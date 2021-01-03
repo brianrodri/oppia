@@ -43,7 +43,6 @@ describe('Learner Dashboard Backend API Service', () => {
     },
     user_email: 'test@example.com',
     is_admin: false,
-    is_super_admin: false,
     is_moderator: false
   };
 

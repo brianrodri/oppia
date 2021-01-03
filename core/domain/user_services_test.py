@@ -307,7 +307,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         error_msg = 'Invalid email address: @'
         with self.assertRaisesRegexp(utils.ValidationError, error_msg):
             user_services.create_new_user('gae_id', bad_email)
-        tmp_admin_user_id = self.get_user_id_from_email(self.SUPER_ADMIN_EMAIL)
+        tmp_admin_user_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         user_ids_in_user_settings = [
             model.id for model in user_models.UserSettingsModel.get_all()]
         user_ids_in_user_auth_details = [
@@ -1217,7 +1217,6 @@ class UpdateContributionMsecTests(test_utils.GenericTestBase):
     def setUp(self):
         super(UpdateContributionMsecTests, self).setUp()
 
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
 

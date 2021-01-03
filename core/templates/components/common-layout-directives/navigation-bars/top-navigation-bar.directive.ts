@@ -208,7 +208,7 @@ angular.module('oppia').directive('topNavigationBar', [
             ctrl.isModerator = null;
             ctrl.isAdmin = null;
             ctrl.isTopicManager = null;
-            ctrl.isSuperAdmin = null;
+            ctrl.isAdmin = null;
             ctrl.userIsLoggedIn = null;
             ctrl.username = '';
             ctrl.currentUrl = window.location.pathname.split('/')[1];
@@ -263,7 +263,7 @@ angular.module('oppia').directive('topNavigationBar', [
               ctrl.isModerator = userInfo.isModerator();
               ctrl.isAdmin = userInfo.isAdmin();
               ctrl.isTopicManager = userInfo.isTopicManager();
-              ctrl.isSuperAdmin = userInfo.isSuperAdmin();
+              ctrl.isAdmin = userInfo.isAdmin();
               ctrl.userIsLoggedIn = userInfo.isLoggedIn();
               ctrl.username = userInfo.getUsername();
               if (ctrl.username) {

@@ -54,7 +54,6 @@ class TrainedClassifierHandlerTests(test_utils.ClassifierTestBase):
             feconf.TESTS_DATA_DIR, 'string_classifier_test.yaml')
         with python_utils.open_file(yaml_path, 'r') as yaml_file:
             self.yaml_content = yaml_file.read()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup('moderator@example.com', 'mod')
 
         assets_list = []
@@ -182,7 +181,7 @@ class TrainedClassifierHandlerTests(test_utils.ClassifierTestBase):
             with fail_training_job:
                 # Adding moderator email to admin config page
                 # for sending emails for failed training jobs.
-                self.login(self.ADMIN_EMAIL, is_super_admin=True)
+                self.login(self.ADMIN_EMAIL)
                 response_dict = self.get_json('/adminhandler')
                 response_config_properties = response_dict['config_properties']
                 expected_email_list = {

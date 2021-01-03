@@ -57,7 +57,6 @@ class ContributionOpportunitiesHandlerTest(test_utils.GenericTestBase):
 
     def setUp(self):
         super(ContributionOpportunitiesHandlerTest, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
@@ -340,7 +339,6 @@ class TranslatableTextHandlerTest(test_utils.GenericTestBase):
 
     def setUp(self):
         super(TranslatableTextHandlerTest, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
         self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
 
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)

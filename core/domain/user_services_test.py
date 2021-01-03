@@ -725,7 +725,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
 
         self.assertIsNone(
             user_models.UserAuthDetailsModel.get_by_auth_id(
-                feconf.AUTH_METHOD_GAE, new_gae_id)
+                feconf.AUTH_ISSUER_GAE, new_gae_id)
         )
 
         user_services.create_new_user(new_gae_id, new_email)
@@ -753,8 +753,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         user_services.create_new_user(gae_id, email)
         user_auth_details_model = (
             user_models.UserAuthDetailsModel.get_by_auth_id(
-                feconf.AUTH_METHOD_GAE, gae_id)
-        )
+                feconf.AUTH_ISSUER_GAE, gae_id))
         user_auth_details = user_services.get_auth_details_by_user_id(
             user_auth_details_model.id)
         self.assertEqual(
@@ -793,7 +792,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         user_services.create_new_user(gae_id, email)
         user_auth_details_model = (
             user_models.UserAuthDetailsModel.get_by_auth_id(
-                feconf.AUTH_METHOD_GAE, gae_id)
+                feconf.AUTH_ISSUER_GAE, gae_id)
         )
         user_id = user_auth_details_model.id
         self.modifiable_user_data.user_id = user_id
@@ -838,7 +837,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         user_services.create_new_user(gae_id, email)
         user_auth_details_model = (
             user_models.UserAuthDetailsModel.get_by_auth_id(
-                feconf.AUTH_METHOD_GAE, gae_id)
+                feconf.AUTH_ISSUER_GAE, gae_id)
         )
         user_id = user_auth_details_model.id
         self.modifiable_user_data.user_id = user_id
@@ -944,7 +943,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         user_services.create_new_user(gae_id, email)
         user_auth_details_model = (
             user_models.UserAuthDetailsModel.get_by_auth_id(
-                feconf.AUTH_METHOD_GAE, gae_id)
+                feconf.AUTH_ISSUER_GAE, gae_id)
         )
         user_id = user_auth_details_model.id
         self.modifiable_user_data.user_id = user_id
@@ -1003,7 +1002,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         user_services.create_new_user(gae_id, email)
         user_auth_details_model = (
             user_models.UserAuthDetailsModel.get_by_auth_id(
-                feconf.AUTH_METHOD_GAE, gae_id)
+                feconf.AUTH_ISSUER_GAE, gae_id)
         )
         user_id = user_auth_details_model.id
         self.modifiable_user_data.user_id = user_id
@@ -1999,7 +1998,7 @@ class UserSettingsTests(test_utils.GenericTestBase):
         user_gae_id = (
             user_services.get_auth_details_by_user_id(user_id).gae_id)
         with self.assertRaisesRegexp(
-            Exception, 'User %s already exists for gae_id %s.'
+            Exception, 'User %s already exists for auth_id %s.'
             % (user_id, user_gae_id)
         ):
             user_services.create_new_user(
@@ -2163,7 +2162,7 @@ class UserAuthDetailsTests(test_utils.GenericTestBase):
         self.user_auth_details.parent_user_id = (
             user_models.UserSettingsModel.get_new_id(''))
         with self.assertRaisesRegexp(
-            utils.ValidationError, 'The parent user ID and gae_id cannot be '
+            utils.ValidationError, 'The parent user ID and auth_id cannot be '
             'present together for a user.'
         ):
             self.user_auth_details.validate()
@@ -2172,7 +2171,7 @@ class UserAuthDetailsTests(test_utils.GenericTestBase):
         self.user_auth_details.parent_user_id = None
         self.user_auth_details.gae_id = None
         with self.assertRaisesRegexp(
-            utils.ValidationError, 'The parent user ID and gae_id cannot be '
+            utils.ValidationError, 'The parent user ID and auth_id cannot be '
             'None together for a user.'
         ):
             self.user_auth_details.validate()

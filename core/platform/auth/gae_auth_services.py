@@ -21,11 +21,17 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 from core.domain import auth_domain
 from core.platform import models
+import feconf
 import python_utils
 
 from google.appengine.api import users
 
 user_models, = models.Registry.import_models([models.NAMES.user])
+
+
+def get_issuer():
+    """Returns the name of the issuer for these services."""
+    return feconf.AUTH_ISSUER_GAE
 
 
 def authenticate_request(unused_request):

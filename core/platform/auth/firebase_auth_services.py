@@ -59,6 +59,7 @@ import logging
 
 from core.domain import auth_domain
 from core.platform import models
+import feconf
 import python_utils
 
 import firebase_admin
@@ -67,6 +68,11 @@ from firebase_admin import exceptions as firebase_exceptions
 
 auth_models, = models.Registry.import_models([models.NAMES.auth])
 transaction_services = models.Registry.import_transaction_services()
+
+
+def get_issuer():
+    """Returns the name of the issuer for these services."""
+    return feconf.AUTH_ISSUER_FIREBASE
 
 
 @contextlib.contextmanager

@@ -26,6 +26,7 @@ import logging
 import re
 
 from constants import constants
+from core.domain import auth_domain
 from core.domain import role_services
 from core.domain import user_domain
 from core.platform import models
@@ -411,19 +412,25 @@ class UserAuthDetails(python_utils.OBJECT):
 
     Attributes:
         user_id: str. The unique ID of the user.
-        gae_id: str. The ID of the user retrieved from GAE.
+        gae_id: str or None. The ID of the user retrieved from GAE.
+        firebase_auth_id: str or None. The Firebase authentication ID of the
+            user.
         parent_user_id: str or None. For profile users, the user ID of the full
             user associated with that profile. None for full users.
         deleted: bool. Whether the user is marked as deleted and will be fully
             deleted soon.
     """
 
-    def __init__(self, user_id, gae_id, parent_user_id=None, deleted=False):
+    def __init__(
+            self, user_id, gae_id=None, firebase_auth_id=None,
+            parent_user_id=None, deleted=False):
         """Constructs a UserAuthDetails domain object.
 
         Args:
             user_id: str. The unique ID of the user.
-            gae_id: str. The ID of the user retrieved from GAE.
+            gae_id: str or None. The ID of the user retrieved from GAE.
+            firebase_auth_id: str or None. The Firebase authentication ID of the
+                user.
             parent_user_id: str or None. For profile users, the user ID of the
                 full user associated with that profile. None for full users.
             deleted: bool. Whether the user has requested removal of their
@@ -431,16 +438,48 @@ class UserAuthDetails(python_utils.OBJECT):
         """
         self.user_id = user_id
         self.gae_id = gae_id
+        self.firebase_auth_id = firebase_auth_id
         self.parent_user_id = parent_user_id
         self.deleted = deleted
 
+    @classmethod
+    def from_issuer(
+            cls, issuer_name, user_id, auth_id, parent_user_id=None,
+            deleted=False):
+        """Constructs a UserAuthDetails domain object determining the auth ID
+        kind from the given issuer.
+
+        Args:
+            issuer_name: str. The name of the issuer of the auth_id.
+            user_id: str. The unique ID of the user.
+            auth_id: str or None. The ID of the user retrieved from the issuer.
+            parent_user_id: str or None. For profile users, the user ID of the
+                full user associated with that profile. None for full users.
+            deleted: bool. Whether the user has requested removal of their
+                account.
+
+        Returns:
+            UserAuthDetails. A domain object with the proper auth_id assigned.
+        """
+        if issuer_name == feconf.AUTH_ISSUER_GAE:
+            return cls(
+                user_id, gae_id=auth_id,
+                parent_user_id=parent_user_id, deleted=deleted)
+        elif issuer_name == feconf.AUTH_ISSUER_FIREBASE:
+            return cls(
+                user_id, firebase_auth_id=auth_id,
+                parent_user_id=parent_user_id, deleted=deleted)
+        else:
+            raise utils.ValidationError('Unknown issuer: %s' % issuer_name)
+
     def validate(self):
-        """Checks that user_id, gae_id, and parent_user_id fields of this
-        UserAuthDetails domain object are valid.
+        """Checks that user_id, gae_id/firebase_auth_id, and parent_user_id
+        fields of this UserAuthDetails domain object are valid.
 
         Raises:
             ValidationError. The user_id is not str.
             ValidationError. The gae_id is not str.
+            ValidationError. The firebase_auth_id is not str.
             ValidationError. The parent_user_id is not str.
         """
         if not isinstance(self.user_id, python_utils.BASESTRING):
@@ -454,23 +493,28 @@ class UserAuthDetails(python_utils.OBJECT):
         if (self.gae_id is not None and
                 not isinstance(self.gae_id, python_utils.BASESTRING)):
             raise utils.ValidationError(
-                'Expected gae_id to be a string, received %s' %
-                self.gae_id
-            )
+                'Expected gae_id to be a string, received %s' % self.gae_id)
+
+        if (self.firebase_auth_id is not None and
+                not isinstance(self.firebase_auth_id, python_utils.BASESTRING)):
+            raise utils.ValidationError(
+                'Expected firebase_auth_id to be a string, received %s' %
+                self.firebase_auth_id)
 
         if (self.parent_user_id is not None and
                 not is_user_id_valid(self.parent_user_id)):
             raise utils.ValidationError(
                 'The parent user ID is in a wrong format.')
 
-        if self.parent_user_id and self.gae_id:
+        auth_id = self.gae_id or self.firebase_auth_id
+        if self.parent_user_id and auth_id:
             raise utils.ValidationError(
-                'The parent user ID and gae_id cannot be present together '
+                'The parent user ID and auth_id cannot be present together '
                 'for a user.')
 
-        if not self.parent_user_id and not self.gae_id:
+        if not self.parent_user_id and not auth_id:
             raise utils.ValidationError(
-                'The parent user ID and gae_id cannot be None together '
+                'The parent user ID and auth_id cannot be None together '
                 'for a user.')
 
     def is_full_user(self):
@@ -479,7 +523,16 @@ class UserAuthDetails(python_utils.OBJECT):
         Returns:
             bool. True if user is full user, False otherwise.
         """
-        return self.gae_id is not None
+        return (self.gae_id or self.firebase_auth_id) is not None
+
+    def to_dict(self):
+        """Returns dict with UserAuthDetailsModel property names as keys."""
+        return {
+            'gae_id': self.gae_id,
+            'firebase_auth_id': self.firebase_auth_id,
+            'parent_user_id': self.parent_user_id,
+            'deleted': self.deleted
+        }
 
 
 def is_user_id_valid(user_id):
@@ -725,10 +778,11 @@ def get_user_settings_by_auth_id(auth_id, strict=False):
         Exception. The value of strict is True and given auth_id does not exist.
     """
     user_id = auth_services.get_user_id_from_auth_id(auth_id)
-    if user_id is not None:
-        user_settings = _get_user_settings_from_model(
-            user_models.UserSettingsModel.get_by_id(user_id))
-        return user_settings
+    user_settings_model = (
+        None if user_id is None else
+        user_models.UserSettingsModel.get_by_id(user_id))
+    if user_settings_model is not None:
+        return _get_user_settings_from_model(user_settings_model)
     elif strict:
         logging.error('Could not find user with id %s' % auth_id)
         raise Exception('User not found.')
@@ -1209,19 +1263,6 @@ def create_new_user(auth_id, email):
     Raises:
         Exception. A user with the given auth_id already exists.
     """
-    def _create_new_user_transactional(user_settings, user_auth_details):
-        """Save user models for new users as a transaction.
-
-        Args:
-            user_settings: UserSettings. The user settings domain object
-                corresponding to the newly created user.
-            user_auth_details: UserAuthDetails. The user auth details domain
-                object corresponding to the newly created user.
-        """
-        _save_user_auth_details(user_auth_details)
-        _save_user_settings(user_settings)
-        create_user_contributions(user_settings.user_id, [], [])
-
     user_settings = get_user_settings_by_auth_id(auth_id, strict=False)
     if user_settings is not None:
         raise Exception('User %s already exists for auth_id %s.' % (
@@ -1230,11 +1271,25 @@ def create_new_user(auth_id, email):
     user_settings = UserSettings(
         user_id, email, feconf.ROLE_ID_EXPLORATION_EDITOR,
         preferred_language_codes=[constants.DEFAULT_LANGUAGE_CODE])
-    transaction_services.run_in_transaction(
-        _create_new_user_transactional,
-        user_settings,
-        UserAuthDetails(user_id, auth_id))
+    _create_new_user_transactional(auth_id, user_settings)
     return user_settings
+
+
+@transaction_services.run_in_transaction_wrapper
+def _create_new_user_transactional(auth_id, user_settings):
+    """Save user models for new users as a transaction.
+
+    Args:
+        auth_id: str. The auth_id of the newly created user.
+        user_settings: UserSettings. The user settings domain object
+            corresponding to the newly created user.
+    """
+    _save_user_auth_details(UserAuthDetails.from_issuer(
+        auth_services.get_issuer(), user_settings.user_id, auth_id))
+    _save_user_settings(user_settings)
+    create_user_contributions(user_settings.user_id, [], [])
+    auth_services.associate_auth_id_to_user_id(
+        auth_domain.AuthIdUserIdPair(auth_id, user_settings.user_id))
 
 
 def create_new_profiles(auth_id, email, modifiable_user_data_list):
@@ -1260,19 +1315,6 @@ def create_new_profiles(auth_id, email, modifiable_user_data_list):
             modifiable_user_data object.
     """
 
-    def _create_new_profile_transactional(
-            user_settings, user_auth_details):
-        """Save user models for new users as a transaction.
-
-        Args:
-            user_settings: UserSettings. The user settings domain object
-                corresponding to the newly created user.
-            user_auth_details: UserAuthDetails. The user auth details domain
-                object corresponding to the newly created list of users.
-        """
-        _save_user_auth_details(user_auth_details)
-        _save_user_settings(user_settings)
-
     # As new profile user creation is done by a full (parent) user only.
     parent_user_settings = get_user_settings_by_auth_id(auth_id, strict=True)
     if parent_user_settings.pin is None:
@@ -1291,19 +1333,31 @@ def create_new_profiles(auth_id, email, modifiable_user_data_list):
         )
         user_settings.populate_from_modifiable_user_data(modifiable_user_data)
 
-        user_auth_details = UserAuthDetails(user_id, None, parent_user_id)
+        user_auth_details = (
+            UserAuthDetails(user_id, parent_user_id=parent_user_id))
 
         # Each new profile user must be written to the datastore first and
         # because if we convert it into a batch write request, then calling
         # get_new_id() in a loop can possibly create same user_id for 2 users
         # because it internally uses UserSettingsModel.get_by_id method to
         # check if user_id does not exist already.
-        transaction_services.run_in_transaction(
-            _create_new_profile_transactional, user_settings,
-            user_auth_details
-        )
+        _create_new_profile_transactional(user_settings, user_auth_details)
         user_settings_list.append(user_settings)
     return user_settings_list
+
+
+@transaction_services.run_in_transaction_wrapper
+def _create_new_profile_transactional(user_settings, user_auth_details):
+    """Save user models for new users as a transaction.
+
+    Args:
+        user_settings: UserSettings. The user settings domain object
+            corresponding to the newly created user.
+        user_auth_details: UserAuthDetails. The user auth details domain
+            object corresponding to the newly created list of users.
+    """
+    _save_user_auth_details(user_auth_details)
+    _save_user_settings(user_settings)
 
 
 def update_multiple_users_data(modifiable_user_data_list):
@@ -1323,12 +1377,10 @@ def update_multiple_users_data(modifiable_user_data_list):
     user_ids = [user.user_id for user in modifiable_user_data_list]
     user_settings_list = get_users_settings(user_ids)
     user_auth_details_list = get_multiple_user_auth_details(user_ids)
-    for (modifiable_user_data, user_settings, user_auth_details) in (
+    for modifiable_user_data, user_settings, user_auth_details in (
             python_utils.ZIP(
                 modifiable_user_data_list, user_settings_list,
-                user_auth_details_list
-            )
-        ):
+                user_auth_details_list)):
         user_id = modifiable_user_data.user_id
         if user_id is None:
             raise Exception('Missing user ID.')
@@ -1362,7 +1414,8 @@ def _save_existing_users_auth_details(user_auth_details_list):
     """Commits a list of existing users' UserAuthDetails objects to the
     datastore.
 
-    Args: user_auth_details_list. list(UserAuthDetails). The list of
+    Args:
+        user_auth_details_list: list(UserAuthDetails). The list of
             UserAuthDetails objects to be saved.
     """
     user_ids = [user.user_id for user in user_auth_details_list]
@@ -1371,12 +1424,7 @@ def _save_existing_users_auth_details(user_auth_details_list):
     for user_auth_details_model, user_auth_details in python_utils.ZIP(
             user_auth_models, user_auth_details_list):
         user_auth_details.validate()
-        user_auth_details_dict = {
-            'gae_id': user_auth_details.gae_id,
-            'parent_user_id': user_auth_details.parent_user_id,
-            'deleted': user_auth_details.deleted
-        }
-        user_auth_details_model.populate(**user_auth_details_dict)
+        user_auth_details_model.populate(**user_auth_details.to_dict())
     user_models.UserAuthDetailsModel.update_timestamps_multi(user_auth_models)
     user_models.UserAuthDetailsModel.put_multi(user_auth_models)
 
@@ -1385,21 +1433,16 @@ def _save_user_auth_details(user_auth_details):
     """Commits a user auth details object to the datastore.
 
     Args:
-        user_auth_details: UserAuthDetails. The user auth details domain
-            object to be saved.
+        user_auth_details: UserAuthDetails. The user auth details domain object
+            to be saved.
     """
     user_auth_details.validate()
-
-    user_auth_details_dict = {
-        'gae_id': user_auth_details.gae_id,
-        'parent_user_id': user_auth_details.parent_user_id,
-        'deleted': user_auth_details.deleted
-    }
 
     # If user auth details entry with the given user_id does not exist, create
     # a new one.
     user_auth_details_model = user_models.UserAuthDetailsModel.get_by_id(
         user_auth_details.user_id)
+    user_auth_details_dict = user_auth_details.to_dict()
     if user_auth_details_model is not None:
         user_auth_details_model.populate(**user_auth_details_dict)
         user_auth_details_model.update_timestamps()
@@ -1447,10 +1490,9 @@ def get_auth_details_by_user_id(user_id, strict=False):
     Raises:
         Exception. The value of strict is True and given user_id does not exist.
     """
-    user_auth_details_model = user_models.UserAuthDetailsModel.get_by_id(
-        user_id)
-    if (user_auth_details_model is not None) and (
-            user_auth_details_model.deleted is False):
+    user_auth_details_model = (
+        user_models.UserAuthDetailsModel.get_by_id(user_id))
+    if user_auth_details_model and not user_auth_details_model.deleted:
         return _get_user_auth_details_from_model(user_auth_details_model)
     elif strict:
         logging.error('Could not find user with id %s' % user_id)
@@ -1470,11 +1512,11 @@ def _get_user_auth_details_from_model(user_auth_details_model):
         UserAuthDetails. Domain object for user auth details.
     """
     return UserAuthDetails(
-        user_id=user_auth_details_model.id,
+        user_auth_details_model.id,
         gae_id=user_auth_details_model.gae_id,
+        firebase_auth_id=user_auth_details_model.firebase_auth_id,
         parent_user_id=user_auth_details_model.parent_user_id,
-        deleted=user_auth_details_model.deleted
-    )
+        deleted=user_auth_details_model.deleted)
 
 
 def get_pseudonymous_username(pseudonymous_id):

@@ -36,6 +36,15 @@ def authenticate_request(unused_request):
     return None
 
 
+def disable_auth_associations(user_id):
+    """Disable the auth associations of the given user so they can't be used."""
+    assoc_model = user_models.UserIdentifiersModel.get_by_user_id(user_id)
+    if assoc_model is not None:
+        assoc_model.deleted = True
+        assoc_model.update_timestamps()
+        assoc_model.put()
+
+
 def delete_auth_associations(unused_user_id):
     """No special action is necessary for deleting Google AppEngine users."""
     pass
@@ -54,7 +63,8 @@ def get_user_id_from_auth_id(auth_id):
 
 def get_multi_user_ids_from_auth_ids(auth_ids):
     """Returns the user IDs associated with the given auth IDs."""
-    assoc_models = user_models.UserIdentifiersModel.get_multi(auth_ids)
+    assoc_models = user_models.UserIdentifiersModel.get_multi(
+        auth_ids, include_deleted=True)
     return [None if m is None else m.user_id for m in assoc_models]
 
 

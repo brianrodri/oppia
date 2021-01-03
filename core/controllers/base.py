@@ -178,7 +178,7 @@ class BaseHandler(webapp2.RequestHandler):
         auth_claims = user_services.get_auth_claims_from_request(request)
         if auth_claims:
             auth_id = auth_claims.auth_id
-            user_settings = user_services.get_user_settings_by_gae_id(auth_id)
+            user_settings = user_services.get_user_settings_by_auth_id(auth_id)
             if user_settings is None:
                 # If the user settings are not yet created and the request leads
                 # to signup page create a new user settings. Otherwise logout

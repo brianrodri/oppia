@@ -355,7 +355,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         self.assertIsNone(
             user_services.get_user_id_from_username('fakeUsername'))
 
-    def test_get_user_settings_by_gae_id_returns_user_settings(self):
+    def test_get_user_settings_by_auth_id_returns_user_settings(self):
         gae_id = 'gae_id'
         email = 'user@example.com'
         user_id = 'user_id'
@@ -370,15 +370,15 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
             user_id=user_id
         ).put()
         user_settings_model = user_models.UserSettingsModel.get_by_id(user_id)
-        user_settings = user_services.get_user_settings_by_gae_id(gae_id)
+        user_settings = user_services.get_user_settings_by_auth_id(gae_id)
         self.assertEqual(user_settings_model.id, user_settings.user_id)
         self.assertEqual(user_settings_model.email, user_settings.email)
         self.assertEqual(user_settings_model.username, user_settings.username)
 
-    def test_get_user_settings_by_gae_id_for_nonexistent_gae_id_is_none(self):
-        self.assertIsNone(user_services.get_user_settings_by_gae_id('gae_id_x'))
+    def test_get_user_settings_by_auth_id_for_nonexistent_gae_id_is_none(self):
+        self.assertIsNone(user_services.get_user_settings_by_auth_id('gae_id_x'))
 
-    def test_get_user_settings_by_gae_id_strict_returns_user_settings(self):
+    def test_get_user_settings_by_auth_id_strict_returns_user_settings(self):
         gae_id = 'gae_id'
         email = 'user@example.com'
         user_id = 'user_id'
@@ -395,15 +395,15 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         user_settings_model = user_models.UserSettingsModel.get_by_id(
             user_id)
         user_settings = (
-            user_services.get_user_settings_by_gae_id(gae_id, strict=True))
+            user_services.get_user_settings_by_auth_id(gae_id, strict=True))
         self.assertEqual(user_settings_model.id, user_settings.user_id)
         self.assertEqual(user_settings_model.email, user_settings.email)
         self.assertEqual(user_settings_model.username, user_settings.username)
 
-    def test_get_user_settings_by_gae_id_strict_for_nonexistent_gae_id_is_none(
+    def test_get_user_settings_by_auth_id_strict_for_nonexistent_gae_id_is_none(
             self):
         with self.assertRaisesRegexp(Exception, 'User not found.'):
-            user_services.get_user_settings_by_gae_id('gae_id_x', strict=True)
+            user_services.get_user_settings_by_auth_id('gae_id_x', strict=True)
 
     def test_fetch_gravatar_success(self):
         user_email = 'user@example.com'
@@ -728,7 +728,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         )
 
         user_services.create_new_user(new_gae_id, new_email)
-        user_settings = user_services.get_user_settings_by_gae_id(new_gae_id)
+        user_settings = user_services.get_user_settings_by_auth_id(new_gae_id)
         user_auth_details = user_models.UserAuthDetailsModel.get_by_id(
             user_settings.user_id)
         self.assertEqual(user_auth_details.gae_id, new_gae_id)
@@ -741,7 +741,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
             user_models.UserIdentifiersModel.get_by_id(new_gae_id))
 
         user_services.create_new_user(new_gae_id, new_email)
-        user_settings = user_services.get_user_settings_by_gae_id(new_gae_id)
+        user_settings = user_services.get_user_settings_by_auth_id(new_gae_id)
         user_identifiers = (
             user_models.UserIdentifiersModel.get_by_id(new_gae_id))
         self.assertEqual(user_settings.user_id, user_identifiers.user_id)
@@ -1096,12 +1096,12 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         user_id = user_services.create_new_user(gae_id, user_email).user_id
         user_services.set_username(user_id, username)
 
-        user_settings = user_services.get_user_settings_by_gae_id(gae_id)
+        user_settings = user_services.get_user_settings_by_auth_id(gae_id)
         self.assertFalse(user_settings.deleted)
 
         user_services.mark_user_for_deletion(user_id)
 
-        user_settings = user_services.get_user_settings_by_gae_id(gae_id)
+        user_settings = user_services.get_user_settings_by_auth_id(gae_id)
         self.assertTrue(user_settings.deleted)
 
     def test_mark_user_for_deletion_deletes_user_auth_details_entry(self):

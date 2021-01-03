@@ -755,35 +755,29 @@ def get_user_settings(user_id, strict=False):
     return user_settings
 
 
-def get_user_settings_by_gae_id(gae_id, strict=False):
+def get_user_settings_by_auth_id(auth_id, strict=False):
     """Return the user settings for a single user.
 
     Args:
-        gae_id: str. The GAE user ID of the user.
+        auth_id: str. The auth user ID of the user.
         strict: bool. Whether to fail noisily if no user with the given
             id exists in the datastore. Defaults to False.
 
     Returns:
-        UserSettings or None. If the given gae_id does not exist and strict
+        UserSettings or None. If the given auth_id does not exist and strict
         is False, returns None. Otherwise, returns the corresponding
         UserSettings domain object.
 
     Raises:
-        Exception. The value of strict is True and given gae_id does not exist.
+        Exception. The value of strict is True and given auth_id does not exist.
     """
-    user_identifiers_model = (
-        user_models.UserIdentifiersModel.get_by_gae_id(gae_id))
-    user_id = (
-        user_identifiers_model.user_id
-        if user_identifiers_model is not None else None
-    )
-
+    user_id = auth_services.get_user_id_from_auth_id(auth_id)
     if user_id is not None:
         user_settings = _get_user_settings_from_model(
             user_models.UserSettingsModel.get_by_id(user_id))
         return user_settings
     elif strict:
-        logging.error('Could not find user with id %s' % gae_id)
+        logging.error('Could not find user with id %s' % auth_id)
         raise Exception('User not found.')
     else:
         return None
@@ -1279,7 +1273,7 @@ def create_new_user(gae_id, email):
         _save_user_settings(user_settings)
         create_user_contributions(user_settings.user_id, [], [])
 
-    user_settings = get_user_settings_by_gae_id(gae_id, strict=False)
+    user_settings = get_user_settings_by_auth_id(gae_id, strict=False)
     if user_settings is not None:
         raise Exception(
             'User %s already exists for gae_id %s.'
@@ -1334,7 +1328,7 @@ def create_new_profiles(gae_id, email, modifiable_user_data_list):
         _save_user_settings(user_settings)
 
     # As new profile user creation is done by a full (parent) user only.
-    parent_user_settings = get_user_settings_by_gae_id(gae_id, strict=True)
+    parent_user_settings = get_user_settings_by_auth_id(gae_id, strict=True)
     if parent_user_settings.pin is None:
         raise Exception(
             'Pin must be set for a full user before creating a profile.')

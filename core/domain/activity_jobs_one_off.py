@@ -283,7 +283,7 @@ class AddCommitCmdsUserIdsMetadataJob(jobs.BaseMapReduceOneOffJobManager):
                     commit_cmd['cmd'] == rights_domain.CMD_CHANGE_ROLE and
                     not user_services.is_user_id_valid(assignee_id)
             ):
-                user_settings = user_services.get_user_settings_by_gae_id(
+                user_settings = user_services.get_user_settings_by_auth_id(
                     assignee_id)
                 if user_settings is None:
                     return (

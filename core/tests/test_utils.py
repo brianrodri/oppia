@@ -1592,7 +1592,7 @@ tags: []
             str or None. ID of the user possessing the given email, or None if
             the user does not exist.
         """
-        user_settings = user_services.get_user_settings_by_gae_id(
+        user_settings = user_services.get_user_settings_by_auth_id(
             self.get_auth_id_from_email(email))
         return user_settings and user_settings.user_id
 

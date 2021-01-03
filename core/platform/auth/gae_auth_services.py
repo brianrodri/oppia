@@ -20,8 +20,11 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 from core.domain import auth_domain
+from core.platform import models
 
 from google.appengine.api import users
+
+user_models, = models.Registry.import_models([models.NAMES.user])
 
 
 def authenticate_request(unused_request):
@@ -45,8 +48,8 @@ def are_auth_associations_deleted(user_id):
 
 def get_user_id_from_auth_id(auth_id):
     """Returns the user ID associated with the given auth ID."""
-    del auth_id # TODO(brianrodri): Stop silencing lint with del.
-    return None
+    assoc_model = user_models.UserIdentifiersModel.get_by_gae_id(auth_id)
+    return None if assoc_model is None else assoc_model.user_id
 
 
 def get_multi_user_ids_from_auth_ids(auth_ids):

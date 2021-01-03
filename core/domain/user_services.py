@@ -452,15 +452,15 @@ class UserAuthDetails(python_utils.OBJECT):
         Args:
             provider_id: str. The name of the provider of the auth_id.
             user_id: str. The unique ID of the user.
-            auth_id: str or None. The ID of the user retrieved from the
-                provider.
+            auth_id: str. The ID of the user retrieved from the provider.
             parent_user_id: str or None. For profile users, the user ID of the
                 full user associated with that profile. None for full users.
             deleted: bool. Whether the user has requested removal of their
                 account.
 
         Returns:
-            UserAuthDetails. A domain object with the proper auth_id assigned.
+            UserAuthDetails. The domain object with auth_id assigned to the
+            appropriate provider-attribute.
         """
         if provider_id == feconf.GAE_AUTH_PROVIDER_ID:
             return cls(

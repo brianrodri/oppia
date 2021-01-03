@@ -375,7 +375,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         self.assertEqual(user_settings_model.email, user_settings.email)
         self.assertEqual(user_settings_model.username, user_settings.username)
 
-    def test_get_user_settings_by_auth_id_for_nonexistent_gae_id_is_none(self):
+    def test_get_user_settings_by_auth_id_for_nonexistent_auth_id_is_none(self):
         self.assertIsNone(
             user_services.get_user_settings_by_auth_id('gae_id_x'))
 
@@ -401,7 +401,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
         self.assertEqual(user_settings_model.email, user_settings.email)
         self.assertEqual(user_settings_model.username, user_settings.username)
 
-    def test_get_user_settings_by_auth_id_strict_for_nonexistent_gae_id_is_none(
+    def test_get_user_settings_by_auth_id_strict_for_missing_auth_id_is_none(
             self):
         with self.assertRaisesRegexp(Exception, 'User not found.'):
             user_services.get_user_settings_by_auth_id('gae_id_x', strict=True)
@@ -777,7 +777,7 @@ class UserServicesUnitTests(test_utils.GenericTestBase):
             user_services.get_auth_details_by_user_id(
                 non_existent_user_id, strict=True)
 
-    def test_get_auth_details_by_gae_id_non_existing_user_returns_none(self):
+    def test_get_auth_details_by_auth_id_non_existing_user_returns_none(self):
         non_existent_user_id = 'id_x'
         self.assertIsNone(
             user_services.get_auth_details_by_user_id(non_existent_user_id))
@@ -1993,7 +1993,7 @@ class UserSettingsTests(test_utils.GenericTestBase):
     def test_has_not_fully_registered_for_guest_user_is_false(self):
         self.assertFalse(user_services.has_fully_registered_account(None))
 
-    def test_create_new_user_with_existing_gae_id_raises_error(self):
+    def test_create_new_user_with_existing_auth_id_raises_error(self):
         user_id = self.user_settings.user_id
         user_gae_id = (
             user_services.get_auth_details_by_user_id(user_id).gae_id)
@@ -2151,14 +2151,14 @@ class UserAuthDetailsTests(test_utils.GenericTestBase):
         ):
             self.user_auth_details.validate()
 
-    def test_validate_non_str_gae_id(self):
+    def test_validate_non_str_auth_id(self):
         self.user_auth_details.gae_id = 0
         with self.assertRaisesRegexp(
             utils.ValidationError, 'Expected gae_id to be a string'
         ):
             self.user_auth_details.validate()
 
-    def test_parent_user_id_gae_id_together_raises_error(self):
+    def test_parent_user_id_auth_id_together_raises_error(self):
         self.user_auth_details.parent_user_id = (
             user_models.UserSettingsModel.get_new_id(''))
         with self.assertRaisesRegexp(
@@ -2167,7 +2167,7 @@ class UserAuthDetailsTests(test_utils.GenericTestBase):
         ):
             self.user_auth_details.validate()
 
-    def test_both_parent_user_id_and_gae_id_none_raises_error(self):
+    def test_both_parent_user_id_and_auth_id_none_raises_error(self):
         self.user_auth_details.parent_user_id = None
         self.user_auth_details.gae_id = None
         with self.assertRaisesRegexp(
@@ -2931,7 +2931,7 @@ class UserContributionReviewRightsTests(test_utils.GenericTestBase):
             user_services.get_contribution_reviewer_usernames(
                 constants.REVIEW_CATEGORY_QUESTION, language_code='hi')
 
-    def test_get_contribution_reviewer_usernames_in_invalid_category_raise_error( # pylint: disable=line-too-long
+    def test_get_contribution_reviewer_usernames_with_invalid_category_raises(
             self):
         with self.assertRaisesRegexp(
             Exception, 'Invalid review category: invalid_category'):

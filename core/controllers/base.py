@@ -200,8 +200,7 @@ class BaseHandler(webapp2.RequestHandler):
             if user_settings.deleted:
                 self.user_is_scheduled_for_deletion = user_settings.deleted
             elif (self.REDIRECT_UNFINISHED_SIGNUPS and not
-                  user_services.has_fully_registered_account(
-                      user_settings.user_id)):
+                  user_services.has_fully_registered_account(self.user_id)):
                 self.partially_logged_in = True
             else:
                 self.username = user_settings.username
@@ -220,8 +219,8 @@ class BaseHandler(webapp2.RequestHandler):
             if self.user_id is None else user_settings.role)
         self.user = user_services.UserActionsInfo(self.user_id)
 
-        self.values['is_moderator'] = user_services.is_at_least_moderator(
-            self.user_id)
+        self.values['is_moderator'] = (
+            user_services.is_at_least_moderator(self.user_id))
         self.values['is_admin'] = user_services.is_admin(self.user_id)
         self.values['is_topic_manager'] = (
             user_services.is_topic_manager(self.user_id))

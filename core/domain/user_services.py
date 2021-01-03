@@ -2817,7 +2817,7 @@ def log_username_change(committer_id, old_username, new_username):
 
 
 def get_auth_claims_from_request(request):
-    """TODO."""
+    """Returns AuthClaims associated to the user who authorized the request."""
     return auth_services.authenticate_request(request)
 
 

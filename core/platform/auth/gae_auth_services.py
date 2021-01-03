@@ -16,6 +16,9 @@
 
 """Service layer for handling user-authentication with GAE's built-in system."""
 
+from __future__ import absolute_import  # pylint: disable=import-only-modules
+from __future__ import unicode_literals  # pylint: disable=import-only-modules
+
 from core.domain import auth_domain
 
 from google.appengine.api import users
@@ -31,16 +34,18 @@ def authenticate_request(unused_request):
 
 def delete_auth_associations(user_id):
     """Deletes associations referring to the given user_id."""
-    pass
+    del user_id # TODO(brianrodri): Stop silencing lint with del.
 
 
 def are_auth_associations_deleted(user_id):
     """Returns whether the Firebase account of the given user ID is deleted."""
+    del user_id # TODO(brianrodri): Stop silencing lint with del.
     return True
 
 
 def get_user_id_from_auth_id(auth_id):
     """Returns the user ID associated with the given auth ID."""
+    del auth_id # TODO(brianrodri): Stop silencing lint with del.
     return None
 
 
@@ -51,9 +56,9 @@ def get_multi_user_ids_from_auth_ids(auth_ids):
 
 def associate_auth_id_to_user_id(auth_id_user_id_pair):
     """Commits the association between auth ID and user ID."""
-    pass
+    del auth_id_user_id_pair # TODO(brianrodri): Stop silencing lint with del.
 
 
 def associate_multi_auth_ids_to_user_ids(auth_id_user_id_pairs):
     """Commits the associations between auth IDs and user IDs."""
-    pass
+    del auth_id_user_id_pairs # TODO(brianrodri): Stop silencing lint with del.

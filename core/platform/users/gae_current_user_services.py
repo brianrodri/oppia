@@ -47,13 +47,3 @@ def get_current_user():
 def is_current_user_super_admin():
     """Checks whether the current user owns this app."""
     return users.is_current_user_admin()
-
-
-def get_current_user_email():
-    """Get the email for current user.
-
-    Returns:
-        str or None. Email for the current user.
-    """
-    user = get_current_user()
-    return user and user.email()

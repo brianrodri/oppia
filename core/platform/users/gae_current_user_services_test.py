@@ -54,13 +54,3 @@ class GaeCurrentUserServicesTests(test_utils.GenericTestBase):
 
         self.assertFalse(
             gae_current_user_services.is_current_user_super_admin())
-
-    def test_get_current_user_email(self):
-        self.assertIsNone(gae_current_user_services.get_current_user_email())
-
-        with self.login_context(self.OWNER_EMAIL):
-            self.assertEqual(
-                gae_current_user_services.get_current_user_email(),
-                self.OWNER_EMAIL)
-
-        self.assertIsNone(gae_current_user_services.get_current_user_email())

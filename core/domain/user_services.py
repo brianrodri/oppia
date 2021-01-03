@@ -2841,12 +2841,3 @@ def is_current_user_super_admin():
         not logged in False is returned.
     """
     return current_user_services.is_current_user_super_admin()
-
-
-def get_current_user_email():
-    """Get the email of current user.
-
-    Returns:
-        str or None. Email of the current user. None if user is not logged in.
-    """
-    return current_user_services.get_current_user_email()

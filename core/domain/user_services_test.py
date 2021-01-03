@@ -1596,12 +1596,12 @@ class SubjectInterestsUnitTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(SubjectInterestsUnitTests, self).setUp()
-        self.gae_id = 'someUser'
+        self.auth_id = 'someUser'
         self.username = 'username'
         self.user_email = 'user@example.com'
 
         self.user_id = user_services.create_new_user(
-            self.gae_id, self.user_email).user_id
+            self.auth_id, self.user_email).user_id
         user_services.set_username(self.user_id, self.username)
 
     def test_invalid_subject_interests_are_not_accepted(self):

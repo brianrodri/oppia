@@ -170,30 +170,27 @@ class BaseHandler(webapp2.RequestHandler):
         if feconf.ENABLE_MAINTENANCE_MODE and not self.is_super_admin:
             return
 
-        auth_claims = user_services.get_auth_claims_from_request(request)
-        self.gae_id = auth_claims.auth_id
         self.user_id = None
         self.username = None
         self.partially_logged_in = False
         self.user_is_scheduled_for_deletion = False
 
-        # TODO(#11462): This part should be moved to the service layer when we
-        # migrate to Firebase.
-        if self.gae_id:
-            user_settings = user_services.get_user_settings_by_gae_id(
-                self.gae_id, strict=False)
+        auth_claims = user_services.get_auth_claims_from_request(request)
+        if auth_claims:
+            auth_id = auth_claims.auth_id
+            user_settings = user_services.get_user_settings_by_gae_id(auth_id)
             if user_settings is None:
                 # If the user settings are not yet created and the request leads
                 # to signup page create a new user settings. Otherwise logout
                 # the not-fully registered user.
                 email = auth_claims.email
                 if 'signup?' in self.request.uri:
-                    user_settings = user_services.create_new_user(
-                        self.gae_id, email)
+                    user_settings = (
+                        user_services.create_new_user(auth_id, email))
                 else:
                     logging.error(
-                        'Cannot find user %s with email %s on page %s'
-                        % (self.gae_id, email, self.request.uri))
+                        'Cannot find user %s with email %s on page %s' % (
+                            auth_id, email, self.request.uri))
                     _clear_login_cookies(self.response.headers)
                     return
 

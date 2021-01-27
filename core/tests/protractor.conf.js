@@ -1,4 +1,5 @@
 var HtmlScreenshotReporter = require('protractor-jasmine2-screenshot-reporter');
+var FirebaseAdmin = require('firebase-admin');
 var glob = require('glob');
 var path = require('path');
 var Constants = require('./protractor_utils/ProtractorConstants');
@@ -218,6 +219,7 @@ exports.config = {
         }
       }
     });
+    FirebaseAdmin.initializeApp();
   },
   // If sauceUser and sauceKey are specified, seleniumServerJar will be ignored.
   // The tests will be run remotely using SauceLabs.

@@ -17,14 +17,39 @@
  * carrying out end-to-end testing with protractor.
  */
 
+var FirebaseAdmin = require('firebase-admin');
+var HashWasm = require('hash-wasm');
+
 var general = require('./general.js');
 var waitFor = require('./waitFor.js');
 
 var AdminPage = require('./AdminPage.js');
 var adminPage = new AdminPage.AdminPage();
 
+var setUpFirebaseUser = async(email) => {
+  try {
+    return await FirebaseAdmin.auth().getUserByEmail(email);
+  } catch (error) {
+    if (error.code === 'auth/user-not-found') {
+      return await FirebaseAdmin.auth().createUser({
+        email: email,
+        emailVerified: true,
+        password: await HashWasm.md5(email),
+      });
+    } else {
+      throw error;
+    }
+  }
+};
+
 var login = async function(
     email, isSuperAdmin = false, manualNavigation = true) {
+  const user = await setUpFirebaseUser(email);
+  if (isSuperAdmin) {
+    await FirebaseAdmin.auth().setCustomUserClaims(user.uid, {
+      role: 'super_admin',
+    });
+  }
   // Use of element is not possible because the login page is non-angular.
   // The full url is also necessary.
   var driver = browser.driver;

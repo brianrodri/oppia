@@ -20,8 +20,6 @@ import 'zone.js';
 
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { AngularFireModule } from '@angular/fire';
-import { AngularFireAuth, AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
 import { FormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
 
@@ -68,13 +66,11 @@ import { AuthService } from 'services/auth.service';
     NgbModalModule,
     BrowserModule,
     FormsModule,
-    AngularFireModule.initializeApp(AuthService.firebaseConfig),
-    AngularFireAuthModule,
+    ...AuthService.getModules(),
   ],
 
   providers: [
-    AngularFireAuth,
-    {provide: USE_EMULATOR, useValue: AuthService.firebaseEmulatorConfig},
+    ...AuthService.getProviders(),
   ],
 
   declarations: [

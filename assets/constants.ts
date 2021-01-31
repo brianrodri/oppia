@@ -5432,6 +5432,10 @@ export default {
   "ANALYTICS_ID": "",
   "SITE_NAME_FOR_ANALYTICS": "",
 
+  // Switch to enable Firebase authentication on the frontend.
+  // TODO(#11462): Switch to true once all Firebase logic is in production.
+  "FIREBASE_AUTH_ENABLED": false,
+
   // Data required for Firebase authentication.
   //
   // NOTE TO RELEASE COORDINATORS: Please change these to the production values,

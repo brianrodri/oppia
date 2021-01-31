@@ -21,7 +21,6 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { of } from 'rxjs';
 import { marbles } from 'rxjs-marbles';
 
-import { AppConstants } from 'app.constants';
 import { AuthService } from 'services/auth.service';
 import { MockAngularFireAuth } from 'tests/unit-test-utils';
 
@@ -114,32 +113,23 @@ describe('Auth service', () => {
       .toBeObservable(expectedObservations);
   }));
 
-  it('should be in emulator mode during unit tests', () => {
-    expect(AuthService.firebaseEmulatorIsEnabled).toBeTrue();
+  it('should not use firebase by default', () => {
+    expect(AuthService.firebaseAuthIsEnabled).toBeFalse();
   });
 
-  it('should use firebase constants for the config', () => {
-    expect(AuthService.firebaseConfig).toEqual({
-      apiKey: AppConstants.FIREBASE_CONFIG_API_KEY,
-      authDomain: AppConstants.FIREBASE_CONFIG_AUTH_DOMAIN,
-      projectId: AppConstants.FIREBASE_CONFIG_PROJECT_ID,
-      storageBucket: AppConstants.FIREBASE_CONFIG_STORAGE_BUCKET,
-      messagingSenderId: AppConstants.FIREBASE_CONFIG_MESSAGING_SENDER_ID,
-      appId: AppConstants.FIREBASE_CONFIG_APP_ID,
-    });
-  });
-
-  it('should return emulator config when emulator is enabled', () => {
-    spyOnProperty(AuthService, 'firebaseEmulatorIsEnabled', 'get')
-      .and.returnValue(true);
-
-    expect(AuthService.firebaseEmulatorConfig).toEqual(['localhost', 9099]);
-  });
-
-  it('should return undefined when emulator is disabled', () => {
-    spyOnProperty(AuthService, 'firebaseEmulatorIsEnabled', 'get')
+  it('should return empty modules and providers when auth is disabled', () => {
+    spyOnProperty(AuthService, 'firebaseAuthIsEnabled', 'get')
       .and.returnValue(false);
 
-    expect(AuthService.firebaseEmulatorConfig).toBeUndefined();
+    expect(AuthService.getModules().length).toEqual(0);
+    expect(AuthService.getProviders().length).toEqual(0);
+  });
+
+  it('should return empty modules and providers when auth is disabled', () => {
+    spyOnProperty(AuthService, 'firebaseAuthIsEnabled', 'get')
+      .and.returnValue(true);
+
+    expect(AuthService.getModules().length).toBeGreaterThan(0);
+    expect(AuthService.getProviders().length).toBeGreaterThan(0);
   });
 });

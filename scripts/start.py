@@ -85,6 +85,11 @@ _PARSER.add_argument(
     help=(
         'optional; if specified, build webpack with source maps.'),
     action='store_true')
+_PARSER.add_argument(
+    '--enable_auth_emulator',
+    help='optional; if specified, start the Firebase authentication emulator.',
+    action='store_true',
+    default=False)
 
 PORT_NUMBER_FOR_GAE_SERVER = 8181
 
@@ -160,8 +165,11 @@ def main(args=None):
     with contextlib2.ExitStack() as stack:
         python_utils.PRINT('Starting ElasticSearch development server.')
         stack.enter_context(common.managed_elasticsearch_dev_server())
-        python_utils.PRINT('Starting Firebase emulators')
-        stack.enter_context(common.managed_firebase_auth_emulator())
+
+        if parsed_args.enable_auth_emulator:
+            python_utils.PRINT('Starting Firebase emulators')
+            stack.enter_context(common.managed_firebase_auth_emulator())
+
         python_utils.PRINT('Starting GAE development server')
         stack.enter_context(managed_dev_appserver)
 

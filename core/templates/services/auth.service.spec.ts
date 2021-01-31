@@ -121,15 +121,13 @@ describe('Auth service', () => {
     spyOnProperty(AuthService, 'firebaseAuthIsEnabled', 'get')
       .and.returnValue(false);
 
-    expect(AuthService.getModules().length).toEqual(0);
-    expect(AuthService.getProviders().length).toEqual(0);
+    expect(AuthService.forRoot().length).toEqual(0);
   });
 
   it('should return empty modules and providers when auth is disabled', () => {
     spyOnProperty(AuthService, 'firebaseAuthIsEnabled', 'get')
       .and.returnValue(true);
 
-    expect(AuthService.getModules().length).toBeGreaterThan(0);
-    expect(AuthService.getProviders().length).toBeGreaterThan(0);
+    expect(AuthService.forRoot().length).toBeGreaterThan(0);
   });
 });

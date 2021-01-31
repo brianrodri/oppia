@@ -66,11 +66,7 @@ import { AuthService } from 'services/auth.service';
     NgbModalModule,
     BrowserModule,
     FormsModule,
-    ...AuthService.getModules(),
-  ],
-
-  providers: [
-    ...AuthService.getProviders(),
+    ...AuthService.forRoot(),
   ],
 
   declarations: [

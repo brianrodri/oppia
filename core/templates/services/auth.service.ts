@@ -16,64 +16,60 @@
  * @fileoverview Service for managing the authorizations of logged-in users.
  */
 
-import { Injectable, Provider } from '@angular/core';
+import { Injectable, Optional } from '@angular/core';
 import { AngularFireModule } from '@angular/fire';
 import { AngularFireAuth, AngularFireAuthModule, USE_EMULATOR } from '@angular/fire/auth';
 import { downgradeInjectable } from '@angular/upgrade/static';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 import { AppConstants } from 'app.constants';
-import { ModuleWithProviders, Type } from '@angular/compiler/src/core';
+import { ModuleWithProviders } from '@angular/compiler/src/core';
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  constructor(private angularFireAuth: AngularFireAuth) {}
+  constructor(@Optional() private angularFireAuth: AngularFireAuth) {}
 
   get idToken$(): Observable<string | null> {
-    return this.angularFireAuth.idToken;
+    return this.angularFireAuth?.idToken ?? of(null);
   }
 
   async signOutAsync(): Promise<void> {
-    return this.angularFireAuth.signOut();
+    await this.angularFireAuth?.signOut();
   }
 
   static get firebaseAuthIsEnabled(): boolean {
     return AppConstants.FIREBASE_AUTH_ENABLED;
   }
 
-  static getModules(): (Type | ModuleWithProviders)[] {
-    const modules = [];
-
+  static forRoot(): ModuleWithProviders[] {
     if (AuthService.firebaseAuthIsEnabled) {
-      modules.push(AngularFireModule.initializeApp({
-        apiKey: AppConstants.FIREBASE_CONFIG_API_KEY,
-        authDomain: AppConstants.FIREBASE_CONFIG_AUTH_DOMAIN,
-        projectId: AppConstants.FIREBASE_CONFIG_PROJECT_ID,
-        storageBucket: AppConstants.FIREBASE_CONFIG_STORAGE_BUCKET,
-        messagingSenderId: AppConstants.FIREBASE_CONFIG_MESSAGING_SENDER_ID,
-        appId: AppConstants.FIREBASE_CONFIG_APP_ID,
-      }));
-      modules.push(AngularFireAuthModule);
+      return [
+        AngularFireModule.initializeApp(
+          {
+            apiKey: AppConstants.FIREBASE_CONFIG_API_KEY,
+            authDomain: AppConstants.FIREBASE_CONFIG_AUTH_DOMAIN,
+            projectId: AppConstants.FIREBASE_CONFIG_PROJECT_ID,
+            storageBucket: AppConstants.FIREBASE_CONFIG_STORAGE_BUCKET,
+            messagingSenderId: AppConstants.FIREBASE_CONFIG_MESSAGING_SENDER_ID,
+            appId: AppConstants.FIREBASE_CONFIG_APP_ID,
+          }),
+        {
+          ngModule: AngularFireAuthModule,
+          providers: [
+            AngularFireAuth,
+            {
+              provide: USE_EMULATOR,
+              useValue: AppConstants.FIREBASE_EMULATOR_ENABLED ?
+                ['localhost', 9099] : undefined,
+            },
+          ]
+        }
+      ];
     }
-
-    return modules;
-  }
-
-  static getProviders(): Provider[] {
-    const providers = [];
-
-    // TODO(#11462): Move these into shared-component.module.ts after launching
-    // Firebase authentication.
-    if (AuthService.firebaseAuthIsEnabled) {
-      providers.push(AngularFireAuth);
-      if (AppConstants.FIREBASE_EMULATOR_ENABLED) {
-        providers.push({provide: USE_EMULATOR, useValue: ['localhost', 9099]});
-      }
-    }
-
-    return providers;
+    return [];
   }
 }
 

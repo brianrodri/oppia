@@ -5439,12 +5439,13 @@ export default {
   "ANALYTICS_ID": "",
   "SITE_NAME_FOR_ANALYTICS": "",
 
-  "FIREBASE_AUTH_ENABLED": false,
+  "FIREBASE_AUTH_ENABLED": true,
 
   // Data required for Firebase authentication.
   //
   // NOTE TO RELEASE COORDINATORS: Please change these to the production values,
-  // and change useEmulator to be false, before deploying to production.
+  // and change FIREBASE_EMULATOR_ENABLED to be false, before deploying to
+  // production.
   "FIREBASE_CONFIG_API_KEY": "fake-api-key",
   "FIREBASE_CONFIG_APP_ID": "",
   "FIREBASE_CONFIG_AUTH_DOMAIN": "",

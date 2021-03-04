@@ -234,7 +234,7 @@ describe('Site language', function() {
   );
 
   it('should not change in an exploration', async function() {
-    await users.login('langCreator@explorations.com', true);
+    await users.login('langCreator@explorations.com');
     await browser.get('/about');
     await waitFor.pageToFullyLoad();
     await _selectLanguage('Español');

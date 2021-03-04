@@ -17,80 +17,46 @@
  * carrying out end-to-end testing with protractor.
  */
 
+var FirebaseAdmin = require('firebase-admin');
 var general = require('./general.js');
 var waitFor = require('./waitFor.js');
 var action = require('./action.js');
 var AdminPage = require('./AdminPage.js');
 var adminPage = new AdminPage.AdminPage();
 
-var login = async function(email, manualNavigation = true) {
-  // Use of element and action is not possible because the login page
-  // is non-angular.
-  // The full url is also necessary.
+var login = async function(email) {
+  // Use of element and action is not possible because sometimes protractor
+  // does not begin on an angular page.
   var driver = browser.driver;
-  // The manualNavigation argument is used to determine whether to navigate to
-  // the login URL using driver.get() or not. If false, the calling method
-  // should handle navigation to the login page.
-  if (manualNavigation) {
-    await driver.get(general.SERVER_URL_PREFIX + general.LOGIN_URL_SUFFIX);
-  }
-  // The statement below uses a browser.wait() to determine if the user has
-  // logged in. Use of waitFor is not possible because the active page is
-  // non-angular.
-  await browser.wait(
-    async() => {
-      try {
-        await driver.findElement(protractor.By.name('email'));
-      } catch (error) {
-        return false;
-      }
-      return true;
-    }, waitFor.DEFAULT_WAIT_TIME_MSECS, 'Login takes too long.');
-  await (await driver.findElement(protractor.By.name('email'))).clear();
-  await (await driver.findElement(protractor.By.name('email'))).sendKeys(email);
-  if (isSuperAdmin) {
-    await (await driver.findElement(protractor.By.name('admin'))).click();
-    let adminCheckboxStatus = await driver.findElement(
-      protractor.By.name('admin')).getAttribute('checked');
-    expect(adminCheckboxStatus).toBeTruthy();
-  }
-  await (await driver.findElement(protractor.By.id('submit-login'))).click();
-  if (manualNavigation) {
-    // The statement below uses a browser.wait() to determine if the user has
-    // logged in. Use of waitFor is not possible because the active page is
-    // non-angular.
-    await browser.wait(
-      async() => {
-        let loginStatusHeaderElement = (
-          await driver.findElement(protractor.By.tagName('h3')));
-        let text = await loginStatusHeaderElement.getText();
-        return text !== 'Logged In';
-      }, waitFor.DEFAULT_WAIT_TIME_MSECS, 'Login takes too long.');
-  }
+  // The full url is also necessary.
+  await driver.get(general.SERVER_URL_PREFIX + '/');
+
+  var loginButton = element(by.css('.protractor-test-login-button'));
+  await waitFor.elementToBeClickable(loginButton, 'login button not found');
+  await loginButton.click();
+
+  await waitFor.alertToBePresent();
+  const alert = await browser.switchTo().alert();
+  await alert.sendKeys(email);
+  await alert.accept();
+
+  await waitFor.pageToFullyLoad();
 };
 
 var logout = async function() {
   // Use of action is not possible because logout page is non-angular.
   var driver = browser.driver;
-  await driver.get(general.SERVER_URL_PREFIX + general.LOGIN_URL_SUFFIX);
-  await (await driver.findElement(protractor.By.id('submit-logout'))).click();
+  await driver.get(general.SERVER_URL_PREFIX);
+  await waitFor.pageToFullyLoad();
+  await general.openProfileDropdown();
+  var logoutLink = element(by.css('.protractor-test-logout-link'));
+  await action.click('logout link from dropdown', logoutLink);
+  await waitFor.pageToFullyLoad();
 };
 
 // The user needs to log in immediately before this method is called. Note
 // that this will fail if the user already has a username.
-var _completeSignup = async function(username, manualNavigation = true) {
-  // The manualNavigation argument is used to determine whether to navigate to
-  // the sign-up URL using browser.get() or not. If false, the calling method
-  // should handle navigation to the sign-up page.
-  if (manualNavigation) {
-    // This is required since there is a redirect which can be considered
-    // as a client side navigation and the tests fail since Angular is
-    // not found due to the navigation interfering with protractor's
-    // bootstrapping.
-    await browser.waitForAngularEnabled(false);
-    await browser.get('/signup?return_url=http%3A%2F%2Flocalhost%3A9001%2F');
-    await browser.waitForAngularEnabled(true);
-  }
+var _completeSignup = async function(username) {
   await waitFor.pageToFullyLoad();
   var usernameInput = element(by.css('.protractor-test-username-input'));
   var agreeToTermsCheckbox = element(
@@ -103,11 +69,17 @@ var _completeSignup = async function(username, manualNavigation = true) {
 };
 
 var _grantSuperAdminPrivileges = async function(email) {
+  const user = await FirebaseAdmin.auth().getUserByEmail(email.toLowerCase());
+  await FirebaseAdmin.auth().setCustomUserClaims(
+    user.uid, {role: 'super_admin'});
+  // We need to logout and login once more to refresh the user's privileges.
+  await logout();
+  await login(email);
 };
 
 var completeLoginFlowFromStoryViewerPage = async function(email, username) {
-  await login(email, false);
-  await _completeSignup(username, false);
+  await login(email);
+  await _completeSignup(username);
 };
 
 var createUser = async function(email, username) {

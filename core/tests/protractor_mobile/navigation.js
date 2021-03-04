@@ -173,8 +173,7 @@ describe('Navigation features on mobile', function() {
 
   it('should navigate to the login page by clicking on the sign in button',
     async function() {
-      var signInButton = element(
-        by.css('.protractor-mobile-test-login'));
+      var signInButton = element(by.css('.protractor-test-login-button'));
       await waitFor.elementToBeClickable(
         signInButton, 'Could not click sign in button');
       // For the rationale behind this statement, see

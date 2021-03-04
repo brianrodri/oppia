@@ -50,7 +50,13 @@ var checkForConsoleErrors = async function(errorsToIgnore) {
   // This causes the tests to fail, therefore, we remove such logs.
   if (browser.isMobile) {
     browserLogs = browserLogs.filter(function(browserLog) {
-      return !(browserLog.message.includes(' Slow network is detected.'));
+      if (browserLog.message.includes(' Slow network is detected.')) {
+        return false;
+      }
+      if (browserLog.message.includes('localhost:9099')) {
+        return false;
+      }
+      return true;
     });
   }
 
@@ -78,7 +84,6 @@ var SERVER_URL_PREFIX = 'http://localhost:9001';
 var EDITOR_URL_SLICE = '/create/';
 var PLAYER_URL_SLICE = '/explore/';
 var USER_PREFERENCES_URL = '/preferences';
-var LOGIN_URL_SUFFIX = '/_ah/login';
 var MODERATOR_URL_SUFFIX = '/moderator';
 // Note that this only works in dev, due to the use of cache slugs in prod.
 var SCRIPTS_URL_SLICE = '/assets/scripts/';
@@ -238,7 +243,6 @@ exports.isInDevMode = isInDevMode;
 exports.SERVER_URL_PREFIX = SERVER_URL_PREFIX;
 exports.USER_PREFERENCES_URL = USER_PREFERENCES_URL;
 exports.EDITOR_URL_SLICE = EDITOR_URL_SLICE;
-exports.LOGIN_URL_SUFFIX = LOGIN_URL_SUFFIX;
 exports.MODERATOR_URL_SUFFIX = MODERATOR_URL_SUFFIX;
 exports.SCRIPTS_URL_SLICE = SCRIPTS_URL_SLICE;
 exports.FIRST_STATE_DEFAULT_NAME = FIRST_STATE_DEFAULT_NAME;

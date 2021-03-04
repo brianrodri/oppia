@@ -242,7 +242,6 @@
         <li class="nav-item">
           <a ng-click="$ctrl.closeSubmenuIfNotMobile($event);$ctrl.onLogoutButtonClicked()"
              class="dropdown-item nav-link protractor-test-logout-link"
-             href="/logout"
              ng-keydown="$ctrl.onMenuKeypress($event, 'profileMenu', {tab: $ctrl.ACTION_CLOSE})">
             <span translate="I18N_TOPNAV_LOGOUT"></span>
           </a>
@@ -252,7 +251,7 @@
 
     <li uib-dropdown ng-if="!$ctrl.userIsLoggedIn && $ctrl.username !== ''" class="nav-item">
       <div class="oppia-navbar-button-container oppia-navbar-button-container-extra-info">
-        <button class="btn oppia-navbar-button protractor-mobile-test-login"
+        <button class="btn oppia-navbar-button protractor-mobile-test-login protractor-test-login-button"
                 ng-click="$ctrl.onLoginButtonClicked()">
           <span translate="I18N_TOPNAV_SIGN_IN"></span>
         </button>

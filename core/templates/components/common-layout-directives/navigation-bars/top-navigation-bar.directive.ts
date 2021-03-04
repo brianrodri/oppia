@@ -98,6 +98,7 @@ angular.module('oppia').directive('topNavigationBar', [
           ctrl.onLogoutButtonClicked = async function() {
             $window.localStorage.removeItem('last_uploaded_audio_lang');
             await AuthService.signOutAsync();
+            $window.location = LOGOUT_URL;
           };
           /**
            * Opens the submenu.

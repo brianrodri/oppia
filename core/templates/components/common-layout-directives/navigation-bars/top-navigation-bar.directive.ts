@@ -49,16 +49,18 @@ angular.module('oppia').directive('topNavigationBar', [
       controllerAs: '$ctrl',
       controller: [
         '$http', '$rootScope', '$scope', '$timeout', '$translate', '$window',
-        'ClassroomBackendApiService', 'DebouncerService', 'DeviceInfoService',
-        'I18nLanguageCodeService', 'NavigationService', 'SearchService',
-        'SidebarStatusService', 'SiteAnalyticsService', 'UserService',
-        'WindowDimensionsService', 'LABEL_FOR_CLEARING_FOCUS', 'LOGOUT_URL',
+        'AuthService', 'ClassroomBackendApiService', 'DebouncerService',
+        'DeviceInfoService', 'I18nLanguageCodeService', 'NavigationService',
+        'SearchService', 'SidebarStatusService', 'SiteAnalyticsService',
+        'UserService', 'WindowDimensionsService', 'LABEL_FOR_CLEARING_FOCUS',
+        'LOGOUT_URL',
         function(
             $http, $rootScope, $scope, $timeout, $translate, $window,
-            ClassroomBackendApiService, DebouncerService, DeviceInfoService,
-            I18nLanguageCodeService, NavigationService, SearchService,
-            SidebarStatusService, SiteAnalyticsService, UserService,
-            WindowDimensionsService, LABEL_FOR_CLEARING_FOCUS, LOGOUT_URL) {
+            AuthService, ClassroomBackendApiService, DebouncerService,
+            DeviceInfoService, I18nLanguageCodeService, NavigationService,
+            SearchService, SidebarStatusService, SiteAnalyticsService,
+            UserService, WindowDimensionsService, LABEL_FOR_CLEARING_FOCUS,
+            LOGOUT_URL) {
           var ctrl = this;
           ctrl.directiveSubscriptions = new Subscription();
           var NAV_MODE_SIGNUP = 'signup';
@@ -79,21 +81,23 @@ angular.module('oppia').directive('topNavigationBar', [
             return UrlInterpolationService.getStaticImageUrl(imagePath);
           };
           ctrl.onLoginButtonClicked = function() {
-            UserService.getLoginUrlAsync().then(
-              function(loginUrl) {
-                if (loginUrl) {
-                  SiteAnalyticsService.registerStartLoginEvent('loginButton');
-                  $timeout(function() {
-                    $window.location = loginUrl;
-                  }, 150);
+            SiteAnalyticsService.registerStartLoginEvent('loginButton');
+            AuthService.signInAsync().then(
+              userIsNew => $timeout(() => {
+                if (userIsNew) {
+                  $window.location = (
+                    `/signup?return_url=${$window.location.pathname}`);
                 } else {
                   $window.location.reload();
                 }
-              }
-            );
+              }, 150),
+              err => {
+                console.error(err.message);
+              })
           };
-          ctrl.onLogoutButtonClicked = function() {
+          ctrl.onLogoutButtonClicked = async function() {
             $window.localStorage.removeItem('last_uploaded_audio_lang');
+            await AuthService.signOutAsync();
           };
           /**
            * Opens the submenu.

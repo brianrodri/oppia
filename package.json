@@ -64,6 +64,7 @@
     "eslint-plugin-oppia": "file:./scripts/linters/custom_eslint_checks",
     "eslint-plugin-unused-imports": "^1.0.0",
     "file-loader": "^6.0.0",
+    "firebase-admin": "^9.5.0",
     "firebase-tools": "^9.1.0",
     "html-dnd": "^1.2.1",
     "html-loader": "^1.1.0",

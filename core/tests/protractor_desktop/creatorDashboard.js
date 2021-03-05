@@ -74,6 +74,7 @@ describe('Creator dashboard functionality', function() {
       EXPLORATION_CATEGORY,
       EXPLORATION_OBJECTIVE,
       EXPLORATION_LANGUAGE);
+    await users.logout();
 
     await users.login('user2@creatorDashboard.com');
     await subscriptionDashboardPage.navigateToUserSubscriptionPage(
@@ -142,6 +143,7 @@ describe('Creator dashboard functionality', function() {
       EXPLORATION_OBJECTIVE,
       EXPLORATION_LANGUAGE);
     await users.logout();
+
     await users.login('user6@creatorDashboard.com');
     await libraryPage.get();
     await libraryPage.findExploration(EXPLORATION_TITLE_3);
@@ -204,6 +206,7 @@ describe('Creator dashboard functionality', function() {
       EXPLORATION_OBJECTIVE,
       EXPLORATION_LANGUAGE);
     await users.logout();
+
     await users.login('user9@creatorDashboard.com');
     await libraryPage.get();
     await libraryPage.findExploration(EXPLORATION_TITLE_5);

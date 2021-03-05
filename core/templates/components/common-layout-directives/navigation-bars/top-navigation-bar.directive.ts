@@ -83,14 +83,10 @@ angular.module('oppia').directive('topNavigationBar', [
           ctrl.onLoginButtonClicked = function() {
             SiteAnalyticsService.registerStartLoginEvent('loginButton');
             AuthService.signInAsync().then(
-              userIsNew => $timeout(() => {
-                if (userIsNew) {
-                  $window.location = (
-                    `/signup?return_url=${$window.location.pathname}`);
-                } else {
-                  $window.location.reload();
-                }
-              }, 150),
+              () => {
+                $window.location = (
+                  `/signup?return_url=${$window.location.pathname}`);
+              },
               err => {
                 console.error(err.message);
               })

@@ -18,6 +18,7 @@
  */
 
 var FirebaseAdmin = require('firebase-admin');
+var HashWasm = require('hash-wasm');
 var general = require('./general.js');
 var waitFor = require('./waitFor.js');
 var action = require('./action.js');
@@ -26,14 +27,10 @@ var adminPage = new AdminPage.AdminPage();
 
 var login = async function(email) {
   // Use of element and action is not possible because sometimes protractor
-  // does not begin on an angular page.
-  var driver = browser.driver;
-  // The full url is also necessary.
-  await driver.get(general.SERVER_URL_PREFIX + '/');
+  // does not begin on an angular page. The full url is also necessary.
+  await browser.driver.get(general.SERVER_URL_PREFIX + '/');
 
-  var loginButton = element(by.css('.protractor-test-login-button'));
-  await waitFor.elementToBeClickable(loginButton, 'login button not found');
-  await loginButton.click();
+  await action.click('login button', $('.protractor-test-login-button'));
 
   await waitFor.alertToBePresent();
   const alert = await browser.switchTo().alert();
@@ -44,13 +41,11 @@ var login = async function(email) {
 };
 
 var logout = async function() {
-  // Use of action is not possible because logout page is non-angular.
-  var driver = browser.driver;
-  await driver.get(general.SERVER_URL_PREFIX);
-  await waitFor.pageToFullyLoad();
+  await browser.driver.get(general.SERVER_URL_PREFIX + '/');
+
   await general.openProfileDropdown();
-  var logoutLink = element(by.css('.protractor-test-logout-link'));
-  await action.click('logout link from dropdown', logoutLink);
+  await action.click(
+    'logout link from dropdown', $('.protractor-test-logout-link'));
   await waitFor.pageToFullyLoad();
 };
 
@@ -68,13 +63,16 @@ var _completeSignup = async function(username) {
   await waitFor.pageToFullyLoad();
 };
 
-var _grantSuperAdminPrivileges = async function(email) {
-  const user = await FirebaseAdmin.auth().getUserByEmail(email.toLowerCase());
-  await FirebaseAdmin.auth().setCustomUserClaims(
-    user.uid, {role: 'super_admin'});
-  // We need to logout and login once more to refresh the user's privileges.
-  await logout();
-  await login(email);
+var _createFirebaseAccount = async function(email, isSuperAdmin = false) {
+  const user = await FirebaseAdmin.auth().createUser({
+    email: email,
+    emailVerified: true,
+    password: await HashWasm.md5(email),
+  });
+  if (isSuperAdmin) {
+    await FirebaseAdmin.auth().setCustomUserClaims(
+      user.uid, {role: 'super_admin'});
+  }
 };
 
 var completeLoginFlowFromStoryViewerPage = async function(email, username) {
@@ -83,19 +81,21 @@ var completeLoginFlowFromStoryViewerPage = async function(email, username) {
 };
 
 var createUser = async function(email, username) {
+  await _createFirebaseAccount(email);
   await createAndLoginUser(email, username);
   await logout();
 };
 
 var createAndLoginUser = async function(email, username) {
+  await _createFirebaseAccount(email);
   await login(email);
   await _completeSignup(username);
 };
 
 var createModerator = async function(email, username) {
+  await _createFirebaseAccount(email, true);
   await login(email);
   await _completeSignup(username);
-  await _grantSuperAdminPrivileges(email);
   await adminPage.get();
   await adminPage.updateRole(username, 'moderator');
   await logout();
@@ -107,9 +107,9 @@ var createAdmin = async function(email, username) {
 };
 
 var createAndLoginAdminUser = async function(email, username) {
+  await _createFirebaseAccount(email, true);
   await login(email);
   await _completeSignup(username);
-  await _grantSuperAdminPrivileges(email);
   await adminPage.get();
   await adminPage.updateRole(username, 'admin');
 };
@@ -120,9 +120,9 @@ var createAdminMobile = async function(email, username) {
 };
 
 var createAndLoginAdminUserMobile = async function(email, username) {
+  await _createFirebaseAccount(email, true);
   await login(email);
   await _completeSignup(username);
-  await _grantSuperAdminPrivileges(email);
 };
 
 var isAdmin = async function() {

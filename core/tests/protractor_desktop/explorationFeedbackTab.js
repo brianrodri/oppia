@@ -71,6 +71,7 @@ describe('ExplorationFeedback', function() {
     await users.createAndLoginAdminUser(
       'user7@ExplorationFeedback.com',
       'superUserExplorationFeedback');
+    await users.logout();
   });
 
   it('should add feedback to an exploration', async function() {

@@ -65,7 +65,7 @@ export class AuthService {
    * with true if the user is new, otherwise fulfills with false.
    * Rejects when sign-in failed.
    */
-  async signInAsync(): Promise<boolean> {
+  async signInAsync(): Promise<void> {
     if (!this.angularFireAuth) {
       throw new Error('AngularFireAuth is not available');
     }
@@ -75,15 +75,12 @@ export class AuthService {
 
     const idToken = await creds.user.getIdToken();
     await this.authBackendApiService.beginSessionAsync(idToken);
-
-    return creds.additionalUserInfo.isNewUser;
   }
 
   async signOutAsync(): Promise<void> {
     if (!this.angularFireAuth) {
       throw new Error('AngularFireAuth is not available');
     }
-
     await this.angularFireAuth.signOut();
   }
 

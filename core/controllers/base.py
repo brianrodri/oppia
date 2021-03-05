@@ -445,14 +445,10 @@ class BaseHandler(webapp2.RequestHandler):
                 in debug mode.
         """
         if isinstance(exception, self.NotLoggedInException):
-            # This checks if the response should be JSON or HTML.
-            # For GET requests, there is no payload, so we check against
-            # GET_HANDLER_ERROR_RETURN_TYPE.
-            # Otherwise, we check whether self.payload exists.
             self.error(401)
             self._render_exception(
-                401,
-                {'error': 'You must be logged in to access this resource.'})
+                401, {
+                    'error': 'You must be logged in to access this resource.'})
             return
 
         logging.error(b''.join(traceback.format_exception(*sys.exc_info())))

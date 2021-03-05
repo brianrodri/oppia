@@ -81,7 +81,6 @@ var completeLoginFlowFromStoryViewerPage = async function(email, username) {
 };
 
 var createUser = async function(email, username) {
-  await _createFirebaseAccount(email);
   await createAndLoginUser(email, username);
   await logout();
 };

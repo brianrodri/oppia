@@ -51,8 +51,8 @@ describe('Auth service', () => {
     authService = TestBed.inject(AuthService);
   });
 
-  it('should not use firebase auth in unit tests', () => {
-    expect(AuthService.firebaseAuthIsEnabled).toBeFalse();
+  it('should use firebase auth in unit tests', () => {
+    expect(AuthService.firebaseAuthIsEnabled).toBeTrue();
   });
 
   it('should be in emulator mode by default', () => {

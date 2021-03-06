@@ -149,7 +149,7 @@ describe('Auth service', () => {
 
         const signInPromise = authService.signInAsync();
 
-        await expectAsync(signInPromise).toBeResolvedTo(false);
+        await expectAsync(signInPromise).toBeResolvedTo();
 
         expect(angularFireAuth.signInWithRedirect).toHaveBeenCalled();
       });
@@ -163,7 +163,7 @@ describe('Auth service', () => {
 
         const signInPromise = authService.signInAsync();
 
-        await expectAsync(signInPromise).toBeResolvedTo(true);
+        await expectAsync(signInPromise).toBeResolvedTo();
 
         expect(angularFireAuth.signInWithRedirect).toHaveBeenCalled();
       });
@@ -193,7 +193,7 @@ describe('Auth service', () => {
 
         const signInPromise = authService.signInAsync();
 
-        await expectAsync(signInPromise).toBeResolvedTo(false);
+        await expectAsync(signInPromise).toBeResolvedTo();
 
         expect(angularFireAuth.signInWithEmailAndPassword.calls.first().args)
           .toEqual([this.email, this.password]);
@@ -212,7 +212,7 @@ describe('Auth service', () => {
 
         const signInPromise = authService.signInAsync();
 
-        await expectAsync(signInPromise).toBeResolvedTo(true);
+        await expectAsync(signInPromise).toBeResolvedTo();
 
         expect(angularFireAuth.signInWithEmailAndPassword.calls.first().args)
           .toEqual([this.email, this.password]);

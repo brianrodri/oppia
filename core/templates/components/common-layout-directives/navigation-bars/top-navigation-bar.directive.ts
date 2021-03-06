@@ -89,7 +89,7 @@ angular.module('oppia').directive('topNavigationBar', [
               },
               err => {
                 console.error(err.message);
-              })
+              });
           };
           ctrl.onLogoutButtonClicked = async function() {
             $window.localStorage.removeItem('last_uploaded_audio_lang');

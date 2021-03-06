@@ -5445,7 +5445,7 @@ export default {
   //
   // NOTE TO RELEASE COORDINATORS: Please change these to use production values
   // and change FIREBASE_EMULATOR_ENABLED to be false before deploying to
-  // production!
+  // production.
   "FIREBASE_CONFIG_API_KEY": "fake-api-key",
   "FIREBASE_CONFIG_APP_ID": "",
   "FIREBASE_CONFIG_AUTH_DOMAIN": "",

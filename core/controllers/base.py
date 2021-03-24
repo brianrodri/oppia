@@ -63,11 +63,36 @@ def load_template(filename):
 
 
 class SessionBeginHandler(webapp2.RequestHandler):
-    """Class which handles the creation of a new authentication session."""
+    """Handler for creating new authentication sessions."""
 
     def get(self):
         """Establishes a new auth session."""
         auth_services.establish_auth_session(self.request, self.response)
+
+
+class SessionEndHandler(webapp2.RequestHandler):
+    """Handler for destroying existing authentication sessions."""
+
+    def get(self):
+        """Destroys an existing auth session."""
+        auth_services.destroy_auth_session(self.response)
+
+
+class SeedFirebaseHandler(webapp2.RequestHandler):
+    """Handler for preparing Firebase and Oppia to run SeedFirebaseOneOffJob.
+
+    TODO(#11462): Delete this handler once the Firebase migration logic is
+    rollback-safe and all backup data is using post-migration data.
+    """
+
+    def get(self):
+        """Prepares Firebase and Oppia to run SeedFirebaseOneOffJob."""
+        try:
+            auth_services.seed_firebase()
+        except Exception:
+            logging.exception('Failed to prepare for SeedFirebaseOneOffJob')
+        finally:
+            self.redirect('/')
 
 
 class LogoutPage(webapp2.RequestHandler):
@@ -164,6 +189,7 @@ class BaseHandler(webapp2.RequestHandler):
 
         self.user_id = None
         self.username = None
+        self.email = None
         self.partially_logged_in = False
         self.user_is_scheduled_for_deletion = False
 
@@ -187,6 +213,7 @@ class BaseHandler(webapp2.RequestHandler):
 
             self.values['user_email'] = user_settings.email
             self.user_id = user_settings.user_id
+            self.email = user_settings.email
 
             if user_settings.deleted:
                 self.user_is_scheduled_for_deletion = user_settings.deleted

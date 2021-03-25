@@ -17,8 +17,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import logging
-
 from core.controllers import acl_decorators
 from core.controllers import base
 from core.domain import config_domain
@@ -27,7 +25,6 @@ from core.domain import email_manager
 from core.domain import suggestion_services
 from core.domain import user_services
 import feconf
-import utils
 
 TWENTY_FIVE_HOURS_IN_MSECS = 25 * 60 * 60 * 1000
 MAX_JOBS_TO_REPORT_ON = 50
@@ -135,33 +132,7 @@ class CronMapreduceCleanupHandler(base.BaseHandler):
         """
         # Only consider jobs that started at most 1 week before recency_msec.
         # The latest start time that a job scheduled for cleanup may have.
-        max_start_time_msec = (
-            utils.get_current_time_in_millisecs() -
-            jobs.MAX_MAPREDUCE_METADATA_RETENTION_MSECS
-        )
-
-        jobs.cleanup_old_jobs_pipelines()
-
-        if jobs.do_unfinished_jobs_exist(
-                cron_services.MapReduceStateModelsCleanupManager.__name__):
-            logging.warning('A previous cleanup job is still running.')
-        else:
-            cron_services.MapReduceStateModelsCleanupManager.enqueue(
-                cron_services.MapReduceStateModelsCleanupManager.create_new(),
-                additional_job_params={
-                    jobs.MAPPER_PARAM_MAX_START_TIME_MSEC: max_start_time_msec
-                })
-            logging.warning(
-                'Deletion jobs for auxiliary MapReduce entities kicked off.')
-
-        if jobs.do_unfinished_jobs_exist(
-                cron_services.JobModelsCleanupManager.__name__):
-            logging.warning(
-                'A previous JobModels cleanup job is still running.')
-        else:
-            cron_services.JobModelsCleanupManager.enqueue(
-                cron_services.JobModelsCleanupManager.create_new())
-            logging.warning('Deletion jobs for JobModels entities kicked off.')
+        pass
 
 
 class CronModelsCleanupHandler(base.BaseHandler):

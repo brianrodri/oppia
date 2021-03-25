@@ -83,8 +83,6 @@ class AdminHandler(base.BaseHandler):
         topic_summary_dicts = [
             summary.to_dict() for summary in topic_summaries]
 
-        queued_or_running_job_types = set([
-            job['job_type'] for job in unfinished_job_data])
         one_off_job_status_summaries = []
         audit_job_status_summaries = []
 
@@ -188,12 +186,16 @@ class AdminHandler(base.BaseHandler):
                     self.user_id, config_property_id)
             elif self.payload.get('action') == 'start_new_job':
                 # START JOB.
+                pass
             elif self.payload.get('action') == 'cancel_job':
                 # CANCEL JOB.
+                pass
             elif self.payload.get('action') == 'start_computation':
                 # START COMPUTATION.
+                pass
             elif self.payload.get('action') == 'stop_computation':
                 # STOP COMPUTATION.
+                pass
             elif self.payload.get('action') == 'upload_topic_similarities':
                 data = self.payload.get('data')
                 recommendations_services.update_topic_similarities(data)
@@ -700,7 +702,6 @@ class AdminJobOutputHandler(base.BaseHandler):
     @acl_decorators.can_access_admin_page
     def get(self):
         """Handles GET requests."""
-        job_id = self.request.get('job_id')
         self.render_json({
             'output': []
         })

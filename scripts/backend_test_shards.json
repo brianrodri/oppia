@@ -128,7 +128,7 @@
         "core.domain.recommendations_validators_test",
         "core.domain.auth_validators_test",
         "core.domain.image_services_test",
-        "core.domain.takeout_service_test",
+        "core.domain.takeout_service_test"
     ],
     "7": [
         "core.domain.story_services_test",

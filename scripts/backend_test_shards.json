@@ -16,7 +16,6 @@
         "extensions.answer_summarizers.models_test",
         "core.controllers.question_editor_test",
         "core.controllers.profile_test",
-        "core.jobs_test",
         "core.controllers.concept_card_viewer_test",
         "core.controllers.story_editor_test",
         "core.controllers.subtopic_viewer_test",
@@ -57,10 +56,8 @@
         "core.domain.role_services_test",
         "core.controllers.contributor_dashboard_test",
         "core.controllers.creator_dashboard_test",
-        "core.domain.opportunity_validators_test",
         "core.domain.expression_parser_test",
         "core.domain.improvements_services_test",
-        "core.domain.skill_validators_test",
         "core.domain.suggestion_registry_test",
         "core.controllers.feedback_test",
         "core.controllers.moderator_test",
@@ -71,7 +68,6 @@
         "core.domain.question_domain_test"
     ],
     "3": [
-        "core.domain.feedback_validators_test",
         "core.domain.rights_manager_test",
         "core.domain.skill_services_test",
         "core.domain.story_domain_test",
@@ -87,7 +83,6 @@
         "core.domain.skill_domain_test",
         "core.domain.auth_services_test",
         "core.domain.opportunity_services_test",
-        "core.domain.audit_validators_test",
         "core.domain.feedback_domain_test",
         "core.domain.platform_parameter_domain_test",
         "core.domain.story_fetchers_test",
@@ -99,24 +94,17 @@
         "core.domain.storage_model_audit_jobs_test",
         "core.domain.feedback_services_test",
         "core.domain.classroom_services_test",
-        "core.domain.classifier_validators_test",
         "core.domain.visualization_registry_test",
         "core.domain.exp_services_test"
     ],
     "4": [
-        "core.domain.prod_validators_test",
-        "core.domain.email_validators_test",
-        "core.domain.exploration_validators_test"
     ],
     "5": [
-        "core.domain.suggestion_validators_test",
         "core.domain.subtopic_page_domain_test",
         "core.domain.subscription_services_test",
         "core.domain.email_domain_test",
         "core.domain.draft_upgrade_services_test",
         "core.domain.event_services_test",
-        "core.domain.config_validators_test",
-        "core.domain.story_validators_test",
         "core.domain.user_query_services_test",
         "core.domain.user_services_test",
         "core.domain.fs_services_test",
@@ -124,16 +112,12 @@
     ],
     "6": [
         "core.domain.obj_services_test",
-        "core.domain.recommendations_validators_test",
-        "core.domain.auth_validators_test",
         "core.domain.image_services_test",
         "core.domain.takeout_service_test"
     ],
     "7": [
         "core.domain.story_services_test",
-        "core.domain.user_validators_test",
-        "core.domain.fs_domain_test",
-        "core.domain.job_validators_test"
+        "core.domain.fs_domain_test"
     ],
     "8": [
         "core.domain.taskqueue_services_test",
@@ -147,7 +131,6 @@
         "core.domain.topic_fetchers_test",
         "core.domain.stats_domain_test",
         "core.domain.caching_services_test",
-        "core.domain.activity_validators_test",
         "core.domain.email_manager_test",
         "core.domain.classifier_domain_test",
         "core.domain.wipeout_domain_test",
@@ -157,7 +140,6 @@
         "core.domain.question_services_test",
         "core.domain.learner_progress_services_test",
         "core.domain.config_services_test",
-        "core.domain.base_model_validators_test",
         "core.domain.subtopic_page_services_test",
         "core.domain.calculation_registry_test",
         "core.domain.question_fetchers_test",
@@ -165,7 +147,6 @@
         "core.domain.customization_args_util_test",
         "core.domain.auth_domain_test",
         "core.domain.action_registry_test",
-        "core.domain.improvements_validators_test",
         "core.domain.improvements_domain_test",
         "core.domain.platform_parameter_registry_test",
         "core.domain.topic_services_test",
@@ -176,14 +157,12 @@
         "scripts.run_e2e_tests_test"
     ],
     "9": [
-        "core.domain.topic_validators_test",
         "jobs.jobs_utils_test",
         "jobs.base_model_validator_test",
         "jobs.base_model_validator_errors_test"
     ],
     "10": [
         "core.domain.moderator_services_test",
-        "core.domain.collection_validators_test",
         "core.domain.image_validation_services_test"
     ],
     "11": [
@@ -229,7 +208,6 @@
         "scripts.linters.python_linter_test",
         "core.platform.auth.firebase_auth_services_test",
         "scripts.install_backend_python_libs_test",
-        "core.domain.statistics_validators_test",
         "scripts.common_test",
         "core.platform.datastore.gae_datastore_services_test",
         "core.storage.question.gae_models_test",
@@ -254,7 +232,6 @@
         "scripts.setup_gae_test",
         "scripts.linters.general_purpose_linter_test",
         "scripts.linters.js_ts_linter_test",
-        "core.domain.question_validators_test",
         "scripts.pre_push_hook_test",
         "core.platform.users.gae_current_user_services_test",
         "core.platform.search.gae_search_services_test",

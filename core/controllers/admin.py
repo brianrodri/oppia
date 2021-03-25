@@ -21,8 +21,6 @@ import logging
 import random
 
 from constants import constants
-from core import jobs
-from core import jobs_registry
 from core.controllers import acl_decorators
 from core.controllers import base
 from core.domain import caching_services
@@ -79,33 +77,18 @@ class AdminHandler(base.BaseHandler):
         """Handles GET requests."""
         demo_exploration_ids = list(feconf.DEMO_EXPLORATIONS.keys())
 
-        recent_job_data = jobs.get_data_for_recent_jobs()
-        unfinished_job_data = jobs.get_data_for_unfinished_jobs()
+        recent_job_data = []
+        unfinished_job_data = []
         topic_summaries = topic_fetchers.get_all_topic_summaries()
         topic_summary_dicts = [
             summary.to_dict() for summary in topic_summaries]
-        for job in unfinished_job_data:
-            job['can_be_canceled'] = job['is_cancelable'] and any([
-                klass.__name__ == job['job_type']
-                for klass in (
-                    jobs_registry.ONE_OFF_JOB_MANAGERS + (
-                        jobs_registry.AUDIT_JOB_MANAGERS))])
 
         queued_or_running_job_types = set([
             job['job_type'] for job in unfinished_job_data])
-        one_off_job_status_summaries = [{
-            'job_type': klass.__name__,
-            'is_queued_or_running': (
-                klass.__name__ in queued_or_running_job_types)
-        } for klass in jobs_registry.ONE_OFF_JOB_MANAGERS]
-        audit_job_status_summaries = [{
-            'job_type': klass.__name__,
-            'is_queued_or_running': (
-                klass.__name__ in queued_or_running_job_types)
-        } for klass in jobs_registry.AUDIT_JOB_MANAGERS]
+        one_off_job_status_summaries = []
+        audit_job_status_summaries = []
 
-        continuous_computations_data = jobs.get_continuous_computations_info(
-            jobs_registry.ALL_CONTINUOUS_COMPUTATION_MANAGERS)
+        continuous_computations_data = []
         for computation in continuous_computations_data:
             if computation['last_started_msec']:
                 computation['human_readable_last_started'] = (
@@ -204,33 +187,13 @@ class AdminHandler(base.BaseHandler):
                 config_services.revert_property(
                     self.user_id, config_property_id)
             elif self.payload.get('action') == 'start_new_job':
-                for klass in (
-                        jobs_registry.ONE_OFF_JOB_MANAGERS + (
-                            jobs_registry.AUDIT_JOB_MANAGERS)):
-                    if klass.__name__ == self.payload.get('job_type'):
-                        klass.enqueue(klass.create_new())
-                        break
+                # START JOB.
             elif self.payload.get('action') == 'cancel_job':
-                job_id = self.payload.get('job_id')
-                job_type = self.payload.get('job_type')
-                for klass in (
-                        jobs_registry.ONE_OFF_JOB_MANAGERS + (
-                            jobs_registry.AUDIT_JOB_MANAGERS)):
-                    if klass.__name__ == job_type:
-                        klass.cancel(job_id, self.user_id)
-                        break
+                # CANCEL JOB.
             elif self.payload.get('action') == 'start_computation':
-                computation_type = self.payload.get('computation_type')
-                for klass in jobs_registry.ALL_CONTINUOUS_COMPUTATION_MANAGERS:
-                    if klass.__name__ == computation_type:
-                        klass.start_computation()
-                        break
+                # START COMPUTATION.
             elif self.payload.get('action') == 'stop_computation':
-                computation_type = self.payload.get('computation_type')
-                for klass in jobs_registry.ALL_CONTINUOUS_COMPUTATION_MANAGERS:
-                    if klass.__name__ == computation_type:
-                        klass.stop_computation(self.user_id)
-                        break
+                # STOP COMPUTATION.
             elif self.payload.get('action') == 'upload_topic_similarities':
                 data = self.payload.get('data')
                 recommendations_services.update_topic_similarities(data)
@@ -739,7 +702,7 @@ class AdminJobOutputHandler(base.BaseHandler):
         """Handles GET requests."""
         job_id = self.request.get('job_id')
         self.render_json({
-            'output': jobs.get_job_output(job_id)
+            'output': []
         })
 
 

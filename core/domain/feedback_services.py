@@ -24,7 +24,6 @@ import itertools
 
 from core.domain import email_manager
 from core.domain import feedback_domain
-from core.domain import feedback_jobs_continuous
 from core.domain import rights_manager
 from core.domain import subscription_services
 from core.domain import taskqueue_services
@@ -589,38 +588,6 @@ def get_next_page_of_all_feedback_messages(
             page_size, urlsafe_start_cursor))
     messages_on_page = [_get_message_from_model(m) for m in models_on_page]
     return (messages_on_page, next_urlsafe_start_cursor, more)
-
-
-def get_thread_analytics_multi(exploration_ids):
-    """Fetches all FeedbackAnalytics, for all the given exploration ids.
-
-    A FeedbackAnalytics contains the exploration id the analytics belongs to,
-    how many open threads exist for the exploration, how many total threads
-    exist for the exploration.
-
-    Args:
-        exploration_ids: list(str). A list of exploration ids.
-
-    Returns:
-        list(FeedbackAnalytics). Analytics in the the same order as the input
-        list. If an exploration id is invalid, the number of threads in the
-        corresponding FeedbackAnalytics object will be zero.
-    """
-    return feedback_jobs_continuous.FeedbackAnalyticsAggregator.get_thread_analytics_multi( # pylint: disable=line-too-long
-        exploration_ids)
-
-
-def get_thread_analytics(exploration_id):
-    """Fetches the FeedbackAnalytics for the given exploration.
-
-    Args:
-        exploration_id: str. The id of the exploration.
-
-    Returns:
-        FeedbackAnalytics. The feedback analytics of the given exploration.
-    """
-    return feedback_jobs_continuous.FeedbackAnalyticsAggregator.get_thread_analytics( # pylint: disable=line-too-long
-        exploration_id)
 
 
 def get_total_open_threads(feedback_analytics_list):

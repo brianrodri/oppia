@@ -156,15 +156,10 @@ class FeedbackStatsHandler(base.BaseHandler):
     GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
 
     @acl_decorators.can_play_exploration
-    def get(self, exploration_id):
-        feedback_thread_analytics = (
-            feedback_services.get_thread_analytics(
-                exploration_id))
+    def get(self, unused_exploration_id):
         self.values.update({
-            'num_open_threads': (
-                feedback_thread_analytics.num_open_threads),
-            'num_total_threads': (
-                feedback_thread_analytics.num_total_threads),
+            'num_open_threads': 0,
+            'num_total_threads': 0,
         })
         self.render_json(self.values)
 

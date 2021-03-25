@@ -35,7 +35,6 @@ from core.domain import subscription_services
 from core.domain import suggestion_services
 from core.domain import summary_services
 from core.domain import topic_fetchers
-from core.domain import user_jobs_continuous
 from core.domain import user_services
 import feconf
 import python_utils
@@ -80,9 +79,7 @@ class NotificationsDashboardHandler(base.BaseHandler):
     @acl_decorators.can_access_creator_dashboard
     def get(self):
         """Handles GET requests."""
-        job_queued_msec, recent_notifications = (
-            user_jobs_continuous.DashboardRecentUpdatesAggregator
-            .get_recent_user_changes(self.user_id))
+        job_queued_msec, recent_notifications = 0, []
 
         last_seen_msec = (
             subscription_services.get_last_seen_notifications_msec(
@@ -167,22 +164,9 @@ class CreatorDashboardHandler(base.BaseHandler):
             collection_services.get_collection_summaries_subscribed_to(
                 self.user_id))
 
-        exploration_ids_subscribed_to = [
-            summary.id for summary in subscribed_exploration_summaries]
-
         exp_summary_dicts = summary_services.get_displayable_exp_summary_dicts(
             subscribed_exploration_summaries)
         collection_summary_dicts = []
-
-        feedback_thread_analytics = (
-            feedback_services.get_thread_analytics_multi(
-                exploration_ids_subscribed_to))
-
-        # TODO(bhenning): Update this to use unresolved answers from
-        # stats_services once the training interface is enabled and it's cheaper
-        # to retrieve top answers from stats_services.
-        for ind, exploration in enumerate(exp_summary_dicts):
-            exploration.update(feedback_thread_analytics[ind].to_dict())
 
         exp_summary_dicts = sorted(
             exp_summary_dicts,
@@ -217,13 +201,7 @@ class CreatorDashboardHandler(base.BaseHandler):
                         collection_summary.category),
                 })
 
-        dashboard_stats = (
-            user_jobs_continuous.UserStatsAggregator.get_dashboard_stats(
-                self.user_id))
-        dashboard_stats.update({
-            'total_open_feedback': feedback_services.get_total_open_threads(
-                feedback_thread_analytics)
-        })
+        dashboard_stats = {}
         if dashboard_stats and dashboard_stats.get('average_ratings'):
             dashboard_stats['average_ratings'] = (
                 _round_average_ratings(dashboard_stats['average_ratings']))
@@ -340,9 +318,7 @@ class NotificationsHandler(base.BaseHandler):
         last_seen_msec = (
             subscription_services.get_last_seen_notifications_msec(
                 self.user_id))
-        _, recent_notifications = (
-            user_jobs_continuous.DashboardRecentUpdatesAggregator
-            .get_recent_user_changes(self.user_id))
+        _, recent_notifications = None, []
         for notification in recent_notifications:
             if (notification['last_updated_ms'] > last_seen_msec and
                     notification['author_id'] != self.user_id):

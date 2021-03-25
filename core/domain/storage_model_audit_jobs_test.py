@@ -47,8 +47,6 @@ class StorageModelAuditJobsTest(test_utils.GenericTestBase):
             for member_name, member_obj in inspect.getmembers(module):
                 if inspect.isclass(member_obj):
                     clazz = getattr(module, member_name)
-                    if clazz.__name__ in MODEL_CLASS_NAMES_TO_EXCLUDE:
-                        continue
                     all_base_classes = [
                         base_class.__name__ for base_class in inspect.getmro(
                             clazz)]

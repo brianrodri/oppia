@@ -19,7 +19,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import ast
 import collections
 import contextlib
 import copy
@@ -53,7 +52,6 @@ from core.domain import story_domain
 from core.domain import story_services
 from core.domain import subtopic_page_domain
 from core.domain import subtopic_page_services
-from core.domain import taskqueue_services
 from core.domain import topic_domain
 from core.domain import topic_services
 from core.domain import user_services
@@ -72,7 +70,6 @@ import utils
 import contextlib2
 import elasticsearch
 from google.appengine.api import mail
-from google.appengine.ext import deferred
 from google.appengine.ext import testbed
 import requests_mock
 import webtest
@@ -1330,127 +1327,6 @@ class AppEngineTestBase(TestBase):
             self._platform_taskqueue_services_stub.create_http_task)
         with platform_taskqueue_services_swap:
             super(AppEngineTestBase, self).run(result=result)
-
-    def _get_all_queue_names(self):
-        """Returns a list of all queue names."""
-        return [q['name'] for q in self._testbed_taskqueue_stub.GetQueues()]
-
-    def count_jobs_in_taskqueue(self, queue_name):
-        """Returns the total number of tasks in a single queue if a queue name
-        is specified or the entire taskqueue if no queue name is specified.
-
-        Args:
-            queue_name: str|None. Name of the queue. Pass in None if no specific
-                queue is designated.
-
-        Returns:
-            int. The total number of tasks in a single queue or in the entire
-            taskqueue.
-        """
-        return self._platform_taskqueue_services_stub.count_jobs_in_taskqueue(
-            queue_name=queue_name)
-
-    def process_and_flush_pending_tasks(self, queue_name=None):
-        """Executes all of the tasks in a single queue if a queue name is
-        specified or all of the tasks in the taskqueue if no queue name is
-        specified.
-
-        Args:
-            queue_name: str|None. Name of the queue. Pass in None if no specific
-                queue is designated.
-        """
-        self._platform_taskqueue_services_stub.process_and_flush_tasks(
-            queue_name=queue_name)
-
-    def get_pending_tasks(self, queue_name=None):
-        """Returns a list of the tasks in a single queue if a queue name is
-        specified or a list of all of the tasks in the taskqueue if no queue
-        name is specified.
-
-        Args:
-            queue_name: str|None. Name of the queue. Pass in None if no specific
-                queue is designated.
-
-        Returns:
-            list(Task). List of tasks in a single queue or in the entire
-            taskqueue.
-        """
-        return self._platform_taskqueue_services_stub.get_pending_tasks(
-            queue_name=queue_name)
-
-    def count_jobs_in_mapreduce_taskqueue(self, queue_name):
-        """Counts the jobs in the given MapReduce taskqueue."""
-        return len(self.get_pending_mapreduce_tasks(queue_name=queue_name))
-
-    def get_pending_mapreduce_tasks(self, queue_name=None):
-        """Returns the jobs in the given MapReduce taskqueue. If queue_name is
-        None, defaults to returning the jobs in all available queues.
-        """
-        queue_names = None if queue_name is None else [queue_name]
-        return self._testbed_taskqueue_stub.get_filtered_tasks(
-            queue_names=queue_names)
-
-    def _execute_mapreduce_tasks(self, tasks):
-        """Execute MapReduce queued tasks.
-
-        Args:
-            tasks: list(google.appengine.api.taskqueue.taskqueue.Task). The
-                queued tasks.
-        """
-        for task in tasks:
-            if task.url == '/_ah/queue/deferred':
-                deferred.run(task.payload)
-            else:
-                # All other tasks will be for MapReduce or taskqueue.
-                params = task.payload or ''
-                headers = {
-                    'Content-Length': python_utils.convert_to_bytes(len(params))
-                }
-                headers.update(
-                    (key, python_utils.convert_to_bytes(val))
-                    for key, val in task.headers.items())
-
-                app = (
-                    self.taskqueue_testapp if task.url.startswith('/task') else
-                    self.testapp)
-                response = app.post(
-                    task.url, params=params, headers=headers,
-                    expect_errors=True)
-
-                if response.status_code != 200:
-                    raise RuntimeError('MapReduce task failed: %r' % task)
-
-    def process_and_flush_pending_mapreduce_tasks(self, queue_name=None):
-        """Runs and flushes pending MapReduce tasks. If queue_name is None, does
-        so for all queues; otherwise, this only runs and flushes tasks for the
-        specified queue.
-
-        For more information on taskqueue_stub, see:
-        https://code.google.com/p/googleappengine/source/browse/trunk/python/google/appengine/api/taskqueue/taskqueue_stub.py
-        """
-        queue_names = (
-            self._get_all_queue_names() if queue_name is None else [queue_name])
-
-        get_enqueued_tasks = lambda: list(
-            self._testbed_taskqueue_stub.get_filtered_tasks(
-                queue_names=queue_names))
-
-        # Loops until get_enqueued_tasks() returns an empty list.
-        for tasks in iter(get_enqueued_tasks, []):
-            for queue in queue_names:
-                self._testbed_taskqueue_stub.FlushQueue(queue)
-            self._execute_mapreduce_tasks(tasks)
-
-    def run_but_do_not_flush_pending_mapreduce_tasks(self):
-        """"Runs, but does not flush, the pending MapReduce tasks."""
-        queue_names = self._get_all_queue_names()
-        tasks = self._testbed_taskqueue_stub.get_filtered_tasks(
-            queue_names=queue_names)
-
-        for queue in queue_names:
-            self._testbed_taskqueue_stub.FlushQueue(queue)
-
-        self._execute_mapreduce_tasks(tasks)
 
 
 class GenericTestBase(AppEngineTestBase):
@@ -3193,59 +3069,6 @@ class LinterTestBase(GenericTestBase):
         """
         failed_count = sum(msg.startswith('FAILED') for msg in stdout)
         self.assertEqual(failed_count, expected_failed_count)
-
-
-class AuditJobsTestBase(GenericTestBase):
-    """Base class for audit jobs tests."""
-
-    def run_job_and_check_output(
-            self, expected_output, sort=False, literal_eval=False):
-        """Helper function to run job and compare output.
-
-        Args:
-            expected_output: list(*). The expected result of the job.
-            sort: bool. Whether to sort the outputs before comparison.
-            literal_eval: bool. Whether to use ast.literal_eval before
-                comparison.
-        """
-        self.process_and_flush_pending_tasks()
-        job_id = self.job_class.create_new()
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-        self.job_class.enqueue(job_id)
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-        self.process_and_flush_pending_mapreduce_tasks()
-        self.process_and_flush_pending_tasks()
-        actual_output = self.job_class.get_output(job_id)
-
-        if literal_eval:
-            actual_output_dict = {}
-            expected_output_dict = {}
-
-            for item in (ast.literal_eval(value) for value in actual_output):
-                value = item[1]
-                if isinstance(value, list):
-                    value = sorted(value)
-                actual_output_dict[item[0]] = value
-
-            for item in (ast.literal_eval(value) for value in expected_output):
-                value = item[1]
-                if isinstance(value, list):
-                    value = sorted(value)
-                expected_output_dict[item[0]] = value
-
-            self.assertItemsEqual(actual_output_dict, expected_output_dict)
-
-            for key in actual_output_dict:
-                self.assertEqual(
-                    actual_output_dict[key], expected_output_dict[key])
-        elif sort:
-            self.assertEqual(sorted(actual_output), sorted(expected_output))
-        else:
-            self.assertEqual(actual_output, expected_output)
 
 
 class EmailMessageMock(python_utils.OBJECT):

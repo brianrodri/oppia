@@ -41,7 +41,6 @@ from core.domain import stats_services
 from core.domain import story_domain
 from core.domain import story_fetchers
 from core.domain import story_services
-from core.domain import taskqueue_services
 from core.domain import topic_domain
 from core.domain import topic_fetchers
 from core.domain import topic_services
@@ -431,31 +430,6 @@ class AdminIntegrationTest(test_utils.GenericTestBase):
 
         self.logout()
 
-    def test_admin_job_output_handler(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-
-        self.save_new_valid_exploration('exp_id', self.admin_id)
-
-        job_id = SampleMapReduceJobManager.create_new()
-        SampleMapReduceJobManager.enqueue(job_id)
-
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-
-        response = self.get_json('/adminjoboutput', params={'job_id': job_id})
-        self.assertIsNone(response['output'])
-
-        self.process_and_flush_pending_mapreduce_tasks()
-
-        response = self.get_json('/adminjoboutput', params={'job_id': job_id})
-        self.assertEqual(
-            SampleMapReduceJobManager.get_status_code(job_id),
-            jobs.STATUS_CODE_COMPLETED)
-        self.assertEqual(response['output'], ['[u\'sum\', 1]'])
-
-        self.logout()
-
     def test_revert_config_property(self):
         observed_log_messages = []
 
@@ -481,60 +455,6 @@ class AdminIntegrationTest(test_utils.GenericTestBase):
             observed_log_messages,
             ['[ADMIN] %s reverted config property: promo_bar_enabled'
              % self.admin_id])
-
-        self.logout()
-
-    def test_start_new_one_off_job(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-
-        with self.swap(
-            jobs_registry, 'ONE_OFF_JOB_MANAGERS', [SampleMapReduceJobManager]):
-
-            csrf_token = self.get_new_csrf_token()
-
-            self.post_json(
-                '/adminhandler', {
-                    'action': 'start_new_job',
-                    'job_type': 'SampleMapReduceJobManager'
-                }, csrf_token=csrf_token)
-
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-
-        self.logout()
-
-    def test_cancel_one_off_job(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-
-        job_id = SampleMapReduceJobManager.create_new()
-        SampleMapReduceJobManager.enqueue(job_id)
-
-        self.run_but_do_not_flush_pending_mapreduce_tasks()
-        status = SampleMapReduceJobManager.get_status_code(job_id)
-
-        self.assertEqual(status, job_models.STATUS_CODE_STARTED)
-
-        with self.swap(
-            jobs_registry, 'ONE_OFF_JOB_MANAGERS', [SampleMapReduceJobManager]):
-
-            self.get_json('/adminhandler')
-            csrf_token = self.get_new_csrf_token()
-
-            self.post_json(
-                '/adminhandler', {
-                    'action': 'cancel_job',
-                    'job_id': job_id,
-                    'job_type': 'SampleMapReduceJobManager'
-                }, csrf_token=csrf_token)
-
-        status = SampleMapReduceJobManager.get_status_code(job_id)
-
-        self.assertEqual(status, job_models.STATUS_CODE_CANCELED)
 
         self.logout()
 
@@ -569,121 +489,6 @@ class AdminIntegrationTest(test_utils.GenericTestBase):
         status = jobs_test.StartExplorationEventCounter.get_status_code()
         self.assertEqual(
             status, job_models.CONTINUOUS_COMPUTATION_STATUS_CODE_RUNNING)
-
-        self.logout()
-
-    def test_stop_computation_with_running_jobs(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-
-        exploration = exp_domain.Exploration.create_default_exploration(
-            'exp_id')
-        exp_services.save_new_exploration('owner_id', exploration)
-
-        self.assertEqual(
-            jobs_test.StartExplorationEventCounter.get_count('exp_id'), 0)
-
-        jobs_test.StartExplorationEventCounter.start_computation()
-        self.run_but_do_not_flush_pending_mapreduce_tasks()
-        status = jobs_test.StartExplorationEventCounter.get_status_code()
-
-        self.assertEqual(
-            status, job_models.CONTINUOUS_COMPUTATION_STATUS_CODE_RUNNING)
-
-        with self.swap(
-            jobs_registry, 'ALL_CONTINUOUS_COMPUTATION_MANAGERS',
-            [jobs_test.StartExplorationEventCounter]):
-
-            self.get_json('/adminhandler')
-            csrf_token = self.get_new_csrf_token()
-
-            self.post_json(
-                '/adminhandler', {
-                    'action': 'stop_computation',
-                    'computation_type': 'StartExplorationEventCounter'
-                }, csrf_token=csrf_token)
-
-        status = jobs_test.StartExplorationEventCounter.get_status_code()
-        self.assertEqual(
-            status, job_models.CONTINUOUS_COMPUTATION_STATUS_CODE_IDLE)
-
-        self.logout()
-
-    def test_stop_computation_with_finished_jobs(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-
-        exploration = exp_domain.Exploration.create_default_exploration(
-            'exp_id')
-        exp_services.save_new_exploration('owner_id', exploration)
-
-        self.assertEqual(
-            jobs_test.StartExplorationEventCounter.get_count('exp_id'), 0)
-
-        jobs_test.StartExplorationEventCounter.start_computation()
-
-        self.process_and_flush_pending_mapreduce_tasks()
-        status = jobs_test.StartExplorationEventCounter.get_status_code()
-
-        self.assertEqual(
-            status, job_models.CONTINUOUS_COMPUTATION_STATUS_CODE_RUNNING)
-
-        with self.swap(
-            jobs_registry, 'ALL_CONTINUOUS_COMPUTATION_MANAGERS',
-            [jobs_test.StartExplorationEventCounter]):
-
-            self.get_json('/adminhandler')
-            csrf_token = self.get_new_csrf_token()
-
-            self.post_json(
-                '/adminhandler', {
-                    'action': 'stop_computation',
-                    'computation_type': 'StartExplorationEventCounter'
-                }, csrf_token=csrf_token)
-
-        status = jobs_test.StartExplorationEventCounter.get_status_code()
-        self.assertEqual(
-            status, job_models.CONTINUOUS_COMPUTATION_STATUS_CODE_IDLE)
-
-        self.logout()
-
-    def test_stop_computation_with_stopped_jobs(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-
-        exploration = exp_domain.Exploration.create_default_exploration(
-            'exp_id')
-        exp_services.save_new_exploration('owner_id', exploration)
-
-        self.assertEqual(
-            jobs_test.StartExplorationEventCounter.get_count('exp_id'), 0)
-
-        jobs_test.StartExplorationEventCounter.start_computation()
-        self.run_but_do_not_flush_pending_mapreduce_tasks()
-        status = jobs_test.StartExplorationEventCounter.get_status_code()
-
-        self.assertEqual(
-            status, job_models.CONTINUOUS_COMPUTATION_STATUS_CODE_RUNNING)
-
-        jobs_test.StartExplorationEventCounter.stop_computation(self.admin_id)
-        status = jobs_test.StartExplorationEventCounter.get_status_code()
-
-        self.assertEqual(
-            status, job_models.CONTINUOUS_COMPUTATION_STATUS_CODE_IDLE)
-
-        with self.swap(
-            jobs_registry, 'ALL_CONTINUOUS_COMPUTATION_MANAGERS',
-            [jobs_test.StartExplorationEventCounter]):
-
-            self.get_json('/adminhandler')
-            csrf_token = self.get_new_csrf_token()
-
-            self.post_json(
-                '/adminhandler', {
-                    'action': 'stop_computation',
-                    'computation_type': 'StartExplorationEventCounter'
-                }, csrf_token=csrf_token)
-
-        status = jobs_test.StartExplorationEventCounter.get_status_code()
-        self.assertEqual(
-            status, job_models.CONTINUOUS_COMPUTATION_STATUS_CODE_IDLE)
 
         self.logout()
 

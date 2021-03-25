@@ -30,7 +30,6 @@
         "core.controllers.custom_landing_pages_test",
         "core.controllers.skill_editor_test",
         "extensions.actions.base_test",
-        "core.controllers.tasks_test",
         "core.controllers.practice_sessions_test",
         "core.controllers.subscriptions_test",
         "extensions.objects.models.objects_test",

@@ -444,7 +444,6 @@
 /constants*.py @nithusha21
 /assets/constants.ts @nithusha21
 /core/controllers/incoming_emails*.py @aks681
-/core/controllers/tasks*.py @aks681
 /core/domain/email*.py @aks681
 /core/domain/image_service*.py @DubeySandeep
 /core/domain/storage_model_audit_jobs_test.py @vojtechjelinek

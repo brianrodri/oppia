@@ -20,9 +20,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 from core.controllers import acl_decorators
 from core.controllers import base
 from core.domain import email_manager
-from core.domain import user_query_jobs_one_off
 from core.domain import user_query_services
-from core.domain import user_services
 import feconf
 
 
@@ -35,32 +33,6 @@ class EmailDashboardPage(base.BaseHandler):
         self.render_template('email-dashboard-page.mainpage.html')
 
 
-def _generate_user_query_dicts(user_queries):
-    """Generate data dicts for the user queries.
-
-    Args:
-        user_queries: list(UserQuery). List of user queries to transform.
-
-    Returns:
-        list(dict(str, str)). List of data dicts for the user queries.
-    """
-    submitters_settings = user_services.get_users_settings(
-        list(set([model.submitter_id for model in user_queries])))
-    user_id_to_username = {
-        submitter.user_id: submitter.username
-        for submitter in submitters_settings
-    }
-    return [
-        {
-            'id': user_query.id,
-            'submitter_username': user_id_to_username[user_query.submitter_id],
-            'created_on': user_query.created_on.strftime('%d-%m-%y %H:%M:%S'),
-            'status': user_query.status,
-            'num_qualified_users': len(user_query.user_ids)
-        } for user_query in user_queries
-    ]
-
-
 class EmailDashboardDataHandler(base.BaseHandler):
     """Query data handler."""
 
@@ -68,46 +40,12 @@ class EmailDashboardDataHandler(base.BaseHandler):
 
     @acl_decorators.can_manage_email_dashboard
     def get(self):
-        cursor = self.request.get('cursor')
-        num_queries_to_fetch = self.request.get('num_queries_to_fetch')
-
-        # num_queries_to_fetch should be convertible to int type and positive.
-        if not num_queries_to_fetch.isdigit():
-            raise self.InvalidInputException(
-                '400 Invalid input for query results.')
-
-        user_queries, next_cursor = (
-            user_query_services.get_recent_user_queries(
-                int(num_queries_to_fetch), cursor))
-
-        data = {
-            'recent_queries': _generate_user_query_dicts(user_queries),
-            'cursor': next_cursor
-        }
-        self.render_json(data)
+        self.render_json({'recent_queries': [], 'cursor': ''})
 
     @acl_decorators.can_manage_email_dashboard
     def post(self):
         """Post handler for query."""
-        data = self.payload['data']
-        kwargs = {key: data[key] for key in data if data[key] is not None}
-        self._validate(kwargs)
-
-        user_query_id = user_query_services.save_new_user_query(
-            self.user_id, **kwargs)
-
-        # Start MR job in background.
-        job_id = user_query_jobs_one_off.UserQueryOneOffJob.create_new()
-        params = {'query_id': user_query_id}
-        user_query_jobs_one_off.UserQueryOneOffJob.enqueue(
-            job_id, additional_job_params=params)
-
-        user_query = (
-            user_query_services.get_user_query(user_query_id, strict=True))
-        data = {
-            'query': _generate_user_query_dicts([user_query])[0]
-        }
-        self.render_json(data)
+        self.render_json({'query': []})
 
     def _validate(self, data):
         """Validator for data obtained from frontend."""
@@ -138,7 +76,7 @@ class QueryStatusCheckHandler(base.BaseHandler):
             raise self.InvalidInputException('Invalid query id.')
 
         data = {
-            'query': _generate_user_query_dicts([user_query])[0]
+            'query': []
         }
         self.render_json(data)
 

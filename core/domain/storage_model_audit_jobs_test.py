@@ -19,36 +19,8 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import inspect
 
-from core.domain import prod_validation_jobs_one_off
 from core.platform import models
 from core.tests import test_utils
-
-
-# This list includes statistics models. The statistics models are included here
-# because the audit jobs for statistics models are defined in
-# core/domain/stats_jobs_one_off.py. These jobs should be updated and moved to
-# core/domain/prod_validation_jobs_one_off.py and the statistics model
-# class names can then be removed from this list.
-# The corresponding issue is #7100.
-MODEL_CLASS_NAMES_TO_EXCLUDE = {
-    'StateCounterModel',
-    'AnswerSubmittedEventLogEntryModel',
-    'ExplorationActualStartEventLogEntryModel',
-    'SolutionHitEventLogEntryModel',
-    'StartExplorationEventLogEntryModel',
-    'MaybeLeaveExplorationEventLogEntryModel',
-    'CompleteExplorationEventLogEntryModel',
-    'RateExplorationEventLogEntryModel',
-    'StateHitEventLogEntryModel',
-    'StateCompleteEventLogEntryModel',
-    'LeaveForRefresherExplorationEventLogEntryModel',
-    'ExplorationStatsModel',
-    'ExplorationIssuesModel',
-    'LearnerAnswerDetailsModel',
-    'ExplorationAnnotationsModel',
-    'StateAnswersModel',
-    'StateAnswersCalcOutputModel',
-}
 
 
 class StorageModelAuditJobsTest(test_utils.GenericTestBase):
@@ -83,9 +55,7 @@ class StorageModelAuditJobsTest(test_utils.GenericTestBase):
                     if 'Model' in all_base_classes:
                         names_of_ndb_model_subclasses.append(clazz.__name__)
 
-        names_of_all_audit_job_classes = (
-            prod_validation_jobs_one_off.ProdValidationAuditOneOffJobMetaClass
-            .get_model_audit_job_names())
+        names_of_all_audit_job_classes = []
 
         model_class_names_with_missing_audit_jobs = [
             model_class_name

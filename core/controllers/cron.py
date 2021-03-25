@@ -22,15 +22,11 @@ import logging
 from core import jobs
 from core.controllers import acl_decorators
 from core.controllers import base
-from core.domain import activity_jobs_one_off
 from core.domain import config_domain
 from core.domain import cron_services
 from core.domain import email_manager
-from core.domain import recommendations_jobs_one_off
 from core.domain import suggestion_services
-from core.domain import user_jobs_one_off
 from core.domain import user_services
-from core.domain import wipeout_jobs_one_off
 import feconf
 import utils
 
@@ -83,8 +79,7 @@ class CronDashboardStatsHandler(base.BaseHandler):
     @acl_decorators.can_perform_cron_tasks
     def get(self):
         """Handles GET requests."""
-        user_jobs_one_off.DashboardStatsOneOffJob.enqueue(
-            user_jobs_one_off.DashboardStatsOneOffJob.create_new())
+        pass
 
 
 class CronUserDeletionHandler(base.BaseHandler):
@@ -93,8 +88,7 @@ class CronUserDeletionHandler(base.BaseHandler):
     @acl_decorators.can_perform_cron_tasks
     def get(self):
         """Handles GET requests."""
-        wipeout_jobs_one_off.UserDeletionOneOffJob.enqueue(
-            wipeout_jobs_one_off.UserDeletionOneOffJob.create_new())
+        pass
 
 
 class CronFullyCompleteUserDeletionHandler(base.BaseHandler):
@@ -103,10 +97,7 @@ class CronFullyCompleteUserDeletionHandler(base.BaseHandler):
     @acl_decorators.can_perform_cron_tasks
     def get(self):
         """Handles GET requests."""
-        wipeout_jobs_one_off.FullyCompleteUserDeletionOneOffJob.enqueue(
-            wipeout_jobs_one_off.FullyCompleteUserDeletionOneOffJob
-            .create_new()
-        )
+        pass
 
 
 class CronExplorationRecommendationsHandler(base.BaseHandler):
@@ -115,9 +106,7 @@ class CronExplorationRecommendationsHandler(base.BaseHandler):
     @acl_decorators.can_perform_cron_tasks
     def get(self):
         """Handles GET requests."""
-        job_class = (
-            recommendations_jobs_one_off.ExplorationRecommendationsOneOffJob)
-        job_class.enqueue(job_class.create_new())
+        pass
 
 
 class CronActivitySearchRankHandler(base.BaseHandler):
@@ -126,8 +115,7 @@ class CronActivitySearchRankHandler(base.BaseHandler):
     @acl_decorators.can_perform_cron_tasks
     def get(self):
         """Handles GET requests."""
-        activity_jobs_one_off.IndexAllActivitiesJobManager.enqueue(
-            activity_jobs_one_off.IndexAllActivitiesJobManager.create_new())
+        pass
 
 
 class CronMapreduceCleanupHandler(base.BaseHandler):

@@ -287,7 +287,6 @@
 # Interaction project.
 /core/domain/customization_args_util*.py @brianrodri
 /core/domain/expression_parser*.py @iamprayush
-/core/domain/interaction_jobs_one_off*.py @aks681
 /core/domain/interaction_registry*.py @iamprayush
 /core/domain/obj_services*.py @iamprayush
 /core/domain/rules_registry*.py @aks681
@@ -313,10 +312,8 @@
 /core/domain/event_services*.py @brianrodri
 /core/domain/improvements_domain*.py @brianrodri
 /core/domain/improvements_services*.py @brianrodri
-/core/domain/improvements_validators*.py @brianrodri
 /core/domain/playthrough_issue_registry*.py @brianrodri
 /core/domain/stats*.py @brianrodri
-/core/domain/statistics_validators*.py @brianrodri
 /core/domain/visualization_registry*.py @brianrodri
 /core/templates/components/common-layout-directives/common-elements/answer-content-modal.controller*.ts @brianrodri
 /core/templates/components/common-layout-directives/common-elements/answer-content-modal.template.html @brianrodri
@@ -448,13 +445,8 @@
 /assets/constants.ts @nithusha21
 /core/controllers/incoming_emails*.py @aks681
 /core/controllers/tasks*.py @aks681
-/core/domain/audit_validators*.py @vojtechjelinek
-/core/domain/base_model_validators*.py @vojtechjelinek
 /core/domain/email*.py @aks681
 /core/domain/image_service*.py @DubeySandeep
-/core/domain/job_validators*.py @vojtechjelinek
-/core/domain/prod_validators*.py @vojtechjelinek
-/core/domain/prod_validation_jobs_one_off*.py @vojtechjelinek
 /core/domain/storage_model_audit_jobs_test.py @vojtechjelinek
 /core/jobs*.py @brianrodri
 /core/platform/ @brianrodri

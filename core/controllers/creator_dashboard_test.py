@@ -144,8 +144,8 @@ class CreatorDashboardHandlerTests(test_utils.GenericTestBase):
         self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
         self.owner_id_1 = self.get_user_id_from_email(self.OWNER_EMAIL_1)
         self.owner_id_2 = self.get_user_id_from_email(self.OWNER_EMAIL_2)
-        self.owner = user_services.UserActionsInfo(self.owner_id)
-        self.owner_1 = user_services.UserActionsInfo(self.owner_id_1)
+        self.owner = user_services.get_user_actions_info(self.owner_id)
+        self.owner_1 = user_services.get_user_actions_info(self.owner_id_1)
         self.collaborator_id = self.get_user_id_from_email(
             self.COLLABORATOR_EMAIL)
         self.viewer_id = self.get_user_id_from_email(self.VIEWER_EMAIL)

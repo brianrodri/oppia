@@ -22,19 +22,14 @@ import re
 import zipfile
 
 from constants import constants
-from core.domain import exp_domain
 from core.domain import exp_services
-from core.domain import rights_manager
 from core.domain import subscription_services
 from core.domain import user_services
 from core.platform import models
 from core.tests import test_utils
 import feconf
-import main_cron
 import python_utils
 import utils
-
-import webtest
 
 (user_models,) = models.Registry.import_models([models.NAMES.user])
 
@@ -158,64 +153,6 @@ class UserContributionsTests(test_utils.GenericTestBase):
             response_dict['created_exp_summary_dicts'], [])
         self.assertEqual(
             response_dict['edited_exp_summary_dicts'], [])
-
-    def test_created(self):
-        # Check that the profile page for a user who has created
-        # a single exploration shows 1 created and 1 edited exploration.
-        self.signup(self.EMAIL_A, self.USERNAME_A)
-        user_a_id = self.get_user_id_from_email(self.EMAIL_A)
-        user_a = user_services.get_user_actions_info(user_a_id)
-        self.save_new_valid_exploration(
-            self.EXP_ID_1, user_a_id, end_state_name='End')
-        rights_manager.publish_exploration(user_a, self.EXP_ID_1)
-        self.process_and_flush_pending_mapreduce_tasks()
-
-        response_dict = self.get_json(
-            '/profilehandler/data/%s' % self.USERNAME_A)
-        self.assertEqual(len(
-            response_dict['created_exp_summary_dicts']), 1)
-        self.assertEqual(len(
-            response_dict['edited_exp_summary_dicts']), 1)
-        self.assertEqual(
-            response_dict['created_exp_summary_dicts'][0]['id'],
-            self.EXP_ID_1)
-        self.assertEqual(
-            response_dict['edited_exp_summary_dicts'][0]['id'],
-            self.EXP_ID_1)
-
-    def test_edited(self):
-        # Check that the profile page for a user who has created
-        # a single exploration shows 0 created and 1 edited exploration.
-        self.signup(self.EMAIL_A, self.USERNAME_A)
-        user_a_id = self.get_user_id_from_email(self.EMAIL_A)
-
-        self.signup(self.EMAIL_B, self.USERNAME_B)
-        user_b_id = self.get_user_id_from_email(self.EMAIL_B)
-        user_a = user_services.get_user_actions_info(user_a_id)
-        self.save_new_valid_exploration(
-            self.EXP_ID_1, user_a_id, end_state_name='End')
-        rights_manager.publish_exploration(user_a, self.EXP_ID_1)
-
-        exp_services.update_exploration(
-            user_b_id, self.EXP_ID_1, [exp_domain.ExplorationChange({
-                'cmd': 'edit_exploration_property',
-                'property_name': 'objective',
-                'new_value': 'the objective'
-            })], 'Test edit')
-        self.process_and_flush_pending_tasks()
-
-        response_dict = self.get_json(
-            '/profilehandler/data/%s' % self.USERNAME_B)
-        self.assertEqual(len(
-            response_dict['created_exp_summary_dicts']), 0)
-        self.assertEqual(len(
-            response_dict['edited_exp_summary_dicts']), 1)
-        self.assertEqual(
-            response_dict['edited_exp_summary_dicts'][0]['id'],
-            self.EXP_ID_1)
-        self.assertEqual(
-            response_dict['edited_exp_summary_dicts'][0]['objective'],
-            'the objective')
 
 
 class FirstContributionDateTests(test_utils.GenericTestBase):
@@ -818,75 +755,6 @@ class DeleteAccountHandlerTests(test_utils.GenericTestBase):
     def test_delete_delete_account_page_disabled(self):
         with self.swap(constants, 'ENABLE_ACCOUNT_DELETION', False):
             self.delete_json('/delete-account-handler', expected_status_int=404)
-
-
-class DeleteAccountTests(test_utils.GenericTestBase):
-    """Integration tests for the account deletion."""
-
-    def setUp(self):
-        super(DeleteAccountTests, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
-        self.signup(self.EDITOR_EMAIL, self.EDITOR_USERNAME)
-        self.editor_id = self.get_user_id_from_email(self.EDITOR_EMAIL)
-        self.login(self.EDITOR_EMAIL)
-        self.enable_deletion_swap = (
-            self.swap(constants, 'ENABLE_ACCOUNT_DELETION', True))
-        self.testapp_swap_1 = self.swap(
-            self, 'testapp', webtest.TestApp(main_cron.app))
-        self.testapp_swap_2 = self.swap(
-            self, 'testapp', webtest.TestApp(main_cron.app))
-
-    def _run_account_deletion(self):
-        """Execute complete deletion for the user that is logged in."""
-        with self.enable_deletion_swap:
-            data = self.delete_json('/delete-account-handler')
-            self.assertEqual(data, {'success': True})
-
-        self.logout()
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        with self.testapp_swap_1:
-            self.get_html_response('/cron/users/user_deletion')
-        self.process_and_flush_pending_mapreduce_tasks()
-
-        with self.testapp_swap_2:
-            self.get_html_response('/cron/users/fully_complete_user_deletion')
-        self.process_and_flush_pending_mapreduce_tasks()
-        self.logout()
-
-    def test_delete_account_without_activities(self):
-        self._run_account_deletion()
-
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.editor_id))
-        self.assertIsNone(
-            user_models.PendingDeletionRequestModel.get_by_id(self.editor_id))
-        self.assertIsNotNone(
-            user_models.DeletedUserModel.get_by_id(self.editor_id))
-
-    def test_new_signup_after_deleting_account(self):
-        self._run_account_deletion()
-
-        self.signup(self.EDITOR_EMAIL, self.EDITOR_USERNAME)
-        self.login(self.EDITOR_EMAIL)
-        self.assertNotEqual(
-            self.editor_id, self.get_user_id_from_email(self.EDITOR_EMAIL))
-
-    def test_delete_account_with_activities(self):
-        self.save_new_valid_collection('col_id', self.editor_id)
-        self.save_new_valid_exploration('exp_id', self.editor_id)
-        self.save_new_topic('topic_id', self.editor_id)
-        self.save_new_skill('skill_id', self.editor_id)
-        self.save_new_story('story_id', self.editor_id, 'topic_id')
-        self.save_new_subtopic('subtopic_id', self.editor_id, 'topic_id')
-
-        self._run_account_deletion()
-
-        self.assertIsNone(
-            user_models.UserSettingsModel.get_by_id(self.editor_id))
-        self.assertIsNone(
-            user_models.PendingDeletionRequestModel.get_by_id(self.editor_id))
-        self.assertIsNotNone(
-            user_models.DeletedUserModel.get_by_id(self.editor_id))
 
 
 class ExportAccountHandlerTests(test_utils.GenericTestBase):

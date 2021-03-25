@@ -25,7 +25,6 @@ from constants import constants
 from core.domain import activity_domain
 from core.domain import activity_services
 from core.domain import collection_services
-from core.domain import exp_domain
 from core.domain import exp_fetchers
 from core.domain import exp_services
 from core.domain import rating_services
@@ -67,62 +66,6 @@ class LibraryPageTests(test_utils.GenericTestBase):
         """Test access to the library page."""
         response = self.get_html_response(feconf.LIBRARY_INDEX_URL)
         response.mustcontain('<library-page></library-page>')
-
-    def test_library_handler_demo_exploration(self):
-        """Test the library data handler on demo explorations."""
-        response_dict = self.get_json(feconf.LIBRARY_SEARCH_DATA_URL)
-        self.assertEqual({
-            'is_admin': False,
-            'is_topic_manager': False,
-            'is_moderator': False,
-            'is_super_admin': False,
-            'activity_list': [],
-            'search_cursor': None
-        }, response_dict)
-
-        # Load a public demo exploration.
-        exp_services.load_demo('0')
-        self.process_and_flush_pending_tasks()
-
-        # Load the search results with an empty query.
-        response_dict = self.get_json(feconf.LIBRARY_SEARCH_DATA_URL)
-        self.assertEqual(len(response_dict['activity_list']), 1)
-        self.assertDictContainsSubset({
-            'id': '0',
-            'category': 'Welcome',
-            'title': 'Welcome to Oppia!',
-            'language_code': 'en',
-            'objective': 'become familiar with Oppia\'s capabilities',
-            'status': rights_domain.ACTIVITY_STATUS_PUBLIC,
-        }, response_dict['activity_list'][0])
-
-        self.set_admins([self.ADMIN_USERNAME])
-
-        # Change title and category.
-        exp_services.update_exploration(
-            self.editor_id, '0', [exp_domain.ExplorationChange({
-                'cmd': 'edit_exploration_property',
-                'property_name': 'title',
-                'new_value': 'A new title!'
-            }), exp_domain.ExplorationChange({
-                'cmd': 'edit_exploration_property',
-                'property_name': 'category',
-                'new_value': 'A new category'
-            })],
-            'Change title and category')
-        self.process_and_flush_pending_tasks()
-
-        # Load the search results with an empty query.
-        response_dict = self.get_json(feconf.LIBRARY_SEARCH_DATA_URL)
-        self.assertEqual(len(response_dict['activity_list']), 1)
-        self.assertDictContainsSubset({
-            'id': '0',
-            'category': 'A new category',
-            'title': 'A new title!',
-            'language_code': 'en',
-            'objective': 'become familiar with Oppia\'s capabilities',
-            'status': rights_domain.ACTIVITY_STATUS_PUBLIC,
-        }, response_dict['activity_list'][0])
 
     def test_library_handler_for_created_explorations(self):
         """Test the library data handler for manually created explorations."""

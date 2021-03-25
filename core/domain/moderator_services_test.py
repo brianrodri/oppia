@@ -19,7 +19,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-from core.domain import moderator_services
 from core.tests import test_utils
 import feconf
 
@@ -50,49 +49,3 @@ class FlagExplorationEmailEnqueueTaskTests(test_utils.EmailTestBase):
 
         self.can_send_emails_ctx = self.swap(
             feconf, 'CAN_SEND_EMAILS', True)
-
-    def test_that_flag_exploration_emails_are_correct(self):
-
-        expected_email_html_body = (
-            'Hello Moderator,<br>'
-            'newuser has flagged exploration "Title" on the following '
-            'grounds: <br>'
-            'AD .<br>'
-            'You can modify the exploration by clicking '
-            '<a href="https://www.oppia.org/create/A">'
-            'here</a>.<br>'
-            '<br>'
-            'Thanks!<br>'
-            '- The Oppia Team<br>'
-            '<br>'
-            'You can change your email preferences via the '
-            '<a href="http://localhost:8181/preferences">Preferences</a> page.')
-
-        expected_email_text_body = (
-            'Hello Moderator,\n'
-            'newuser has flagged exploration "Title" on the following '
-            'grounds: \n'
-            'AD .\n'
-            'You can modify the exploration by clicking here.\n'
-            '\n'
-            'Thanks!\n'
-            '- The Oppia Team\n'
-            '\n'
-            'You can change your email preferences via the Preferences page.')
-
-        with self.can_send_emails_ctx:
-            moderator_services.enqueue_flag_exploration_email_task(
-                self.exploration.id, self.report_text, self.new_user_id)
-
-            self.process_and_flush_pending_tasks()
-
-            # Make sure correct email is sent.
-            messages = self._get_sent_email_messages(
-                self.MODERATOR_EMAIL)
-            self.assertEqual(len(messages), 1)
-            self.assertEqual(
-                messages[0].html.decode(),
-                expected_email_html_body)
-            self.assertEqual(
-                messages[0].body.decode(),
-                expected_email_text_body)

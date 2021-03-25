@@ -39,7 +39,6 @@ from core.domain import rights_manager
 from core.domain import search_services
 from core.domain import state_domain
 from core.domain import stats_services
-from core.domain import subscription_services
 from core.domain import user_services
 from core.platform import models
 from core.tests import test_utils
@@ -397,22 +396,6 @@ class ExplorationSummaryQueriesUnitTests(ExplorationServicesUnitTests):
             exp_services.get_exploration_ids_matching_query('', [], []),
             ([], None))
 
-    def test_get_subscribed_users_activity_ids_with_deleted_explorations(self):
-        # Ensure a deleted exploration does not show up in subscribed users
-        # activity ids.
-        subscription_services.subscribe_to_exploration(
-            self.owner_id, self.EXP_ID_0)
-        self.assertIn(
-            self.EXP_ID_0,
-            subscription_services.get_exploration_ids_subscribed_to(
-                self.owner_id))
-        exp_services.delete_exploration(self.owner_id, self.EXP_ID_0)
-        self.process_and_flush_pending_tasks()
-        self.assertNotIn(
-            self.EXP_ID_0,
-            subscription_services.get_exploration_ids_subscribed_to(
-                self.owner_id))
-
     def test_search_exploration_summaries(self):
         # Search within the 'Architecture' category.
         exp_ids, _ = exp_services.get_exploration_ids_matching_query(
@@ -590,11 +573,6 @@ class ExplorationCreateAndDeleteUnitTests(ExplorationServicesUnitTests):
         self.assertIsNotNone(
             exp_models.ExplorationRightsSnapshotContentModel.get_by_id(
                 exp_rights_snapshot_id))
-
-    def test_deletion_of_multiple_explorations_empty(self):
-        """Test that delete_explorations with empty list works correctly."""
-        exp_services.delete_explorations(self.owner_id, [])
-        self.process_and_flush_pending_tasks()
 
     def test_soft_deletion_of_multiple_explorations(self):
         """Test that soft deletion of explorations works correctly."""
@@ -913,40 +891,6 @@ class ExplorationCreateAndDeleteUnitTests(ExplorationServicesUnitTests):
         self.assertEqual(len(retrieved_exploration.param_specs), 1)
         self.assertEqual(
             list(retrieved_exploration.param_specs.keys())[0], 'theParameter')
-
-    def test_save_and_retrieve_exploration_summary(self):
-        self.save_new_valid_exploration(self.EXP_0_ID, self.owner_id)
-
-        # Change param spec.
-        exp_services.update_exploration(
-            self.owner_id, self.EXP_0_ID, [exp_domain.ExplorationChange({
-                'cmd': exp_domain.CMD_EDIT_EXPLORATION_PROPERTY,
-                'property_name': 'param_specs',
-                'new_value': {
-                    'theParameter':
-                        param_domain.ParamSpec('UnicodeString').to_dict()
-                }
-            })], '')
-
-        # Change title and category.
-        exp_services.update_exploration(
-            self.owner_id, self.EXP_0_ID, [exp_domain.ExplorationChange({
-                'cmd': exp_domain.CMD_EDIT_EXPLORATION_PROPERTY,
-                'property_name': 'title',
-                'new_value': 'A new title'
-            }), exp_domain.ExplorationChange({
-                'cmd': exp_domain.CMD_EDIT_EXPLORATION_PROPERTY,
-                'property_name': 'category',
-                'new_value': 'A new category'
-            })], 'Change title and category')
-
-        self.process_and_flush_pending_tasks()
-        retrieved_exp_summary = exp_fetchers.get_exploration_summary_by_id(
-            self.EXP_0_ID)
-
-        self.assertEqual(retrieved_exp_summary.title, 'A new title')
-        self.assertEqual(retrieved_exp_summary.category, 'A new category')
-        self.assertEqual(retrieved_exp_summary.contributor_ids, [self.owner_id])
 
     def test_update_exploration_by_migration_bot(self):
         self.save_new_valid_exploration(
@@ -3681,85 +3625,6 @@ class ExplorationSearchTests(ExplorationServicesUnitTests):
 
         self.assertEqual(add_docs_counter.times_called, 1)
 
-    def test_updated_exploration_is_added_correctly_to_index(self):
-        exp_id = 'id0'
-        exp_title = 'title 0'
-        exp_category = 'cat0'
-        actual_docs = []
-        initial_exp_doc = {
-            'category': 'cat0',
-            'id': 'id0',
-            'language_code': 'en',
-            'objective': 'An objective',
-            'rank': 20,
-            'tags': [],
-            'title': 'title 0'}
-        updated_exp_doc = {
-            'category': 'cat1',
-            'id': 'id0',
-            'language_code': 'en',
-            'objective': 'An objective',
-            'rank': 20,
-            'tags': [],
-            'title': 'title 0'
-        }
-
-        def mock_add_documents_to_index(docs, index):
-            self.assertEqual(index, exp_services.SEARCH_INDEX_EXPLORATIONS)
-            actual_docs.extend(docs)
-
-        add_docs_counter = test_utils.CallCounter(mock_add_documents_to_index)
-        add_docs_swap = self.swap(
-            search_services,
-            'add_documents_to_index',
-            add_docs_counter)
-
-        with add_docs_swap:
-            self.save_new_valid_exploration(
-                exp_id, self.owner_id, title=exp_title, category=exp_category,
-                end_state_name='End')
-
-            rights_manager.publish_exploration(self.owner, exp_id)
-            self.assertEqual(actual_docs, [initial_exp_doc])
-            self.assertEqual(add_docs_counter.times_called, 2)
-
-            actual_docs = []
-            exp_services.update_exploration(
-                self.owner_id, exp_id, [
-                    exp_domain.ExplorationChange({
-                        'cmd': exp_domain.CMD_EDIT_EXPLORATION_PROPERTY,
-                        'property_name': 'category',
-                        'new_value': 'cat1'})], 'update category')
-
-            self.process_and_flush_pending_tasks()
-            self.assertEqual(actual_docs, [updated_exp_doc])
-            self.assertEqual(add_docs_counter.times_called, 3)
-
-    def test_get_number_of_ratings(self):
-        self.save_new_valid_exploration(self.EXP_0_ID, self.owner_id)
-        exp = exp_fetchers.get_exploration_summary_by_id(self.EXP_0_ID)
-
-        self.assertEqual(exp_services.get_number_of_ratings(exp.ratings), 0)
-
-        rating_services.assign_rating_to_exploration(
-            self.owner_id, self.EXP_0_ID, 5)
-        self.assertEqual(
-            exp_services.get_number_of_ratings(exp.ratings), 1)
-
-        rating_services.assign_rating_to_exploration(
-            self.USER_ID_1, self.EXP_0_ID, 3)
-        self.process_and_flush_pending_tasks()
-        exp = exp_fetchers.get_exploration_summary_by_id(self.EXP_0_ID)
-        self.assertEqual(
-            exp_services.get_number_of_ratings(exp.ratings), 2)
-
-        rating_services.assign_rating_to_exploration(
-            self.USER_ID_2, self.EXP_0_ID, 5)
-        self.process_and_flush_pending_tasks()
-        exp = exp_fetchers.get_exploration_summary_by_id(self.EXP_0_ID)
-        self.assertEqual(
-            exp_services.get_number_of_ratings(exp.ratings), 3)
-
     def test_get_average_rating(self):
         self.save_new_valid_exploration(self.EXP_0_ID, self.owner_id)
         exp = exp_fetchers.get_exploration_summary_by_id(self.EXP_0_ID)
@@ -3899,48 +3764,6 @@ class ExplorationSummaryTests(ExplorationServicesUnitTests):
         contributors_summary = exp_fetchers.get_exploration_summary_by_id(
             exp_id).contributors_summary
         self.assertEqual(expected, contributors_summary)
-
-    def test_contributors_summary(self):
-        # Have Albert create a new exploration. Version 1.
-        self.save_new_valid_exploration(self.EXP_ID_1, self.albert_id)
-        self._check_contributors_summary(self.EXP_ID_1, {self.albert_id: 1})
-
-        # Have Bob update that exploration. Version 2.
-        exp_services.update_exploration(
-            self.bob_id, self.EXP_ID_1, [exp_domain.ExplorationChange({
-                'cmd': exp_domain.CMD_EDIT_EXPLORATION_PROPERTY,
-                'property_name': 'title',
-                'new_value': 'Exploration 1 title'
-            })], 'Changed title.')
-        self.process_and_flush_pending_tasks()
-        self._check_contributors_summary(
-            self.EXP_ID_1, {self.albert_id: 1, self.bob_id: 1})
-        # Have Bob update that exploration. Version 3.
-        exp_services.update_exploration(
-            self.bob_id, self.EXP_ID_1, [exp_domain.ExplorationChange({
-                'cmd': exp_domain.CMD_EDIT_EXPLORATION_PROPERTY,
-                'property_name': 'title',
-                'new_value': 'Exploration 1 title'
-            })], 'Changed title.')
-        self.process_and_flush_pending_tasks()
-        self._check_contributors_summary(
-            self.EXP_ID_1, {self.albert_id: 1, self.bob_id: 2})
-
-        # Have Albert update that exploration. Version 4.
-        exp_services.update_exploration(
-            self.albert_id, self.EXP_ID_1, [exp_domain.ExplorationChange({
-                'cmd': exp_domain.CMD_EDIT_EXPLORATION_PROPERTY,
-                'property_name': 'title',
-                'new_value': 'Exploration 1 title'
-            })], 'Changed title.')
-        self.process_and_flush_pending_tasks()
-        self._check_contributors_summary(
-            self.EXP_ID_1, {self.albert_id: 2, self.bob_id: 2})
-
-        # Have Albert revert to version 3. Version 5.
-        exp_services.revert_exploration(self.albert_id, self.EXP_ID_1, 4, 3)
-        self._check_contributors_summary(
-            self.EXP_ID_1, {self.albert_id: 1, self.bob_id: 2})
 
     def test_get_exploration_summary_by_id_with_invalid_exploration_id(self):
         exploration_summary = exp_fetchers.get_exploration_summary_by_id(

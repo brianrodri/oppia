@@ -28,7 +28,6 @@ import sys
 import time
 
 from constants import constants
-import feconf
 import python_utils
 from scripts import build
 from scripts import common
@@ -541,9 +540,7 @@ def run_tests(args):
         python_utils.PRINT('Waiting for servers to come up...')
 
         # Wait for the servers to come up.
-        common.wait_for_port_to_be_open(feconf.ES_LOCALHOST_PORT)
         common.wait_for_port_to_be_open(WEB_DRIVER_PORT)
-        common.wait_for_port_to_be_open(GOOGLE_APP_ENGINE_PORT)
         python_utils.PRINT('Servers have come up.')
         python_utils.PRINT(
             'Note: If ADD_SCREENSHOT_REPORTER is set to true in '

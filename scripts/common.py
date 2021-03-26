@@ -942,6 +942,7 @@ def managed_dev_appserver(
     # from an untrusted user, only other callers of the script, so there's no
     # risk of shell-injection attacks.
     with managed_process(dev_appserver_args, shell=True, env=env) as proc:
+        wait_for_port_to_be_open(port)
         yield proc
 
 
@@ -982,4 +983,5 @@ def managed_elasticsearch_dev_server():
     # Override the default path to ElasticSearch config files.
     es_env = {'ES_PATH_CONF': ES_PATH_CONFIG_DIR}
     with managed_process(es_args, env=es_env, shell=True) as proc:
+        wait_for_port_to_be_open(feconf.ES_LOCALHOST_PORT)
         yield proc

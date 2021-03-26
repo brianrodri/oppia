@@ -653,7 +653,7 @@ def build_using_webpack(config_path):
     python_utils.PRINT('Building webpack')
 
     managed_webpack_compiler = common.managed_webpack_compiler(
-        webpack_config_file=config_path, watch=False, shell=True)
+        webpack_config_file=config_path, watch_mode=False, shell=True)
 
     with managed_webpack_compiler as proc:
         proc.wait()

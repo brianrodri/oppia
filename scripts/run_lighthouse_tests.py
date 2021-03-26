@@ -26,14 +26,11 @@ import subprocess
 import sys
 
 from constants import constants
-import feconf
 import python_utils
 from scripts import build
 from scripts import common
 
 
-WEBPACK_BIN_PATH = os.path.join(
-    common.CURR_DIR, 'node_modules', 'webpack', 'bin', 'webpack.js')
 LIGHTHOUSE_MODE_PERFORMANCE = 'performance'
 LIGHTHOUSE_MODE_ACCESSIBILITY = 'accessibility'
 SERVER_MODE_PROD = 'dev'
@@ -93,9 +90,7 @@ def run_lighthouse_puppeteer_script():
         python_utils.PRINT(script_output)
         for url in script_output:
             export_url(url)
-        python_utils.PRINT(
-            'Puppeteer script completed successfully.')
-
+        python_utils.PRINT('Puppeteer script completed successfully.')
     except subprocess.CalledProcessError:
         python_utils.PRINT(
             'Puppeteer script failed. More details can be found above.')
@@ -107,15 +102,10 @@ def run_webpack_compilation():
     max_tries = 5
     webpack_bundles_dir_name = 'webpack_bundles'
     for _ in python_utils.RANGE(max_tries):
-        try:
-            webpack_config_file = common.WEBPACK_DEV_CONFIG
-            subprocess.check_call([
-                common.NODE_BIN_PATH, WEBPACK_BIN_PATH, '--config',
-                webpack_config_file])
-        except subprocess.CalledProcessError as error:
-            python_utils.PRINT(error.output)
-            sys.exit(error.returncode)
-            return
+        managed_webpack_compiler = common.managed_webpack_compiler(
+            use_prod_config=False, watch_mode=False)
+        with managed_webpack_compiler as compiler:
+            compiler.wait()
         if os.path.isdir(webpack_bundles_dir_name):
             break
     if not os.path.isdir(webpack_bundles_dir_name):
@@ -171,6 +161,9 @@ def enable_webpages():
 
 def main(args=None):
     """Runs lighthouse checks and deletes reports."""
+    # TODO(#11549): Move this to top of the file.
+    import contextlib2
+
     parsed_args = _PARSER.parse_args(args=args)
 
     if parsed_args.mode == LIGHTHOUSE_MODE_ACCESSIBILITY:
@@ -201,22 +194,16 @@ def main(args=None):
             'Invalid lighthouse mode: \'%s\', please choose'
             'from \'accessibility\' or \'performance\'' % lighthouse_mode)
 
-    # TODO(#11549): Move this to top of the file.
-    import contextlib2
-    managed_dev_appserver = common.managed_dev_appserver(
-        APP_YAML_FILENAMES[server_mode], port=GOOGLE_APP_ENGINE_PORT,
-        clear_datastore=True, log_level='critical', skip_sdk_update_check=True)
-
     with contextlib2.ExitStack() as stack:
         stack.enter_context(common.managed_redis_server())
         stack.enter_context(common.managed_elasticsearch_dev_server())
         if constants.EMULATOR_MODE:
             stack.enter_context(common.managed_firebase_auth_emulator())
-        stack.enter_context(managed_dev_appserver)
 
-        # Wait for the servers to come up.
-        common.wait_for_port_to_be_open(feconf.ES_LOCALHOST_PORT)
-        common.wait_for_port_to_be_open(GOOGLE_APP_ENGINE_PORT)
+        stack.enter_context(common.managed_dev_appserver(
+            APP_YAML_FILENAMES[server_mode], port=GOOGLE_APP_ENGINE_PORT,
+            clear_datastore=True, log_level='critical',
+            skip_sdk_update_check=True))
 
         run_lighthouse_puppeteer_script()
         run_lighthouse_checks(lighthouse_mode)

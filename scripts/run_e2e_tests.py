@@ -200,7 +200,6 @@ def cleanup():
         common.kill_processes_based_on_regex(p)
 
     build.set_constants_to_default()
-    common.stop_redis_server()
 
     for port in [OPPIA_SERVER_PORT, GOOGLE_APP_ENGINE_PORT]:
         if not common.wait_for_port_to_be_closed(port):
@@ -231,17 +230,10 @@ def run_webpack_compilation(source_maps=False):
     max_tries = 5
     webpack_bundles_dir_name = 'webpack_bundles'
     for _ in python_utils.RANGE(max_tries):
-        try:
-            webpack_config_file = (
-                build.WEBPACK_DEV_SOURCE_MAPS_CONFIG if source_maps
-                else build.WEBPACK_DEV_CONFIG)
-            subprocess.check_call([
-                common.NODE_BIN_PATH, WEBPACK_BIN_PATH, '--config',
-                webpack_config_file])
-        except subprocess.CalledProcessError as error:
-            python_utils.PRINT(error.output)
-            sys.exit(error.returncode)
-            return
+        managed_webpack_compiler = common.managed_webpack_compiler(
+            use_source_maps=source_maps, use_prod_config=False)
+        with managed_webpack_compiler as compiler:
+            compiler.wait()
         if os.path.isdir(webpack_bundles_dir_name):
             break
     if not os.path.isdir(webpack_bundles_dir_name):
@@ -517,7 +509,6 @@ def run_tests(args):
         sys.exit(1)
     setup_and_install_dependencies(args.skip_install)
 
-    common.start_redis_server()
     atexit.register(cleanup)
 
     dev_mode = not args.prod_env
@@ -541,6 +532,7 @@ def run_tests(args):
         env={'PORTSERVER_ADDRESS': PORTSERVER_SOCKET_FILEPATH})
 
     with contextlib2.ExitStack() as stack:
+        stack.enter_context(common.managed_redis_server())
         stack.enter_context(common.managed_elasticsearch_dev_server())
         if constants.EMULATOR_MODE:
             stack.enter_context(common.managed_firebase_auth_emulator())

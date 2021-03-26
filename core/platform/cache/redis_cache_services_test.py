@@ -27,19 +27,23 @@ import feconf
 import python_utils
 from scripts import common
 
+import contextlib2
+
 
 class RedisCacheServicesUnitTests(test_utils.TestBase):
     """Tests for redis_cache_services."""
 
     @classmethod
     def setUpClass(cls):
-        common.start_redis_server()
         super(RedisCacheServicesUnitTests, cls).setUpClass()
+        with contextlib2.ExitStack() as exit_stack:
+            exit_stack.enter_context(common.managed_redis_server())
+            cls._exit_stack = exit_stack.pop_all()
 
     @classmethod
     def tearDownClass(cls):
+        cls._exit_stack.close()
         super(RedisCacheServicesUnitTests, cls).tearDownClass()
-        common.stop_redis_server()
 
     def test_memory_stats_returns_dict(self):
         memory_stats = redis_cache_services.get_memory_cache_stats()

@@ -154,6 +154,12 @@ COMPILED_REQUIREMENTS_FILE_PATH = os.path.join(CURR_DIR, 'requirements.txt')
 # will be identical.
 REQUIREMENTS_FILE_PATH = os.path.join(CURR_DIR, 'requirements.in')
 
+WEBPACK_FILE = os.path.join('node_modules', 'webpack', 'bin', 'webpack.js')
+WEBPACK_DEV_CONFIG = 'webpack.dev.config.ts'
+WEBPACK_DEV_SOURCE_MAPS_CONFIG = 'webpack.dev.sourcemap.config.ts'
+WEBPACK_PROD_CONFIG = 'webpack.prod.config.ts'
+WEBPACK_PROD_SOURCE_MAPS_CONFIG = 'webpack.prod.sourcemap.config.ts'
+
 DIRS_TO_ADD_TO_SYS_PATH = [
     GOOGLE_APP_ENGINE_SDK_HOME,
     PYLINT_PATH,
@@ -673,46 +679,6 @@ def wait_for_port_to_be_closed(port_number):
     return not is_port_open(port_number)
 
 
-def start_redis_server():
-    """Start the redis server with the daemonize argument to prevent
-    the redis-server from exiting on its own.
-    """
-    if is_windows_os():
-        raise Exception(
-            'The redis command line interface is not installed because your '
-            'machine is on the Windows operating system. The redis server '
-            'cannot start.')
-
-    # Check if a redis dump file currently exists. This file contains residual
-    # data from a previous run of the redis server. If it exists, removes the
-    # dump file so that the redis server starts with a clean slate.
-    if os.path.exists(REDIS_DUMP_PATH):
-        os.remove(REDIS_DUMP_PATH)
-
-    # Redis-cli is only required in a development environment.
-    python_utils.PRINT('Starting Redis development server.')
-    # Start the redis local development server. Redis doesn't run on
-    # Windows machines.
-    subprocess.call([
-        REDIS_SERVER_PATH, REDIS_CONF_PATH,
-        '--daemonize', 'yes'
-    ])
-    wait_for_port_to_be_open(feconf.REDISPORT)
-
-
-def stop_redis_server():
-    """Stops the redis server by shutting it down."""
-    if is_windows_os():
-        raise Exception(
-            'The redis command line interface is not installed because your '
-            'machine is on the Windows operating system. There is no redis '
-            'server to shutdown.')
-
-    python_utils.PRINT('Cleaning up the redis_servers.')
-    # Shutdown the redis server before exiting.
-    subprocess.call([REDIS_CLI_PATH, 'shutdown'])
-
-
 def fix_third_party_imports():
     """Sets up up the environment variables and corrects the system paths so
     that the backend tests and imports work correctly.
@@ -854,11 +820,76 @@ def managed_process(command_args, shell=False, timeout_secs=60, **kwargs):
 
 
 @contextlib.contextmanager
+def managed_redis_server():
+    """Returns a context manager to start up and shut down the Redis server."""
+    if is_windows_os():
+        raise Exception(
+            'The redis command line interface is not installed because your '
+            'machine is on the Windows operating system. The redis server '
+            'cannot start.')
+
+    # Check if a redis dump file currently exists. This file contains residual
+    # data from a previous run of the redis server. If it exists, removes the
+    # dump file so that the redis server starts with a clean slate.
+    if os.path.exists(REDIS_DUMP_PATH):
+        os.remove(REDIS_DUMP_PATH)
+
+    redis_server_command_args = [
+        REDIS_SERVER_PATH, REDIS_CONF_PATH, '--daemonize', 'no',
+    ]
+
+    with managed_process(redis_server_command_args) as proc:
+        wait_for_port_to_be_open(feconf.REDISPORT)
+        yield proc
+
+
+@contextlib.contextmanager
+def managed_webpack_compiler(
+        webpack_config_file=None, use_prod_config=False, use_source_maps=True,
+        watch_mode=True, **kwargs):
+    """Returns a context manager for running and stopping the webpack compiler.
+
+    Args:
+        webpack_config_file: str|None. Path to the config file. If None, a file
+            will be selected automatically based on the use_prod_config and
+            use_source_maps arguments.
+        use_prod_config: bool. If true, uses the production config file.
+            Otherwise, uses the development config file.
+        use_source_maps: bool. If true, uses the config file with source maps.
+        watch_mode: bool. Whether to have the compiler run in watch mode, which
+            rebuilds on file change.
+        **kwargs: dict(str: *). Forwarded to managed_process().
+
+    Yields:
+        psutil.Process. Handle to the compiler.
+    """
+    if webpack_config_file is None:
+        if use_prod_config:
+            webpack_config_file = (
+                WEBPACK_PROD_SOURCE_MAPS_CONFIG if use_source_maps else
+                WEBPACK_PROD_CONFIG)
+        else:
+            webpack_config_file = (
+                WEBPACK_DEV_SOURCE_MAPS_CONFIG if use_source_maps else
+                WEBPACK_DEV_CONFIG)
+
+    webpack_compiler_command_args = [
+        NODE_BIN_PATH, WEBPACK_FILE,
+        '--config', webpack_config_file,
+        '--watch', 'true' if watch_mode else 'false',
+    ]
+
+    with managed_process(webpack_compiler_command_args, **kwargs) as proc:
+        yield proc
+
+
+@contextlib.contextmanager
 def managed_dev_appserver(
         app_yaml_path, env=None, log_level='info',
         host='0.0.0.0', port=8080, admin_host='0.0.0.0', admin_port=8000,
         clear_datastore=False, enable_console=False, enable_host_checking=True,
-        automatic_restart=True, skip_sdk_update_check=False):
+        automatic_restart=True, skip_sdk_update_check=False,
+        enable_email=False):
     """Returns a context manager to start up and shut down a GAE dev appserver.
 
     Args:
@@ -884,6 +915,8 @@ def managed_dev_appserver(
             files relevant to their module are changed.
         skip_sdk_update_check: bool. Whether to skip checking for SDK updates.
             If false, uses .appcfg_nag to decide.
+        enable_email: bool. Allows the app to send emails. NOTE: Be careful with
+            this: you do not want to spam people accidentally.
 
     Yields:
         psutil.Process. The dev_appserver process.
@@ -902,6 +935,7 @@ def managed_dev_appserver(
         '--skip_sdk_update_check', 'true' if skip_sdk_update_check else 'false',
         '--log_level', log_level,
         '--dev_appserver_log_level', log_level,
+        '--enable_sendmail', enable_email,
         app_yaml_path
     ]
     # OK to use shell=True here because we are not passing anything that came

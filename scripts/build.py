@@ -79,11 +79,6 @@ YUICOMPRESSOR_DIR = os.path.join(
     os.pardir, 'oppia_tools', 'yuicompressor-2.4.8', 'yuicompressor-2.4.8.jar')
 PARENT_DIR = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 UGLIFY_FILE = os.path.join('node_modules', 'uglify-js', 'bin', 'uglifyjs')
-WEBPACK_FILE = os.path.join('node_modules', 'webpack', 'bin', 'webpack.js')
-WEBPACK_DEV_CONFIG = 'webpack.dev.config.ts'
-WEBPACK_DEV_SOURCE_MAPS_CONFIG = 'webpack.dev.sourcemap.config.ts'
-WEBPACK_PROD_CONFIG = 'webpack.prod.config.ts'
-WEBPACK_PROD_SOURCE_MAPS_CONFIG = 'webpack.prod.sourcemap.config.ts'
 WEBPACK_TERSER_CONFIG = 'webpack.terser.config.ts'
 
 # Files with these extensions shouldn't be moved to build directory.
@@ -657,9 +652,11 @@ def build_using_webpack(config_path):
 
     python_utils.PRINT('Building webpack')
 
-    cmd = '%s %s --config %s' % (
-        common.NODE_BIN_PATH, WEBPACK_FILE, config_path)
-    subprocess.check_call(cmd, shell=True)
+    managed_webpack_compiler = common.managed_webpack_compiler(
+        webpack_config_file=config_path, watch=False, shell=True)
+
+    with managed_webpack_compiler as proc:
+        proc.wait()
 
 
 def hash_should_be_inserted(filepath):
@@ -1362,9 +1359,9 @@ def main(args=None):
                     'deparallelize_terser flag.')
             build_using_webpack(WEBPACK_TERSER_CONFIG)
         elif options.source_maps:
-            build_using_webpack(WEBPACK_PROD_SOURCE_MAPS_CONFIG)
+            build_using_webpack(common.WEBPACK_PROD_SOURCE_MAPS_CONFIG)
         else:
-            build_using_webpack(WEBPACK_PROD_CONFIG)
+            build_using_webpack(common.WEBPACK_PROD_CONFIG)
         generate_app_yaml(
             deploy_mode=options.deploy_mode,
             maintenance_mode=options.maintenance_mode)

@@ -1985,13 +1985,15 @@ th.mat-header-cell, td.mat-cell, td.mat-footer-cell {
   background-repeat: repeat-x; }
 
 .mat-form-field-appearance-fill .mat-form-field-flex {
-  background-color: rgba(0, 0, 0, 0.04); }
+  background-color: rgba(0, 0, 0, 0.04);
+  }
 
 .mat-form-field-appearance-fill.mat-form-field-disabled .mat-form-field-flex {
   background-color: rgba(0, 0, 0, 0.02); }
 
 .mat-form-field-appearance-fill .mat-form-field-underline::before {
-  background-color: rgba(0, 0, 0, 0.42); }
+  background-color: rgba(0, 0, 0, 0.42);
+  }
 
 .mat-form-field-appearance-fill.mat-form-field-disabled .mat-form-field-label {
   color: rgba(0, 0, 0, 0.38); }

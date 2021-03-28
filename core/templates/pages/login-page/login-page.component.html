@@ -1,0 +1,132 @@
+<div class="login-page">
+  <mat-card class="login-card" *ngIf="email">
+    <mat-card-header>
+      <mat-card-title>Sign in to the Firebase emulator</mat-card-title>
+    </mat-card-header>
+    <form (ngSubmit)="onClickSubmit()">
+      <mat-card-content>
+        <mat-form-field appearance="fill">
+          <mat-label>Enter an email</mat-label>
+          <input class="protractor-test-sign-in-email-input" type="text" aria-label="Email"
+                 matInput [formControl]="email" [matAutocomplete]="auto">
+          <mat-autocomplete #auto="matAutocomplete">
+            <mat-option *ngIf="!email.value || 'testadmin@example.com'.startsWith(email.value)"
+                        value="testadmin@example.com">
+              testadmin@example.com
+            </mat-option>
+          </mat-autocomplete>
+          <mat-hint *ngIf="email.value !== 'testadmin@example.com'">
+            To grant super-admin privileges to an account, please refer to the
+            <a href="https://github.com/oppia/oppia/wiki/Firebase-authentication#creating-an-administrator-account"
+               target="_blank">Wiki</a>.
+          </mat-hint>
+          <mat-hint *ngIf="email.value === 'testadmin@example.com'">
+            This email address has implicit super-admin privileges!
+          </mat-hint>
+        </mat-form-field>
+      </mat-card-content>
+
+      <mat-card-actions align="end">
+        <button color="primary" mat-raised-button [disabled]="email.invalid" type="submit">Sign In</button>
+      </mat-card-actions>
+    </form>
+    <mat-card-content>
+    </mat-card-content>
+  </mat-card>
+</div>
+<style>
+.login-page {
+  align-items: center;
+  display: flex;
+  height: 400px;
+  justify-content: center;
+}
+.login-page .login-card {
+  max-width: 500px;
+  min-width: 150px;
+  width: 100%;
+}
+.login-page .mat-form-field {
+  width: 100%;
+}
+.login-page .mat-card-actions {
+  margin: 0;
+}
+.login-page .mat-chip.mat-standard-chip.mat-chip-selected.mat-warn,
+.login-page .mat-datepicker-content.mat-warn .mat-calendar-body-selected {
+  background-color: red;
+  color: black;
+}
+.login-page .mat-button.mat-warn .mat-button-focus-overlay,
+.login-page .mat-checkbox-checked.mat-warn .mat-checkbox-background,
+.login-page .mat-checkbox-indeterminate.mat-warn .mat-checkbox-background,
+.login-page .mat-fab.mat-warn,
+.login-page .mat-flat-button.mat-warn,
+.login-page .mat-form-field.mat-focused .mat-form-field-ripple.mat-warn,
+.login-page .mat-form-field.mat-form-field-invalid .mat-form-field-ripple.mat-accent,
+.login-page .mat-icon-button.mat-warn .mat-button-focus-overlay,
+.login-page .mat-mini-fab.mat-warn,
+.login-page .mat-progress-bar.mat-warn .mat-progress-bar-fill::after,
+.login-page .mat-radio-button.mat-warn:active .mat-radio-persistent-ripple,
+.login-page .mat-raised-button.mat-warn,
+.login-page .mat-slide-toggle.mat-warn.mat-checked .mat-ripple-element,
+.login-page .mat-slide-toggle.mat-warn.mat-checked .mat-slide-toggle-thumb,
+.login-page .mat-stroked-button.mat-warn .mat-button-focus-overlay,
+.login-page .mat-tab-group.mat-background-warn .mat-tab-header,
+.login-page .mat-tab-group.mat-background-warn .mat-tab-header-pagination,
+.login-page .mat-tab-group.mat-background-warn .mat-tab-links,
+.login-page .mat-tab-group.mat-warn .mat-ink-bar,
+.login-page .mat-tab-nav-bar.mat-background-warn .mat-tab-header,
+.login-page .mat-tab-nav-bar.mat-background-warn .mat-tab-header-pagination,
+.login-page .mat-tab-nav-bar.mat-background-warn .mat-tab-links,
+.login-page .mat-tab-nav-bar.mat-warn .mat-ink-bar,
+.login-page .mat-warn .mat-slider-thumb-label {
+  background-color: red;
+}
+.login-page .mat-step-header .mat-step-icon-state-error {
+  background-color: transparent;
+  color: red;
+}
+.login-page .mat-badge-warn .mat-badge-content,
+.login-page .mat-toolbar.mat-warn {
+  background: red;
+  color: black;
+}
+.login-page .mat-checkbox:active:not(.mat-checkbox-disabled).mat-warn .mat-ripple-element,
+.login-page .mat-warn .mat-pseudo-checkbox-indeterminate {
+  background: red;
+}
+.login-page .mat-radio-button.mat-warn.mat-radio-checked .mat-radio-outer-circle {
+  border-color: red;
+}
+.login-page .oppia-editor-warnings-error-color {
+  border-color: transparent transparent red transparent;
+  color: #333;
+}
+.login-page .mat-form-field-invalid .mat-input-element {
+  caret-color: red;
+}
+.login-page .mat-button.mat-warn,
+.login-page .mat-datepicker-toggle-active.mat-warn,
+.login-page .mat-error,
+.login-page .mat-form-field .mat-select.mat-select-invalid .mat-select-arrow,
+.login-page .mat-form-field-appearance-outline.mat-focused.mat-warn .mat-form-field-outline-thick,
+.login-page .mat-form-field-appearance-outline.mat-form-field-invalid.mat-form-field-invalid .mat-form-field-outline-thick,
+.login-page .mat-form-field-type-mat-native-select.mat-focused:not(.mat-form-field-invalid).mat-warn .mat-form-field-infix::after,
+.login-page .mat-form-field-type-mat-native-select.mat-form-field-invalid .mat-form-field-infix::after,
+.login-page .mat-form-field.mat-focused .mat-form-field-label.mat-warn,
+.login-page .mat-form-field.mat-focused.mat-warn .mat-select-arrow,
+.login-page .mat-form-field.mat-form-field-invalid .mat-form-field-label .mat-form-field-required-marker,
+.login-page .mat-form-field.mat-form-field-invalid .mat-form-field-label,
+.login-page .mat-icon-button.mat-warn,
+.login-page .mat-icon.mat-warn,
+.login-page .mat-step-header .mat-step-label.mat-step-label-error,
+.login-page .mat-stroked-button.mat-warn,
+.login-page .mat-warn .mat-option.mat-selected:not(.mat-option-disabled) {
+  color: red;
+}
+.login-page .mat-progress-spinner.mat-warn circle,
+.login-page .mat-spinner.mat-warn circle {
+  stroke: red;
+}
+</style>

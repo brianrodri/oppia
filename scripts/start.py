@@ -165,6 +165,8 @@ def main(args=None):
         if constants.EMULATOR_MODE:
             python_utils.PRINT('Starting Firebase emulators')
             stack.enter_context(common.managed_firebase_auth_emulator())
+            python_utils.PRINT('Starting Cloud Datastore Emulator')
+            stack.enter_context(common.managed_cloud_datastore_emulator())
         python_utils.PRINT('Starting GAE development server')
         stack.enter_context(managed_dev_appserver)
 

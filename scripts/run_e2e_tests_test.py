@@ -931,6 +931,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 common, 'managed_firebase_auth_emulator',
                 value=contextlib2.nullcontext()),
             self.swap_to_always_return(
+                common, 'managed_cloud_datastore_emulator',
+                value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
                 common, 'managed_dev_appserver',
                 value=contextlib2.nullcontext()),
             self.swap_with_checks(
@@ -1048,6 +1051,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 value=contextlib2.nullcontext()),
             self.swap_to_always_return(
                 common, 'managed_firebase_auth_emulator',
+                value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
+                common, 'managed_cloud_datastore_emulator',
                 value=contextlib2.nullcontext()),
             self.swap_to_always_return(
                 common, 'managed_dev_appserver',
@@ -1398,6 +1404,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 common, 'managed_firebase_auth_emulator',
                 value=contextlib2.nullcontext()),
             self.swap_to_always_return(
+                common, 'managed_cloud_datastore_emulator',
+                value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
                 common, 'managed_dev_appserver',
                 value=contextlib2.nullcontext()),
             self.swap_with_checks(
@@ -1572,6 +1581,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 common, 'managed_firebase_auth_emulator',
                 value=contextlib2.nullcontext()),
             self.swap_to_always_return(
+                common, 'managed_cloud_datastore_emulator',
+                value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
                 common, 'managed_dev_appserver',
                 value=contextlib2.nullcontext()),
             self.swap_with_checks(
@@ -1695,6 +1707,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 value=contextlib2.nullcontext()),
             self.swap_to_always_return(
                 common, 'managed_firebase_auth_emulator',
+                value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
+                common, 'managed_cloud_datastore_emulator',
                 value=contextlib2.nullcontext()),
             self.swap_to_always_return(
                 common, 'managed_dev_appserver',

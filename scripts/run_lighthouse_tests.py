@@ -215,6 +215,7 @@ def main(args=None):
         stack.enter_context(common.managed_elasticsearch_dev_server())
         if constants.EMULATOR_MODE:
             stack.enter_context(common.managed_firebase_auth_emulator())
+            stack.enter_context(common.managed_cloud_datastore_emulator())
         stack.enter_context(managed_dev_appserver)
 
         # Wait for the servers to come up.

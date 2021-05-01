@@ -213,11 +213,39 @@ class ElasticSearchStub(python_utils.OBJECT):
     library and the '_seq_no' increments with every operation.)
     """
 
-    _DB = {}
+    def __init__(self, test):
+        self._test = test
+        self._db = {}
+
+    def __enter__(self):
+        with contextlib2.ExitStack() as swap_stack:
+            swap_stack.enter_context(self._test.swap(
+                elastic_search_services.ES.indices, 'create',
+                self.mock_create_index))
+            swap_stack.enter_context(self._test.swap(
+                elastic_search_services.ES, 'index',
+                self.mock_index))
+            swap_stack.enter_context(self._test.swap(
+                elastic_search_services.ES, 'exists',
+                self.mock_exists))
+            swap_stack.enter_context(self._test.swap(
+                elastic_search_services.ES, 'delete',
+                self.mock_delete))
+            swap_stack.enter_context(self._test.swap(
+                elastic_search_services.ES, 'delete_by_query',
+                self.mock_delete_by_query))
+            swap_stack.enter_context(self._test.swap(
+                elastic_search_services.ES, 'search',
+                self.mock_search))
+
+            self._swap_stack = swap_stack.pop_all()
+
+    def __exit__(self, *unused_args):
+        self._swap_stack.close()
 
     def reset(self):
         """Helper method that clears the mock database."""
-        self._DB.clear()
+        self._db.clear()
 
     def _generate_index_not_found_error(self, index_name):
         """Helper method that generates an elasticsearch 'index not found' 404
@@ -265,11 +293,11 @@ class ElasticSearchStub(python_utils.OBJECT):
             elasticsearch.RequestError. An index with the given name already
                 exists.
         """
-        if index_name in self._DB:
+        if index_name in self._db:
             raise elasticsearch.RequestError(
                 400, 'resource_already_exists_exception',
                 'index [%s/RaNdOmStRiNgOfAlPhAs] already exists' % index_name)
-        self._DB[index_name] = []
+        self._db[index_name] = []
         return {
             'index': index_name,
             'acknowledged': True,
@@ -296,11 +324,11 @@ class ElasticSearchStub(python_utils.OBJECT):
             elasticsearch.RequestError. An index with the given name already
                 exists.
         """
-        if index_name not in self._DB:
+        if index_name not in self._db:
             raise self._generate_index_not_found_error(index_name)
-        self._DB[index_name] = [
-            d for d in self._DB[index_name] if d['id'] != id]
-        self._DB[index_name].append(document)
+        self._db[index_name] = [
+            d for d in self._db[index_name] if d['id'] != id]
+        self._db[index_name].append(document)
         return {
             '_index': index_name,
             '_shards': {
@@ -330,9 +358,9 @@ class ElasticSearchStub(python_utils.OBJECT):
         Raises:
             elasticsearch.NotFoundError: The given index name was not found.
         """
-        if index_name not in self._DB:
+        if index_name not in self._db:
             raise self._generate_index_not_found_error(index_name)
-        return any([d['id'] == doc_id for d in self._DB[index_name]])
+        return any([d['id'] == doc_id for d in self._db[index_name]])
 
     def mock_delete(self, index_name, doc_id):
         """Deletes a document from an index in the mock database. Does nothing
@@ -350,11 +378,11 @@ class ElasticSearchStub(python_utils.OBJECT):
             elasticsearch.NotFoundError. The given index name was not found, or
                 the given doc_id was not found in the given index.
         """
-        if index_name not in self._DB:
+        if index_name not in self._db:
             raise self._generate_index_not_found_error(index_name)
-        docs = [d for d in self._DB[index_name] if d['id'] != doc_id]
-        if len(self._DB[index_name]) != len(docs):
-            self._DB[index_name] = docs
+        docs = [d for d in self._db[index_name] if d['id'] != doc_id]
+        if len(self._db[index_name]) != len(docs):
+            self._db[index_name] = docs
             return {
                 '_type': '_doc',
                 '_seq_no': 99,
@@ -408,10 +436,10 @@ class ElasticSearchStub(python_utils.OBJECT):
         assert query['query'] == {
             'match_all': {}
         }
-        if index_name not in self._DB:
+        if index_name not in self._db:
             raise self._generate_index_not_found_error(index_name)
-        index_size = len(self._DB[index_name])
-        del self._DB[index_name][:]
+        index_size = len(self._db[index_name])
+        del self._db[index_name][:]
         return {
             'took': 72,
             'version_conflicts': 0,
@@ -451,12 +479,12 @@ class ElasticSearchStub(python_utils.OBJECT):
         assert index not in ['_all', '', None]
         assert sorted(params.keys()) == ['from', 'size']
 
-        if index not in self._DB:
+        if index not in self._db:
             raise self._generate_index_not_found_error(index)
 
         result_docs = []
         result_doc_ids = set([])
-        for doc in self._DB[index]:
+        for doc in self._db[index]:
             if not doc['id'] in result_doc_ids:
                 result_docs.append(doc)
                 result_doc_ids.add(doc['id'])
@@ -517,70 +545,73 @@ class ElasticSearchStub(python_utils.OBJECT):
 class AuthServicesStub(python_utils.OBJECT):
     """Test-only implementation of the public API in core.platform.auth."""
 
-    def __init__(self):
-        """Initializes a new instance that emulates an empty auth server."""
+    def __init__(self, test):
+        """Initializes a new instance that emulates an empty auth server.
+
+        Args:
+            test: GenericTestBase. The test class instance this stub is intended
+                to serve.
+        """
+        self._test = test
         self._user_id_by_auth_id = {}
         self._external_user_id_associations = set()
 
-    @classmethod
-    def install_stub(cls, test):
-        """Installs a new instance of the stub onto the given test instance.
-
-        Args:
-            test: GenericTestBase. The test instance to install the stub on.
-
-        Returns:
-            callable. A function that will uninstall the stub when called.
-        """
-        with contextlib2.ExitStack() as stack:
-            stub = cls()
-
-            stack.enter_context(test.swap(
-                platform_auth_services, 'establish_auth_session',
-                stub.establish_auth_session))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'destroy_auth_session',
-                stub.destroy_auth_session))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'get_auth_claims_from_request',
-                stub.get_auth_claims_from_request))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'mark_user_for_deletion',
-                stub.mark_user_for_deletion))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'delete_external_auth_associations',
-                stub.delete_external_auth_associations))
-            stack.enter_context(test.swap(
+    def __enter__(self):
+        """Installs a new instance of the stub onto the given test instance."""
+        with contextlib2.ExitStack() as swap_stack:
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'establish_auth_session',
+                self.establish_auth_session))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'destroy_auth_session',
+                self.destroy_auth_session))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'get_auth_claims_from_request',
+                self.get_auth_claims_from_request))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'mark_user_for_deletion',
+                self.mark_user_for_deletion))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'delete_external_auth_associations',
+                self.delete_external_auth_associations))
+            swap_stack.enter_context(self._test.swap(
                 platform_auth_services,
                 'verify_external_auth_associations_are_deleted',
-                stub.verify_external_auth_associations_are_deleted))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'get_auth_id_from_user_id',
-                stub.get_auth_id_from_user_id))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'get_user_id_from_auth_id',
-                stub.get_user_id_from_auth_id))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'get_multi_user_ids_from_auth_ids',
-                stub.get_multi_user_ids_from_auth_ids))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'get_multi_auth_ids_from_user_ids',
-                stub.get_multi_auth_ids_from_user_ids))
-            stack.enter_context(test.swap(
-                platform_auth_services, 'associate_auth_id_with_user_id',
-                stub.associate_auth_id_with_user_id))
-            stack.enter_context(test.swap(
+                self.verify_external_auth_associations_are_deleted))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'get_auth_id_from_user_id',
+                self.get_auth_id_from_user_id))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'get_user_id_from_auth_id',
+                self.get_user_id_from_auth_id))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'get_multi_user_ids_from_auth_ids',
+                self.get_multi_user_ids_from_auth_ids))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'get_multi_auth_ids_from_user_ids',
+                self.get_multi_auth_ids_from_user_ids))
+            swap_stack.enter_context(self._test.swap(
+                platform_auth_services,
+                'associate_auth_id_with_user_id',
+                self.associate_auth_id_with_user_id))
+            swap_stack.enter_context(self._test.swap(
                 platform_auth_services,
                 'associate_multi_auth_ids_with_user_ids',
-                stub.associate_multi_auth_ids_with_user_ids))
+                self.associate_multi_auth_ids_with_user_ids))
 
-            # Standard usage of ExitStack: enter a bunch of context managers
-            # from the safety of an ExitStack's context. Once they've all been
-            # opened, pop_all() of them off of the original context so they can
-            # *stay* open. Calling the function returned will exit all of them
-            # in reverse order.
-            # https://docs.python.org/3/library/contextlib.html#cleaning-up-in-an-enter-implementation
-            return stack.pop_all().close
+            self._swap_stack = swap_stack.pop_all()
+
+    def __exit__(self, *unused_args):
+        self._swap_stack.close()
 
     @classmethod
     def establish_auth_session(cls, unused_request, unused_response):
@@ -770,14 +801,14 @@ class TaskqueueServicesStub(python_utils.OBJECT):
     layer, namely the platform.taskqueue taskqueue services API.
     """
 
-    def __init__(self, test_base):
+    def __init__(self, test):
         """Initializes a taskqueue services stub that replaces the API
         functionality of core.platform.taskqueue.
 
         Args:
-            test_base: GenericTestBase. The current test base.
+            test: GenericTestBase. The current test base.
         """
-        self._test_base = test_base
+        self._test = test
         self._client = cloud_tasks_emulator.Emulator(
             task_handler=self._task_handler, automatic_task_handling=False)
 
@@ -798,8 +829,8 @@ class TaskqueueServicesStub(python_utils.OBJECT):
                 python_utils.convert_to_bytes(task_name or None)),
             'X-AppEngine-Fake-Is-Admin': python_utils.convert_to_bytes(1),
         }
-        csrf_token = self._test_base.get_new_csrf_token()
-        self._test_base.post_task(url, payload, headers, csrf_token=csrf_token)
+        csrf_token = self._test.get_new_csrf_token()
+        self._test.post_task(url, payload, headers, csrf_token=csrf_token)
 
     def create_http_task(
             self, queue_name, url, payload=None, scheduled_for=None,
@@ -870,7 +901,32 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
     layer, namely the platform.cache cache services API.
     """
 
-    _CACHE_DICT = {}
+    def __init__(self, test):
+        self._test = test
+        self._cache_dict = {}
+
+    def __enter__(self):
+        with contextlib2.ExitStack() as swap_stack:
+            swap_stack.enter_context(self._test.swap(
+                memory_cache_services,
+                'flush_cache', self.flush_cache))
+            swap_stack.enter_context(self._test.swap(
+                memory_cache_services,
+                'get_multi', self.get_multi))
+            swap_stack.enter_context(self._test.swap(
+                memory_cache_services,
+                'set_multi', self.set_multi))
+            swap_stack.enter_context(self._test.swap(
+                memory_cache_services,
+                'delete_multi', self.delete_multi))
+            swap_stack.enter_context(self._test.swap(
+                memory_cache_services,
+                'get_memory_cache_stats', self.get_memory_cache_stats))
+
+            self._swap_stack = swap_stack.pop_all()
+
+    def __exit__(self, *unused_args):
+        self._swap_stack.close()
 
     def get_memory_cache_stats(self):
         """Returns a mock profile of the cache dictionary. This mock does not
@@ -881,11 +937,11 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
             MemoryCacheStats. MemoryCacheStats object containing the total
             number of keys in the cache dictionary.
         """
-        return caching_domain.MemoryCacheStats(0, 0, len(self._CACHE_DICT))
+        return caching_domain.MemoryCacheStats(0, 0, len(self._cache_dict))
 
     def flush_cache(self):
         """Wipes the cache dictionary clean."""
-        self._CACHE_DICT.clear()
+        self._cache_dict.clear()
 
     def get_multi(self, keys):
         """Looks up a list of keys in cache dictionary.
@@ -898,7 +954,7 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
             the keys that are passed in.
         """
         assert isinstance(keys, list)
-        return [self._CACHE_DICT.get(key, None) for key in keys]
+        return [self._cache_dict.get(key, None) for key in keys]
 
     def set_multi(self, key_value_mapping):
         """Sets multiple keys' values at once in the cache dictionary.
@@ -912,7 +968,7 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
             bool. Whether the set action succeeded.
         """
         assert isinstance(key_value_mapping, dict)
-        self._CACHE_DICT.update(key_value_mapping)
+        self._cache_dict.update(key_value_mapping)
         return True
 
     def delete_multi(self, keys):
@@ -925,9 +981,9 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
             int. Number of successfully deleted keys.
         """
         assert all(isinstance(key, python_utils.BASESTRING) for key in keys)
-        keys_to_delete = [key for key in keys if key in self._CACHE_DICT]
+        keys_to_delete = [key for key in keys if key in self._cache_dict]
         for key in keys_to_delete:
-            del self._CACHE_DICT[key]
+            del self._cache_dict[key]
         return len(keys_to_delete)
 
 
@@ -1806,47 +1862,10 @@ title: Title
                 None, a temporary result object is created (by calling the
                 defaultTestResult() method) and used instead.
         """
-        memory_cache_services_stub = MemoryCacheServicesStub()
-        memory_cache_services_stub.flush_cache()
-        es_stub = ElasticSearchStub()
-        es_stub.reset()
-
-        with contextlib2.ExitStack() as stack:
-            stack.callback(AuthServicesStub.install_stub(self))
-            stack.enter_context(self.swap(
-                elastic_search_services.ES.indices, 'create',
-                es_stub.mock_create_index))
-            stack.enter_context(self.swap(
-                elastic_search_services.ES, 'index',
-                es_stub.mock_index))
-            stack.enter_context(self.swap(
-                elastic_search_services.ES, 'exists',
-                es_stub.mock_exists))
-            stack.enter_context(self.swap(
-                elastic_search_services.ES, 'delete',
-                es_stub.mock_delete))
-            stack.enter_context(self.swap(
-                elastic_search_services.ES, 'delete_by_query',
-                es_stub.mock_delete_by_query))
-            stack.enter_context(self.swap(
-                elastic_search_services.ES, 'search',
-                es_stub.mock_search))
-            stack.enter_context(self.swap(
-                memory_cache_services, 'flush_cache',
-                memory_cache_services_stub.flush_cache))
-            stack.enter_context(self.swap(
-                memory_cache_services, 'get_multi',
-                memory_cache_services_stub.get_multi))
-            stack.enter_context(self.swap(
-                memory_cache_services, 'set_multi',
-                memory_cache_services_stub.set_multi))
-            stack.enter_context(self.swap(
-                memory_cache_services, 'get_memory_cache_stats',
-                memory_cache_services_stub.get_memory_cache_stats))
-            stack.enter_context(self.swap(
-                memory_cache_services, 'delete_multi',
-                memory_cache_services_stub.delete_multi))
-
+        auth_stub = AuthServicesStub(self)
+        es_stub = ElasticSearchStub(self)
+        mem_cache_stub = MemoryCacheServicesStub(self)
+        with auth_stub, es_stub, mem_cache_stub:
             super(GenericTestBase, self).run(result=result)
 
     def setUp(self):

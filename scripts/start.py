@@ -101,7 +101,6 @@ def cleanup():
     while common.is_port_in_use(PORT_NUMBER_FOR_GAE_SERVER):
         time.sleep(1)
     build.set_constants_to_default()
-    common.stop_redis_server()
 
 
 def main(args=None):
@@ -148,8 +147,6 @@ def main(args=None):
         # Give webpack few seconds to do the initial compilation.
         time.sleep(10)
 
-    common.start_redis_server()
-
     # TODO(#11549): Move this to top of the file.
     import contextlib2
     managed_dev_appserver = common.managed_dev_appserver(
@@ -160,6 +157,7 @@ def main(args=None):
         skip_sdk_update_check=True, port=PORT_NUMBER_FOR_GAE_SERVER)
 
     with contextlib2.ExitStack() as stack:
+        stack.enter_context(common.managed_redis_server())
         python_utils.PRINT('Starting ElasticSearch development server.')
         stack.enter_context(common.managed_elasticsearch_dev_server())
         if constants.EMULATOR_MODE:

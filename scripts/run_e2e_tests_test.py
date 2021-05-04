@@ -315,67 +315,43 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                         run_e2e_tests.cleanup()
 
     def test_cleanup_on_windows(self):
-
-        def mock_is_windows_os():
-            return True
-
-        def mock_set_constants_to_default():
-            return
-
-        def mock_wait_for_port_to_not_be_in_use(unused_port):
-            return True
-
-        subprocess_swap = self.swap(run_e2e_tests, 'SUBPROCESSES', [])
-
-        google_app_engine_path = '%s/' % common.GOOGLE_APP_ENGINE_SDK_HOME
-        webdriver_download_path = '%s/selenium' % (
-            run_e2e_tests.WEBDRIVER_HOME_PATH)
         elasticsearch_path = '%s/' % common.ES_PATH
-        process_pattern = [
-            ('.*%s.*' % re.escape(google_app_engine_path),),
-            ('.*%s.*' % re.escape(webdriver_download_path),),
-            ('.*%s.*' % re.escape(elasticsearch_path),),
-        ]
-        expected_pattern = process_pattern[:]
-        expected_pattern[1] = ('.*%s.*' % re.escape(
-            os.path.abspath(webdriver_download_path)),)
-        def mock_kill_process_based_on_regex(unused_regex):
-            return
+        google_app_engine_path = '%s/' % common.GOOGLE_APP_ENGINE_SDK_HOME
+        webdriver_download_abspath = (
+            os.path.abspath('%s/selenium' % run_e2e_tests.WEBDRIVER_HOME_PATH))
 
-        swap_kill_process = self.swap_with_checks(
-            common, 'kill_processes_based_on_regex',
-            mock_kill_process_based_on_regex,
-            expected_args=expected_pattern)
-        swap_is_windows = self.swap_with_checks(
-            common, 'is_windows_os', mock_is_windows_os)
-        swap_set_constants_to_default = self.swap_with_checks(
-            build, 'set_constants_to_default', mock_set_constants_to_default)
-        swap_wait_for_port_to_not_be_in_use = self.swap_with_checks(
-            common, 'wait_for_port_to_not_be_in_use',
-            mock_wait_for_port_to_not_be_in_use,
-            expected_args=[
-                (run_e2e_tests.OPPIA_SERVER_PORT,),
-                (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,)])
-        windows_exception = self.assertRaisesRegexp(
-            Exception, 'The redis command line interface is not installed '
-            'because your machine is on the Windows operating system. There is '
-            'no redis server to shutdown.'
-        )
-        with swap_kill_process, subprocess_swap, swap_is_windows, (
-            windows_exception):
-            with swap_set_constants_to_default:
-                with swap_wait_for_port_to_not_be_in_use:
-                    run_e2e_tests.cleanup()
+        swap_contexts = [
+            self.swap(run_e2e_tests, 'SUBPROCESSES', []),
+            self.swap_to_always_return(common, 'is_windows_os', value=True),
+            self.swap_to_always_return(build, 'set_constants_to_default'),
+            self.swap_with_checks(
+                common, 'kill_processes_based_on_regex', lambda _: None,
+                expected_args=[
+                    ('.*%s.*' % re.escape(google_app_engine_path),),
+                    ('.*%s.*' % re.escape(webdriver_download_abspath),),
+                    ('.*%s.*' % re.escape(elasticsearch_path),),
+                ]),
+            self.swap_with_checks(
+                common, 'wait_for_port_to_not_be_in_use', lambda _: True,
+                expected_args=[
+                    (p,) for p in run_e2e_tests.PORTS_USED_BY_OPPIA_PROCESSES
+                ]),
+        ]
+
+        with contextlib2.ExitStack() as exit_stack:
+            for swap_context in swap_contexts:
+                exit_stack.enter_context(swap_context)
+
+            run_e2e_tests.cleanup()
 
     def test_is_oppia_server_already_running_when_ports_closed(self):
-        def mock_is_port_in_use(unused_port):
-            return False
+        is_port_in_use_swap = self.swap_to_always_return(
+            common, 'is_port_in_use', value=False)
 
-        is_port_in_use_swap = self.swap_with_checks(
-            common, 'is_port_in_use', mock_is_port_in_use)
         with is_port_in_use_swap:
             result = run_e2e_tests.is_oppia_server_already_running()
-            self.assertFalse(result)
+
+        self.assertFalse(result)
 
     def test_is_oppia_server_already_running_when_one_of_the_ports_is_open(
             self):
@@ -898,6 +874,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
 
+        def mock_check_if_on_ci():
+            return True
+
         def mock_report_pass(unused_suite_name):
             return
 
@@ -933,11 +912,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             self.swap_to_always_return(
                 common, 'managed_dev_appserver',
                 value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
+                common, 'managed_redis_server',
+                value=contextlib2.nullcontext()),
             self.swap_with_checks(
                 common, 'wait_for_port_to_be_in_use',
                 mock_wait_for_port_to_be_in_use,
                 expected_args=[
-                    (feconf.REDISPORT,),
                     (feconf.ES_LOCALHOST_PORT,),
                     (run_e2e_tests.WEB_DRIVER_PORT,),
                     (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
@@ -955,16 +936,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                         run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
                     ],),
                     ([
-                        common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH,
-                        '--daemonize', 'yes'
-                    ],),
-                    ([
                         common.NODE_BIN_PATH,
                         '--unhandled-rejections=strict',
                         run_e2e_tests.PROTRACTOR_BIN_PATH,
                         'commands',
                     ],),
                 ]),
+            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci),
             self.swap_with_checks(
                 flake_checker, 'report_pass', mock_report_pass,
                 expected_args=[('full',)]),
@@ -1052,11 +1030,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             self.swap_to_always_return(
                 common, 'managed_dev_appserver',
                 value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
+                common, 'managed_redis_server',
+                value=contextlib2.nullcontext()),
             self.swap_with_checks(
                 common, 'wait_for_port_to_be_in_use',
                 mock_wait_for_port_to_be_in_use,
                 expected_args=[
-                    (feconf.REDISPORT,),
                     (feconf.ES_LOCALHOST_PORT,),
                     (run_e2e_tests.WEB_DRIVER_PORT,),
                     (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,)]),
@@ -1066,10 +1046,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 expected_args=[(3, 'full', True)]),
             self.swap_with_checks(
                 subprocess, 'Popen', mock_popen, expected_args=[
-                    ([
-                        common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH,
-                        '--daemonize', 'yes'
-                    ],),
                     ([
                         common.NODE_BIN_PATH,
                         '--unhandled-rejections=strict',
@@ -1417,6 +1393,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
 
+        def mock_check_if_on_ci():
+            return True
+
         def mock_report_pass(unused_suite_name):
             return
 
@@ -1452,11 +1431,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             self.swap_to_always_return(
                 common, 'managed_dev_appserver',
                 value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
+                common, 'managed_redis_server',
+                value=contextlib2.nullcontext()),
             self.swap_with_checks(
                 common, 'wait_for_port_to_be_in_use',
                 mock_wait_for_port_to_be_in_use,
                 expected_args=[
-                    (feconf.REDISPORT,),
                     (feconf.ES_LOCALHOST_PORT,),
                     (run_e2e_tests.WEB_DRIVER_PORT,),
                     (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
@@ -1474,10 +1455,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                         run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
                     ],),
                     ([
-                        common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH,
-                        '--daemonize', 'yes'
-                    ],),
-                    ([
                         common.NODE_BIN_PATH,
                         '--unhandled-rejections=strict',
                         run_e2e_tests.PROTRACTOR_BIN_PATH,
@@ -1485,6 +1462,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     ],),
                 ],
             ),
+            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci),
             self.swap_with_checks(
                 flake_checker, 'report_pass', mock_report_pass,
                 expected_args=[('full',)]),
@@ -1591,6 +1569,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
 
+        def mock_check_if_on_ci():
+            return True
+
         def mock_report_pass(unused_suite_name):
             return
 
@@ -1626,14 +1607,17 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             self.swap_to_always_return(
                 common, 'managed_dev_appserver',
                 value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
+                common, 'managed_redis_server',
+                value=contextlib2.nullcontext()),
             self.swap_with_checks(
                 common, 'wait_for_port_to_be_in_use',
                 mock_wait_for_port_to_be_in_use,
                 expected_args=[
-                    (feconf.REDISPORT,),
                     (feconf.ES_LOCALHOST_PORT,),
                     (run_e2e_tests.WEB_DRIVER_PORT,),
-                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,)]),
+                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
+                ]),
             self.swap_with_checks(
                 run_e2e_tests, 'get_e2e_test_parameters',
                 mock_get_e2e_test_parameters,
@@ -1647,10 +1631,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                         run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
                     ],),
                     ([
-                        common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH,
-                        '--daemonize', 'yes'
-                    ],),
-                    ([
                         common.NODE_BIN_PATH,
                         '--inspect-brk',
                         '--unhandled-rejections=strict',
@@ -1659,6 +1639,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     ],),
                 ],
             ),
+            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci),
             self.swap_with_checks(
                 flake_checker, 'report_pass', mock_report_pass,
                 expected_args=[('full',)]),
@@ -1716,6 +1697,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
 
+        def mock_check_if_on_ci():
+            return True
+
         def mock_report_pass(unused_suite_name):
             return
 
@@ -1751,14 +1735,17 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             self.swap_to_always_return(
                 common, 'managed_dev_appserver',
                 value=contextlib2.nullcontext()),
+            self.swap_to_always_return(
+                common, 'managed_redis_server',
+                value=contextlib2.nullcontext()),
             self.swap_with_checks(
                 common, 'wait_for_port_to_be_in_use',
                 mock_wait_for_port_to_be_in_use,
                 expected_args=[
-                    (feconf.REDISPORT,),
                     (feconf.ES_LOCALHOST_PORT,),
                     (run_e2e_tests.WEB_DRIVER_PORT,),
-                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,)]),
+                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
+                ]),
             self.swap_with_checks(
                 run_e2e_tests, 'get_e2e_test_parameters',
                 mock_get_e2e_test_parameters,
@@ -1772,10 +1759,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                         run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
                     ],),
                     ([
-                        common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH,
-                        '--daemonize', 'yes'
-                    ],),
-                    ([
                         common.NODE_BIN_PATH,
                         '--unhandled-rejections=strict',
                         run_e2e_tests.PROTRACTOR_BIN_PATH,
@@ -1783,6 +1766,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     ],),
                 ],
             ),
+            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci),
             self.swap_with_checks(
                 flake_checker, 'report_pass', mock_report_pass,
                 expected_args=[('full',)]),

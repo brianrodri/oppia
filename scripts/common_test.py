@@ -768,115 +768,6 @@ class CommonTests(test_utils.GenericTestBase):
             if os.path.exists('readme_test_dir'):
                 shutil.rmtree('readme_test_dir')
 
-    def test_windows_os_throws_exception_when_starting_redis_server(self):
-        def mock_is_windows_os():
-            return True
-        windows_not_supported_exception = self.assertRaisesRegexp(
-            Exception,
-            'The redis command line interface is not installed because your '
-            'machine is on the Windows operating system. The redis server '
-            'cannot start.')
-        swap_os_check = self.swap(common, 'is_windows_os', mock_is_windows_os)
-        with swap_os_check, windows_not_supported_exception:
-            common.start_redis_server()
-
-    def test_windows_os_throws_exception_when_stopping_redis_server(self):
-        def mock_is_windows_os():
-            return True
-        windows_not_supported_exception = self.assertRaisesRegexp(
-            Exception,
-            'The redis command line interface is not installed because your '
-            'machine is on the Windows operating system. There is no redis '
-            'server to shutdown.')
-        swap_os_check = self.swap(common, 'is_windows_os', mock_is_windows_os)
-
-        with swap_os_check, windows_not_supported_exception:
-            common.stop_redis_server()
-
-    def test_start_and_stop_server_calls_are_called(self):
-        # Test that starting the server calls subprocess.call().
-        check_function_calls = {
-            'subprocess_call_is_called': False
-        }
-        expected_check_function_calls = {
-            'subprocess_call_is_called': True
-        }
-
-        def mock_call(unused_cmd_tokens, *args, **kwargs):  # pylint: disable=unused-argument
-            check_function_calls['subprocess_call_is_called'] = True
-            class Ret(python_utils.OBJECT):
-                """Return object with required attributes."""
-
-                def __init__(self):
-                    self.returncode = 0
-                def communicate(self):
-                    """Return required method."""
-                    return '', ''
-            return Ret()
-
-        def mock_wait_for_port_to_be_in_use(port): # pylint: disable=unused-argument
-            return
-
-        swap_call = self.swap(subprocess, 'call', mock_call)
-        swap_wait_for_port_to_be_in_use = self.swap(
-            common, 'wait_for_port_to_be_in_use',
-            mock_wait_for_port_to_be_in_use)
-        with swap_call, swap_wait_for_port_to_be_in_use:
-            common.start_redis_server()
-
-        self.assertEqual(check_function_calls, expected_check_function_calls)
-
-        # Test that stopping the server calls subprocess.call().
-        check_function_calls = {
-            'subprocess_call_is_called': False
-        }
-        expected_check_function_calls = {
-            'subprocess_call_is_called': True
-        }
-
-        swap_call = self.swap(subprocess, 'call', mock_call)
-        with swap_call:
-            common.stop_redis_server()
-
-        self.assertEqual(check_function_calls, expected_check_function_calls)
-
-    def test_start_server_removes_redis_dump(self):
-        check_function_calls = {
-            'os_remove_is_called': False
-        }
-
-        def mock_os_remove_file(file_path): # pylint: disable=unused-argument
-            check_function_calls['os_remove_is_called'] = True
-
-        def mock_os_path_exists(file_path): # pylint: disable=unused-argument
-            return True
-
-        def mock_call(unused_cmd_tokens, *args, **kwargs):  # pylint: disable=unused-argument
-            class Ret(python_utils.OBJECT):
-                """Return object with required attributes."""
-
-                def __init__(self):
-                    self.returncode = 0
-                def communicate(self):
-                    """Return required method."""
-                    return '', ''
-            return Ret()
-
-        def mock_wait_for_port_to_be_in_use(port): # pylint: disable=unused-argument
-            return
-
-        swap_call = self.swap(subprocess, 'call', mock_call)
-        swap_wait_for_port_to_be_in_use = self.swap(
-            common, 'wait_for_port_to_be_in_use',
-            mock_wait_for_port_to_be_in_use)
-        swap_os_remove = self.swap(os, 'remove', mock_os_remove_file)
-        swap_os_path_exists = self.swap(os.path, 'exists', mock_os_path_exists)
-        with swap_call, swap_wait_for_port_to_be_in_use, swap_os_remove, (
-            swap_os_path_exists):
-            common.start_redis_server()
-
-        self.assertTrue(check_function_calls['os_remove_is_called'])
-
     def test_fix_third_party_imports_correctly_sets_up_imports(self):
         common.fix_third_party_imports()
         # Asserts that imports from problematic modules do not error.
@@ -1290,3 +1181,57 @@ class ManagedProcessTests(test_utils.TestBase):
             stack.enter_context(common.managed_elasticsearch_dev_server())
 
         self.assertTrue(check_function_calls['shutil_rmtree_is_called'])
+
+    def test_managed_redis_server_throws_exception_when_on_windows_os(self):
+        window_os_context = (
+            self.swap_to_always_return(common, 'is_windows_os', value=True))
+        assert_context = self.assertRaisesRegexp(
+            Exception,
+            'The redis command line interface is not installed because your '
+            'machine is on the Windows operating system. The redis server '
+            'cannot start.')
+        with window_os_context, assert_context, common.managed_redis_server():
+            # The `assert_context` will handle test results.
+            pass
+
+    def test_managed_redis_server(self):
+        is_redis_dump_path = lambda p, *_, **__: p == common.REDIS_DUMP_PATH
+
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'wait_for_port_to_be_in_use'))
+            exit_stack.enter_context(self.swap_conditionally(
+                os.path, 'exists', condition=is_redis_dump_path))
+            exit_stack.enter_context(self.swap_conditionally(
+                os, 'remove', condition=is_redis_dump_path))
+
+            exit_stack.enter_context(common.managed_redis_server())
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args,
+            [common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH])
+        self.assertEqual(popen_calls[0].kwargs, {'shell': False})
+
+    def test_managed_redis_server_deletes_redis_dump_when_it_exists(self):
+        is_redis_dump_path = lambda p, *_, **__: p == common.REDIS_DUMP_PATH
+
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'wait_for_port_to_be_in_use'))
+            exit_stack.enter_context(self.swap_conditionally(
+                os.path, 'exists', returns=True, condition=is_redis_dump_path))
+            os_remove_mock = exit_stack.enter_context(self.swap_conditionally(
+                os, 'remove',
+                condition=is_redis_dump_path, use_call_counter=True))
+
+            exit_stack.enter_context(common.managed_redis_server())
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args,
+            [common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH])
+        self.assertEqual(popen_calls[0].kwargs, {'shell': False})
+        self.assertEqual(os_remove_mock.times_called, 1)

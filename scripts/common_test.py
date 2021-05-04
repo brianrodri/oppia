@@ -1,4 +1,3 @@
-#
 # Copyright 2019 The Oppia Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1235,3 +1234,77 @@ class ManagedProcessTests(test_utils.TestBase):
             [common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH])
         self.assertEqual(popen_calls[0].kwargs, {'shell': False})
         self.assertEqual(os_remove_mock.times_called, 1)
+
+    def test_managed_web_browser_on_linux_os(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_linux_os', value=True))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_mac_os', value=False))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_windows_os', value=False))
+            exit_stack.enter_context(self.swap_to_always_return(
+                os, 'listdir', value=[]))
+
+            managed_web_browser = common.create_managed_web_browser(123)
+            self.assertIsNotNone(managed_web_browser)
+            exit_stack.enter_context(managed_web_browser)
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args, ['xdg-open', 'http://localhost:123/'])
+
+    def test_managed_web_browser_on_virtualbox_os(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_linux_os', value=True))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_mac_os', value=False))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_windows_os', value=False))
+            exit_stack.enter_context(self.swap_to_always_return(
+                os, 'listdir', value=['VBOX-123']))
+
+            managed_web_browser = common.create_managed_web_browser(123)
+            self.assertIsNone(managed_web_browser)
+
+        self.assertEqual(len(popen_calls), 0)
+
+    def test_managed_web_browser_on_mac_os(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_linux_os', value=False))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_mac_os', value=True))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_windows_os', value=False))
+            exit_stack.enter_context(self.swap_to_always_return(
+                os, 'listdir', value=[]))
+
+            managed_web_browser = common.create_managed_web_browser(123)
+            self.assertIsNotNone(managed_web_browser)
+            exit_stack.enter_context(managed_web_browser)
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args, ['open', 'http://localhost:123/'])
+
+    def test_managed_web_browser_on_windows_os(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_linux_os', value=False))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_mac_os', value=False))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_windows_os', value=True))
+            exit_stack.enter_context(self.swap_to_always_return(
+                os, 'listdir', value=[]))
+
+            managed_web_browser = common.create_managed_web_browser(123)
+            self.assertIsNone(managed_web_browser)
+
+        self.assertEqual(len(popen_calls), 0)

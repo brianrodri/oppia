@@ -1001,3 +1001,27 @@ def managed_redis_server():
     with managed_process([REDIS_SERVER_PATH, REDIS_CONF_PATH]) as proc:
         wait_for_port_to_be_in_use(feconf.REDISPORT)
         yield proc
+
+
+def create_managed_web_browser(port):
+    """Returns a context manager for a web browser targeting the given port on
+    localhost. If a web browser cannot be opened on the current system by Oppia,
+    then returns None instead.
+
+    Args:
+        port: int. The port number to open in the web browser.
+
+    Returns:
+        context manager|None. The context manager to a web browser window, or
+        None if the current operating system does not support web browsers.
+    """
+    target = 'http://localhost:%s/' % port
+    if is_linux_os():
+        if any(re.match('.*VBOX.*', d) for d in os.listdir('/dev/disk/by-id/')):
+            return None
+        else:
+            return managed_process(['xdg-open', target])
+    elif is_mac_os():
+        return managed_process(['open', target])
+    else:
+        return None

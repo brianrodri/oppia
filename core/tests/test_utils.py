@@ -21,7 +21,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import ast
 import collections
-import contextlib
 import copy
 import functools
 import inspect
@@ -1000,7 +999,7 @@ class TestBase(unittest.TestCase):
         """
         return '/assets%s%s' % (utils.get_asset_dir_prefix(), asset_suffix)
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def capture_logging(self, min_level=logging.NOTSET):
         """Context manager that captures logs into a list.
 
@@ -1042,7 +1041,7 @@ class TestBase(unittest.TestCase):
             logger.setLevel(old_level)
             logger.removeHandler(list_stream_handler)
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def swap(self, obj, attr, newvalue):
         """Swap an object's attribute value within the context of a 'with'
         statement. The object can be anything that supports getattr and setattr,
@@ -1076,7 +1075,7 @@ class TestBase(unittest.TestCase):
         finally:
             setattr(obj, attr, original)
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def swap_conditionally(
             self, obj, attr, returns=None, condition=None,
             use_call_counter=False):
@@ -1116,7 +1115,7 @@ class TestBase(unittest.TestCase):
         with self.swap(obj, attr, function_that_conditionally_returns):
             yield function_that_conditionally_returns
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def swap_to_always_return(self, obj, attr, value=None):
         """Swap obj.attr with a function that always returns the given value."""
         def function_that_always_returns(*unused_args, **unused_kwargs):
@@ -1125,7 +1124,7 @@ class TestBase(unittest.TestCase):
         with self.swap(obj, attr, function_that_always_returns):
             yield
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def swap_to_always_raise(self, obj, attr, error=Exception):
         """Swap obj.attr with a function that always raises the given error."""
         def function_that_always_raises(*unused_args, **unused_kwargs):
@@ -1134,7 +1133,7 @@ class TestBase(unittest.TestCase):
         with self.swap(obj, attr, function_that_always_raises):
             yield
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def swap_with_call_counter(
             self, obj, attr, raises=None, returns=None, call_through=False):
         """Swap obj.attr with a CallCounter instance.
@@ -1167,7 +1166,7 @@ class TestBase(unittest.TestCase):
         with self.swap(obj, attr, call_counter):
             yield call_counter
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def swap_with_checks(
             self, obj, attr, new_function, expected_args=None,
             expected_kwargs=None, called=True):
@@ -1924,7 +1923,7 @@ title: Title
         self.testbed.setup_env(
             overwrite=True, user_email='', user_id='', user_is_admin='0')
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def mock_datetime_utcnow(self, mocked_datetime):
         """Mocks response from datetime.datetime.utcnow method.
 
@@ -1946,7 +1945,7 @@ title: Title
         with datastore_services.mock_datetime_for_datastore(mocked_datetime):
             yield
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def login_context(self, email, is_super_admin=False):
         """Log in with the given email under the context of a 'with' statement.
 
@@ -1964,7 +1963,7 @@ title: Title
         finally:
             self.logout()
 
-    @contextlib.contextmanager
+    @contextlib2.contextmanager
     def super_admin_context(self):
         """Log in as a global admin under the context of a 'with' statement.
 

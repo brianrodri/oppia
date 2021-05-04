@@ -23,7 +23,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 import argparse
 import atexit
 import os
-import re
 import subprocess
 import time
 
@@ -171,46 +170,24 @@ def main(args=None):
         common.wait_for_port_to_be_in_use(PORT_NUMBER_FOR_GAE_SERVER)
         common.wait_for_port_to_be_in_use(feconf.ES_LOCALHOST_PORT)
 
-        # Launch a browser window.
-        if common.is_linux_os() and not parsed_args.no_browser:
-            detect_virtualbox_pattern = re.compile('.*VBOX.*')
-            if list(filter(
-                    detect_virtualbox_pattern.match,
-                    os.listdir('/dev/disk/by-id/'))):
-                common.print_each_string_after_two_new_lines([
-                    'INFORMATION',
-                    'Setting up a local development server. You can access '
-                    'this server',
-                    'by navigating to localhost:%s in a browser window.'
-                    % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)])
-            else:
-                common.print_each_string_after_two_new_lines([
-                    'INFORMATION',
-                    'Setting up a local development server at localhost:%s. '
-                    % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER),
-                    'Opening a default browser window pointing to this server'])
-                time.sleep(5)
-                background_processes.append(
-                    subprocess.Popen([
-                        'xdg-open', 'http://localhost:%s/'
-                        % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)]))
-        elif common.is_mac_os() and not parsed_args.no_browser:
+        managed_web_browser = (
+            None if parsed_args.no_browser else
+            common.create_managed_web_browser(PORT_NUMBER_FOR_GAE_SERVER))
+
+        if managed_web_browser is None:
             common.print_each_string_after_two_new_lines([
                 'INFORMATION',
-                'Setting up a local development server at localhost:%s. '
-                % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER),
-                'Opening a default browser window pointing to this server.'])
-            time.sleep(5)
-            background_processes.append(
-                subprocess.Popen([
-                    'open', 'http://localhost:%s/'
-                    % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)]))
+                'Setting up a local development server. You can access this '
+                'server by navigating to localhost:%s in a browser window.' % (
+                    PORT_NUMBER_FOR_GAE_SERVER)])
         else:
             common.print_each_string_after_two_new_lines([
                 'INFORMATION',
-                'Setting up a local development server. You can access this ',
-                'server by navigating to localhost:%s in a browser window.'
-                % python_utils.UNICODE(PORT_NUMBER_FOR_GAE_SERVER)])
+                'Setting up a local development server at localhost:%s. '
+                'Opening a default browser window pointing to this server' % (
+                    PORT_NUMBER_FOR_GAE_SERVER)])
+            time.sleep(5)
+            stack.enter_context(managed_web_browser)
 
         python_utils.PRINT('Done!')
 

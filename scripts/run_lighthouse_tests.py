@@ -108,10 +108,8 @@ def run_webpack_compilation():
     webpack_bundles_dir_name = 'webpack_bundles'
     for _ in python_utils.RANGE(max_tries):
         try:
-            webpack_config_file = build.WEBPACK_DEV_CONFIG
-            subprocess.check_call([
-                common.NODE_BIN_PATH, WEBPACK_BIN_PATH, '--config',
-                webpack_config_file])
+            with common.managed_webpack_compiler() as proc:
+                proc.wait()
         except subprocess.CalledProcessError as error:
             python_utils.PRINT(error.output)
             sys.exit(error.returncode)

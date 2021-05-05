@@ -29,7 +29,6 @@ import sys
 import time
 
 from core.tests import test_utils
-import feconf
 import python_utils
 
 from scripts import build
@@ -134,13 +133,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
     def setUp(self):
         super(RunE2ETestsTests, self).setUp()
+
+        self.exit_stack = contextlib2.ExitStack()
+
         def mock_print(unused_msg):
             return
 
         def mock_run_cmd(unused_commands):
-            pass
-
-        def mock_check_call(unused_commands):
             pass
 
         def mock_build_main(args):  # pylint: disable=unused-argument
@@ -162,7 +161,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             self.swap_with_checks, common, 'inplace_replace_file',
             mock_inplace_replace)
         self.mock_run_cmd = mock_run_cmd
-        self.mock_check_call = mock_check_call
         self.mock_build_main = mock_build_main
         self.mock_remove = mock_remove
         self.print_swap = functools.partial(
@@ -180,6 +178,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.constant_file_path_swap = self.swap(
             run_e2e_tests, 'CONSTANT_FILE_PATH', self.mock_constant_file_path)
 
+    def tearDown(self):
+        try:
+            self.exit_stack.close()
+        finally:
+            super(RunE2ETestsTests, self).tearDown()
+
     def test_cleanup_when_no_subprocess(self):
 
         def mock_kill_process_based_on_regex(unused_regex):
@@ -191,10 +195,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_set_constants_to_default():
             return
 
-        def mock_wait_for_port_to_not_be_in_use(unused_port):
-            return True
-
-        subprocess_swap = self.swap(run_e2e_tests, 'SUBPROCESSES', [])
+        self.exit_stack.enter_context(
+            self.swap(run_e2e_tests, 'SUBPROCESSES', []))
 
         google_app_engine_path = '%s/' % (
             common.GOOGLE_APP_ENGINE_SDK_HOME)
@@ -207,25 +209,16 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             ('.*%s.*' % re.escape(elasticsearch_path),),
         ]
 
-        swap_kill_process = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             common, 'kill_processes_based_on_regex',
             mock_kill_process_based_on_regex,
-            expected_args=process_pattern)
-        swap_is_windows = self.swap_with_checks(
-            common, 'is_windows_os', mock_is_windows_os)
-        swap_set_constants_to_default = self.swap_with_checks(
-            build, 'set_constants_to_default', mock_set_constants_to_default)
-        swap_wait_for_port_to_not_be_in_use = self.swap_with_checks(
-            common, 'wait_for_port_to_not_be_in_use',
-            mock_wait_for_port_to_not_be_in_use,
-            expected_args=[
-                (run_e2e_tests.OPPIA_SERVER_PORT,),
-                (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
-                (run_e2e_tests.ELASTICSEARCH_SERVER_PORT,)])
-        with swap_kill_process, subprocess_swap, swap_is_windows:
-            with swap_set_constants_to_default:
-                with swap_wait_for_port_to_not_be_in_use:
-                    run_e2e_tests.cleanup()
+            expected_args=process_pattern))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'is_windows_os', mock_is_windows_os))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            build, 'set_constants_to_default', mock_set_constants_to_default))
+
+        run_e2e_tests.cleanup()
 
     def test_cleanup_when_subprocesses_exist(self):
 
@@ -242,23 +235,23 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         mock_processes = [
             MockProcessClass(), MockProcessClass(), MockProcessClass()]
-        subprocess_swap = self.swap(
-            run_e2e_tests, 'SUBPROCESSES', mock_processes)
-        swap_kill_process = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'SUBPROCESSES', mock_processes))
+        self.exit_stack.enter_context(self.swap_with_checks(
             common, 'kill_processes_based_on_regex',
-            mock_kill_process_based_on_regex)
-        swap_set_constants_to_default = self.swap_with_checks(
-            build, 'set_constants_to_default', mock_set_constants_to_default)
-        swap_wait_for_port_to_not_be_in_use = self.swap_with_checks(
+            mock_kill_process_based_on_regex))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            build, 'set_constants_to_default', mock_set_constants_to_default))
+        self.exit_stack.enter_context(self.swap_with_checks(
             common, 'wait_for_port_to_not_be_in_use',
             mock_wait_for_port_to_not_be_in_use,
             expected_args=[
                 (run_e2e_tests.OPPIA_SERVER_PORT,),
                 (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
-                (run_e2e_tests.ELASTICSEARCH_SERVER_PORT,)])
-        with subprocess_swap, swap_kill_process, swap_set_constants_to_default:
-            with swap_wait_for_port_to_not_be_in_use:
-                run_e2e_tests.cleanup()
+                (run_e2e_tests.ELASTICSEARCH_SERVER_PORT,)]))
+
+        run_e2e_tests.cleanup()
+
         self.assertEqual(
             mock_kill_process_based_on_regex.called_times, len(mock_processes))
 
@@ -276,7 +269,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_wait_for_port_to_not_be_in_use(unused_port):
             return False
 
-        subprocess_swap = self.swap(run_e2e_tests, 'SUBPROCESSES', [])
+        self.exit_stack.enter_context(
+            self.swap(run_e2e_tests, 'SUBPROCESSES', []))
 
         google_app_engine_path = '%s/' % (
             common.GOOGLE_APP_ENGINE_SDK_HOME)
@@ -289,30 +283,26 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             ('.*%s.*' % re.escape(elasticsearch_path),),
         ]
 
-        swap_kill_process = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             common, 'kill_processes_based_on_regex',
             mock_kill_process_based_on_regex,
-            expected_args=process_pattern)
-        swap_is_windows = self.swap_with_checks(
-            common, 'is_windows_os', mock_is_windows_os)
-        swap_set_constants_to_default = self.swap_with_checks(
-            build, 'set_constants_to_default', mock_set_constants_to_default)
-        swap_wait_for_port_to_not_be_in_use = self.swap_with_checks(
+            expected_args=process_pattern))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'is_windows_os', mock_is_windows_os))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            build, 'set_constants_to_default', mock_set_constants_to_default))
+        self.exit_stack.enter_context(self.swap_with_checks(
             common, 'wait_for_port_to_not_be_in_use',
             mock_wait_for_port_to_not_be_in_use,
             expected_args=[
-                (run_e2e_tests.OPPIA_SERVER_PORT,)])
+                (run_e2e_tests.OPPIA_SERVER_PORT,)]))
         expected_error = (
             '^Port {} failed to close within {} seconds.$'.format(
                 run_e2e_tests.OPPIA_SERVER_PORT,
                 common.MAX_WAIT_TIME_FOR_PORT_TO_CLOSE_SECS))
-        with swap_kill_process, subprocess_swap, swap_is_windows:
-            with swap_set_constants_to_default:
-                with swap_wait_for_port_to_not_be_in_use:
-                    with self.assertRaisesRegexp(
-                        RuntimeError, expected_error
-                    ):
-                        run_e2e_tests.cleanup()
+
+        with self.assertRaisesRegexp(RuntimeError, expected_error):
+            run_e2e_tests.cleanup()
 
     def test_cleanup_on_windows(self):
         elasticsearch_path = '%s/' % common.ES_PATH
@@ -320,36 +310,32 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         webdriver_download_abspath = (
             os.path.abspath('%s/selenium' % run_e2e_tests.WEBDRIVER_HOME_PATH))
 
-        swap_contexts = [
-            self.swap(run_e2e_tests, 'SUBPROCESSES', []),
-            self.swap_to_always_return(common, 'is_windows_os', value=True),
-            self.swap_to_always_return(build, 'set_constants_to_default'),
-            self.swap_with_checks(
-                common, 'kill_processes_based_on_regex', lambda _: None,
-                expected_args=[
-                    ('.*%s.*' % re.escape(google_app_engine_path),),
-                    ('.*%s.*' % re.escape(webdriver_download_abspath),),
-                    ('.*%s.*' % re.escape(elasticsearch_path),),
-                ]),
-            self.swap_with_checks(
-                common, 'wait_for_port_to_not_be_in_use', lambda _: True,
-                expected_args=[
-                    (p,) for p in run_e2e_tests.PORTS_USED_BY_OPPIA_PROCESSES
-                ]),
-        ]
+        self.exit_stack.enter_context(
+            self.swap(run_e2e_tests, 'SUBPROCESSES', []))
+        self.exit_stack.enter_context(
+            self.swap_to_always_return(common, 'is_windows_os', value=True))
+        self.exit_stack.enter_context(
+            self.swap_to_always_return(build, 'set_constants_to_default'))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'kill_processes_based_on_regex', lambda _: None,
+            expected_args=[
+                ('.*%s.*' % re.escape(google_app_engine_path),),
+                ('.*%s.*' % re.escape(webdriver_download_abspath),),
+                ('.*%s.*' % re.escape(elasticsearch_path),),
+                ]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'wait_for_port_to_not_be_in_use', lambda _: True,
+            expected_args=[
+                (p,) for p in run_e2e_tests.PORTS_USED_BY_OPPIA_PROCESSES
+                ]))
 
-        with contextlib2.ExitStack() as exit_stack:
-            for swap_context in swap_contexts:
-                exit_stack.enter_context(swap_context)
-
-            run_e2e_tests.cleanup()
+        run_e2e_tests.cleanup()
 
     def test_is_oppia_server_already_running_when_ports_closed(self):
-        is_port_in_use_swap = self.swap_to_always_return(
-            common, 'is_port_in_use', value=False)
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'is_port_in_use', value=False))
 
-        with is_port_in_use_swap:
-            result = run_e2e_tests.is_oppia_server_already_running()
+        result = run_e2e_tests.is_oppia_server_already_running()
 
         self.assertFalse(result)
 
@@ -361,11 +347,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 return True
             return False
 
-        is_port_in_use_swap = self.swap_with_checks(
-            common, 'is_port_in_use', mock_is_port_in_use)
-        with is_port_in_use_swap:
-            result = run_e2e_tests.is_oppia_server_already_running()
-            self.assertTrue(result)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'is_port_in_use', mock_is_port_in_use))
+
+        result = run_e2e_tests.is_oppia_server_already_running()
+
+        self.assertTrue(result)
 
     def test_wait_for_port_to_be_in_use_when_port_successfully_opened(self):
         def mock_is_port_in_use(unused_port):
@@ -380,12 +367,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             return
         mock_sleep.called_times = 0
 
-        is_port_in_use_swap = self.swap_with_checks(
-            common, 'is_port_in_use', mock_is_port_in_use)
-        sleep_swap = self.swap_with_checks(time, 'sleep', mock_sleep)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'is_port_in_use', mock_is_port_in_use))
+        self.exit_stack.enter_context(
+            self.swap_with_checks(time, 'sleep', mock_sleep))
 
-        with is_port_in_use_swap, sleep_swap:
-            common.wait_for_port_to_be_in_use(1)
+        common.wait_for_port_to_be_in_use(1)
+
         self.assertEqual(mock_is_port_in_use.wait_time, 11)
         self.assertEqual(mock_sleep.called_times, 10)
 
@@ -401,38 +389,32 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         mock_sleep.sleep_time = 0
 
-        is_port_in_use_swap = self.swap(
-            common, 'is_port_in_use', mock_is_port_in_use)
-        sleep_swap = self.swap_with_checks(time, 'sleep', mock_sleep)
-        exit_swap = self.swap_with_checks(sys, 'exit', mock_exit)
-        with is_port_in_use_swap, sleep_swap, exit_swap:
-            common.wait_for_port_to_be_in_use(1)
+        self.exit_stack.enter_context(self.swap(
+            common, 'is_port_in_use', mock_is_port_in_use))
+        self.exit_stack.enter_context(
+            self.swap_with_checks(time, 'sleep', mock_sleep))
+        self.exit_stack.enter_context(
+            self.swap_with_checks(sys, 'exit', mock_exit))
+
+        common.wait_for_port_to_be_in_use(1)
+
         self.assertEqual(
             mock_sleep.sleep_time,
             common.MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS)
 
     def test_run_webpack_compilation_success(self):
-        def mock_isdir(unused_dirname):
-            mock_isdir.run_times += 1
-            if mock_isdir.run_times > 3:
-                return True
-            return False
-        mock_isdir.run_times = 0
+        def mock_managed_webpack_compiler(**unused_kwargs):
+            return contextlib2.nullcontext(enter_result=MockProcessClass())
 
-        expected_commands = [
-            self.mock_node_bin_path, self.mock_webpack_bin_path, '--config',
-            'webpack.dev.config.ts']
-
-        isdir_swap = self.swap_with_checks(os.path, 'isdir', mock_isdir)
         # The webpack compilation processes will be called 4 times as mock_isdir
         # will return true after 4 calls.
-        check_call_swap = self.swap_with_checks(
-            subprocess, 'check_call', self.mock_check_call,
-            expected_args=[(expected_commands,)] * 4)
-        with self.node_bin_path_swap, self.webpack_bin_path_swap, (
-            check_call_swap):
-            with isdir_swap:
-                run_e2e_tests.run_webpack_compilation()
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'managed_webpack_compiler',
+            mock_managed_webpack_compiler))
+        self.exit_stack.enter_context(self.node_bin_path_swap)
+        self.exit_stack.enter_context(self.webpack_bin_path_swap)
+
+        run_e2e_tests.run_webpack_compilation()
 
     def test_get_chrome_driver_version(self):
         def mock_popen(unused_arg):
@@ -444,7 +426,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     return '77.0.3865'
             return Ret()
 
-        popen_swap = self.swap(os, 'popen', mock_popen)
+        self.exit_stack.enter_context(self.swap(os, 'popen', mock_popen))
         def mock_url_open(unused_arg):
             class Ret(python_utils.OBJECT):
                 """Return object with required attributes."""
@@ -454,37 +436,38 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     return CHROME_DRIVER_VERSION
             return Ret()
 
-        url_open_swap = self.swap(python_utils, 'url_open', mock_url_open)
-        with popen_swap, url_open_swap:
-            version = run_e2e_tests.get_chrome_driver_version()
-            self.assertEqual(version, CHROME_DRIVER_VERSION)
+        self.exit_stack.enter_context(
+            self.swap(python_utils, 'url_open', mock_url_open))
+
+        version = run_e2e_tests.get_chrome_driver_version()
+
+        self.assertEqual(version, CHROME_DRIVER_VERSION)
 
     def test_run_webpack_compilation_failed(self):
+
+        def mock_managed_webpack_compiler(**unused_kwargs):
+            return contextlib2.nullcontext(enter_result=MockProcessClass())
+
         def mock_isdir(unused_port):
             return False
 
         def mock_exit(unused_exit_code):
             return
 
-        expected_commands = [
-            self.mock_node_bin_path, self.mock_webpack_bin_path, '--config',
-            'webpack.dev.config.ts']
         # The webpack compilation processes will be called five times.
-        check_call_swap = self.swap_with_checks(
-            subprocess, 'check_call', self.mock_check_call,
-            expected_args=[(expected_commands,)] * 5)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'managed_webpack_compiler',
+            mock_managed_webpack_compiler))
 
-        isdir_swap = self.swap(os.path, 'isdir', mock_isdir)
-        exit_swap = self.swap_with_checks(
-            sys, 'exit', mock_exit, expected_args=[(1,)])
-        with self.node_bin_path_swap, self.webpack_bin_path_swap:
-            with check_call_swap, isdir_swap, exit_swap:
-                run_e2e_tests.run_webpack_compilation()
+        self.exit_stack.enter_context(self.swap(os.path, 'isdir', mock_isdir))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(1,)]))
+        self.exit_stack.enter_context(self.node_bin_path_swap)
+        self.exit_stack.enter_context(self.webpack_bin_path_swap)
+
+        run_e2e_tests.run_webpack_compilation()
 
     def test_run_webdriver_manager(self):
-        expected_commands = [
-            common.NODE_BIN_PATH, run_e2e_tests.WEBDRIVER_MANAGER_BIN_PATH,
-            'start', '--detach']
 
         def mock_popen(unused_command):
             class Ret(python_utils.OBJECT):
@@ -497,146 +480,136 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     return '', ''
             return Ret()
 
-        popen_swap = self.swap_with_checks(
-            subprocess, 'Popen', mock_popen, expected_args=[
-                (expected_commands,)], expected_kwargs=[{}])
-        with popen_swap:
-            run_e2e_tests.run_webdriver_manager(['start', '--detach'])
+        self.exit_stack.enter_context(
+            self.swap_with_checks(subprocess, 'Popen', mock_popen))
+
+        run_e2e_tests.run_webdriver_manager(['start', '--detach'])
 
     def test_setup_and_install_dependencies_without_skip(self):
 
         def mock_install_third_party_libs_main():
             return
 
-        install_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             install_third_party_libs, 'main',
-            mock_install_third_party_libs_main)
+            mock_install_third_party_libs_main))
 
-        with install_swap:
-            run_e2e_tests.setup_and_install_dependencies(False)
+        run_e2e_tests.setup_and_install_dependencies(False)
 
     def test_setup_and_install_dependencies_with_skip(self):
 
         def mock_install_third_party_libs_main(unused_args):
             return
 
-        install_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             install_third_party_libs, 'main',
-            mock_install_third_party_libs_main, called=False)
+            mock_install_third_party_libs_main, called=False))
 
-        with install_swap:
-            run_e2e_tests.setup_and_install_dependencies(True)
+        run_e2e_tests.setup_and_install_dependencies(True)
 
     def test_build_js_files_in_dev_mode_with_hash_file_exists(self):
-        def mock_isdir(unused_path):
-            return True
+        def mock_managed_webpack_compiler(**unused_kwargs):
+            return contextlib2.nullcontext(enter_result=MockProcessClass())
 
-        expected_commands = [
-            self.mock_node_bin_path, self.mock_webpack_bin_path, '--config',
-            'webpack.dev.config.ts']
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'managed_webpack_compiler', mock_managed_webpack_compiler))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            build, 'main', self.mock_build_main,
+            expected_kwargs=[{'args': []}]))
+        self.exit_stack.enter_context(self.constant_file_path_swap)
+        self.exit_stack.enter_context(self.node_bin_path_swap)
+        self.exit_stack.enter_context(self.webpack_bin_path_swap)
 
-        isdir_swap = self.swap_with_checks(os.path, 'isdir', mock_isdir)
-        check_call_swap = self.swap_with_checks(
-            subprocess, 'check_call', self.mock_check_call,
-            expected_args=[(expected_commands,)])
-        build_main_swap = self.swap_with_checks(
-            build, 'main', self.mock_build_main, expected_kwargs=[{'args': []}])
-        print_swap = self.print_swap(called=False)
-        with print_swap, self.constant_file_path_swap, check_call_swap:
-            with self.node_bin_path_swap, self.webpack_bin_path_swap:
-                with build_main_swap, isdir_swap:
-                    run_e2e_tests.build_js_files(True)
+        run_e2e_tests.build_js_files(True)
 
     def test_build_js_files_in_dev_mode_with_exception_raised(self):
-
-        def mock_check_call(commands):
+        def mock_error(**_):
             raise subprocess.CalledProcessError(
-                returncode=2, cmd=commands, output='ERROR')
+                returncode=2, cmd=[], output='ERROR')
 
         def mock_exit(unused_code):
             pass
 
-        expected_commands = [
-            self.mock_node_bin_path, self.mock_webpack_bin_path, '--config',
-            'webpack.dev.config.ts']
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'managed_webpack_compiler', mock_error))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            build, 'main', self.mock_build_main,
+            expected_kwargs=[{'args': []}]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(2,)]))
+        self.exit_stack.enter_context(self.constant_file_path_swap)
+        self.exit_stack.enter_context(self.node_bin_path_swap)
+        self.exit_stack.enter_context(self.webpack_bin_path_swap)
 
-        check_call_swap = self.swap_with_checks(
-            subprocess, 'check_call', mock_check_call,
-            expected_args=[(expected_commands,)])
-        build_main_swap = self.swap_with_checks(
-            build, 'main', self.mock_build_main, expected_kwargs=[{'args': []}])
-        exit_swap = self.swap_with_checks(
-            sys, 'exit', mock_exit, expected_args=[(2,)])
-        print_swap = self.print_swap(expected_args=[('ERROR',)])
-        with print_swap, self.constant_file_path_swap:
-            with self.node_bin_path_swap, self.webpack_bin_path_swap:
-                with check_call_swap, exit_swap, build_main_swap:
-                    run_e2e_tests.build_js_files(True)
+        run_e2e_tests.build_js_files(True)
 
     def test_build_js_files_in_prod_mode(self):
-        run_cmd_swap = self.swap_with_checks(
-            common, 'run_cmd', self.mock_run_cmd, called=False)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'run_cmd', self.mock_run_cmd, called=False))
 
-        build_main_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             build, 'main', self.mock_build_main,
-            expected_kwargs=[{'args': ['--prod_env']}])
+            expected_kwargs=[{'args': ['--prod_env']}]))
 
-        with self.constant_file_path_swap:
-            with self.node_bin_path_swap, self.webpack_bin_path_swap:
-                with run_cmd_swap, build_main_swap:
-                    run_e2e_tests.build_js_files(False)
+        self.exit_stack.enter_context(self.constant_file_path_swap)
+        self.exit_stack.enter_context(self.node_bin_path_swap)
+        self.exit_stack.enter_context(self.webpack_bin_path_swap)
+
+        run_e2e_tests.build_js_files(False)
 
     def test_build_js_files_in_prod_mode_with_deparallelize_terser(self):
-        run_cmd_swap = self.swap_with_checks(
-            common, 'run_cmd', self.mock_run_cmd, called=False)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'run_cmd', self.mock_run_cmd, called=False))
 
-        build_main_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             build, 'main', self.mock_build_main,
             expected_kwargs=[{'args': [
-                '--prod_env', '--deparallelize_terser']}])
+                '--prod_env', '--deparallelize_terser']}]))
 
-        with self.constant_file_path_swap:
-            with self.node_bin_path_swap, self.webpack_bin_path_swap:
-                with build_main_swap, run_cmd_swap:
-                    run_e2e_tests.build_js_files(
-                        False, deparallelize_terser=True)
+        self.exit_stack.enter_context(self.constant_file_path_swap)
+        self.exit_stack.enter_context(self.node_bin_path_swap)
+        self.exit_stack.enter_context(self.webpack_bin_path_swap)
+
+        run_e2e_tests.build_js_files(
+            False, deparallelize_terser=True)
 
     def test_build_js_files_in_prod_mode_with_source_maps(self):
-        run_cmd_swap = self.swap_with_checks(
-            common, 'run_cmd', self.mock_run_cmd, called=False)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'run_cmd', self.mock_run_cmd, called=False))
 
-        build_main_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             build, 'main', self.mock_build_main,
             expected_kwargs=[{'args': [
-                '--prod_env', '--source_maps']}])
+                '--prod_env', '--source_maps']}]))
 
-        with self.constant_file_path_swap:
-            with self.node_bin_path_swap, self.webpack_bin_path_swap:
-                with build_main_swap, run_cmd_swap:
-                    run_e2e_tests.build_js_files(
-                        False, source_maps=True)
+        self.exit_stack.enter_context(self.constant_file_path_swap)
+        self.exit_stack.enter_context(self.node_bin_path_swap)
+        self.exit_stack.enter_context(self.webpack_bin_path_swap)
+
+        run_e2e_tests.build_js_files(
+            False, source_maps=True)
 
     def test_webpack_compilation_in_dev_mode_with_source_maps(self):
-        run_cmd_swap = self.swap_with_checks(
-            common, 'run_cmd', self.mock_run_cmd, called=False)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'run_cmd', self.mock_run_cmd, called=False))
 
-        build_main_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             build, 'main', self.mock_build_main,
-            expected_kwargs=[{'args': []}])
+            expected_kwargs=[{'args': []}]))
 
         def mock_run_webpack_compilation(source_maps=False):
             self.assertEqual(source_maps, True)
 
-        run_webpack_compilation_swap = self.swap(
+        self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_webpack_compilation',
-            mock_run_webpack_compilation)
+            mock_run_webpack_compilation))
 
-        with self.constant_file_path_swap:
-            with self.node_bin_path_swap, self.webpack_bin_path_swap:
-                with build_main_swap, run_cmd_swap:
-                    with run_webpack_compilation_swap:
-                        run_e2e_tests.build_js_files(
-                            True, source_maps=True)
+        self.exit_stack.enter_context(self.constant_file_path_swap)
+        self.exit_stack.enter_context(self.node_bin_path_swap)
+        self.exit_stack.enter_context(self.webpack_bin_path_swap)
+
+        run_e2e_tests.build_js_files(
+            True, source_maps=True)
 
     def test_tweak_webdriver_manager_on_x64_machine(self):
 
@@ -649,7 +622,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             return
 
         expected_replace = 'this.osArch = "x64";'
-        inplace_replace_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             common, 'inplace_replace_file', mock_inplace_replace,
             expected_args=[
                 (
@@ -660,21 +633,19 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     run_e2e_tests.GECKO_PROVIDER_FILE_PATH,
                     run_e2e_tests.PATTERN_FOR_REPLACE_WEBDRIVER_CODE,
                     expected_replace)
-            ])
+                ]))
         def mock_is_x64():
             return True
 
-        architecture_swap = self.swap_with_checks(
-            common, 'is_x64_architecture', mock_is_x64)
-        is_windows_swap = self.swap_with_checks(
-            common, 'is_windows_os', mock_is_windows)
-        undo_swap = self.swap_with_checks(
-            run_e2e_tests, 'undo_webdriver_tweak', mock_undo_tweak)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'is_x64_architecture', mock_is_x64))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'is_windows_os', mock_is_windows))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'undo_webdriver_tweak', mock_undo_tweak))
 
-        with inplace_replace_swap, architecture_swap, is_windows_swap:
-            with undo_swap:
-                with run_e2e_tests.tweak_webdriver_manager():
-                    pass
+        with run_e2e_tests.tweak_webdriver_manager():
+            pass
 
     def test_tweak_webdriver_manager_on_x86_windows(self):
         def mock_is_windows():
@@ -686,7 +657,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             return
 
         expected_replace = 'this.osArch = "x86";'
-        inplace_replace_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             common, 'inplace_replace_file', mock_inplace_replace,
             expected_args=[
                 (
@@ -697,21 +668,19 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     run_e2e_tests.GECKO_PROVIDER_FILE_PATH,
                     run_e2e_tests.PATTERN_FOR_REPLACE_WEBDRIVER_CODE,
                     expected_replace)
-            ])
+                ]))
         def mock_is_x64():
             return False
 
-        architecture_swap = self.swap_with_checks(
-            common, 'is_x64_architecture', mock_is_x64)
-        is_windows_swap = self.swap_with_checks(
-            common, 'is_windows_os', mock_is_windows)
-        undo_swap = self.swap_with_checks(
-            run_e2e_tests, 'undo_webdriver_tweak', mock_undo_tweak)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'is_x64_architecture', mock_is_x64))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            common, 'is_windows_os', mock_is_windows))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'undo_webdriver_tweak', mock_undo_tweak))
 
-        with inplace_replace_swap, architecture_swap, is_windows_swap:
-            with undo_swap:
-                with run_e2e_tests.tweak_webdriver_manager():
-                    pass
+        with run_e2e_tests.tweak_webdriver_manager():
+            pass
 
     def test_undo_webdriver_tweak(self):
         files_to_check = [
@@ -733,21 +702,21 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_remove(unused_path):
             return
 
-        isfile_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             os.path, 'isfile', mock_isfile, expected_args=[
                 (filepath,) for filepath in files_to_check
-            ])
-        rename_swap = self.swap_with_checks(
+                ]))
+        self.exit_stack.enter_context(self.swap_with_checks(
             os, 'rename', mock_rename, expected_args=[
                 (filepath, filepath.replace('.bak', '')) for
                 filepath in files_to_rename
-            ])
-        remove_swap = self.swap_with_checks(
+                ]))
+        self.exit_stack.enter_context(self.swap_with_checks(
             os, 'remove', mock_remove, expected_args=[
                 (filepath,) for filepath in files_to_remove
-            ])
-        with isfile_swap, rename_swap, remove_swap:
-            run_e2e_tests.undo_webdriver_tweak()
+                ]))
+
+        run_e2e_tests.undo_webdriver_tweak()
 
     def test_start_webdriver_manager(self):
         @contextlib.contextmanager
@@ -757,8 +726,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_run_webdriver_manager(unused_commands):
             return
 
-        tweak_swap = self.swap_with_checks(
-            run_e2e_tests, 'tweak_webdriver_manager', mock_tweak_webdriver)
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'tweak_webdriver_manager', mock_tweak_webdriver))
 
         expected_commands = [
             ([
@@ -769,12 +738,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 CHROME_DRIVER_VERSION, '--detach', '--quiet'],)
         ]
 
-        run_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'run_webdriver_manager', mock_run_webdriver_manager,
-            expected_args=expected_commands)
-        with tweak_swap, run_swap:
-            run_e2e_tests.start_webdriver_manager(
-                CHROME_DRIVER_VERSION)
+            expected_args=expected_commands))
+
+        run_e2e_tests.start_webdriver_manager(
+            CHROME_DRIVER_VERSION)
 
     def test_get_parameter_for_one_sharding_instance(self):
         result = run_e2e_tests.get_parameter_for_sharding(1)
@@ -820,13 +789,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_is_oppia_server_already_running(*unused_args):
             return True
 
-        check_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running',
-            mock_is_oppia_server_already_running)
-        exit_swap = self.swap(sys, 'exit', mock_exit)
-        with check_swap, exit_swap:
-            with self.assertRaisesRegexp(Exception, r'sys\.exit\(1\)'):
-                run_e2e_tests.main(args=[])
+            mock_is_oppia_server_already_running))
+        self.exit_stack.enter_context(self.swap(sys, 'exit', mock_exit))
+
+        with self.assertRaisesRegexp(Exception, r'sys\.exit\(1\)'):
+            run_e2e_tests.main(args=[])
 
     def test_start_tests_when_no_other_instance_running(self):
 
@@ -854,9 +823,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_webdriver_manager(unused_arg):
             return
 
-        def mock_wait_for_port_to_be_in_use(unused_port):
-            return
-
         def mock_get_e2e_test_parameters(
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
@@ -880,81 +846,72 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_report_pass(unused_suite_name):
             return
 
-        swap_contexts = [
-            self.swap(
-                run_e2e_tests, 'get_chrome_driver_version',
-                mock_get_chrome_driver_version),
-            self.swap_with_checks(
-                run_e2e_tests, 'is_oppia_server_already_running',
-                mock_is_oppia_server_already_running),
-            self.swap_with_checks(
-                run_e2e_tests, 'setup_and_install_dependencies',
-                mock_setup_and_install_dependencies, expected_args=[(False,)]),
-            self.swap_with_checks(
-                atexit, 'register', mock_register, expected_args=[
-                    (run_e2e_tests.cleanup_portserver, mock_process),
-                    (mock_cleanup,),
-                ]),
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup),
-            self.swap_with_checks(
-                run_e2e_tests, 'build_js_files', mock_build_js_files,
-                expected_args=[(True,)]),
-            self.swap_with_checks(
-                run_e2e_tests, 'start_webdriver_manager',
-                mock_start_webdriver_manager,
-                expected_args=[(CHROME_DRIVER_VERSION,)]),
-            self.swap_to_always_return(
-                common, 'managed_elasticsearch_dev_server',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_firebase_auth_emulator',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_dev_appserver',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_redis_server',
-                value=contextlib2.nullcontext()),
-            self.swap_with_checks(
-                common, 'wait_for_port_to_be_in_use',
-                mock_wait_for_port_to_be_in_use,
-                expected_args=[
-                    (feconf.ES_LOCALHOST_PORT,),
-                    (run_e2e_tests.WEB_DRIVER_PORT,),
-                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
-                ]),
-            self.swap_with_checks(
-                run_e2e_tests, 'get_e2e_test_parameters',
-                mock_get_e2e_test_parameters,
-                expected_args=[(3, 'full', True)]),
-            self.swap_with_checks(
-                subprocess, 'Popen', mock_popen, expected_args=[
-                    ([
-                        'python', '-m',
-                        'scripts.run_portserver',
-                        '--portserver_unix_socket_address',
-                        run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'get_chrome_driver_version',
+            mock_get_chrome_driver_version))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'is_oppia_server_already_running',
+            mock_is_oppia_server_already_running))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'setup_and_install_dependencies',
+            mock_setup_and_install_dependencies, expected_args=[(False,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            atexit, 'register', mock_register, expected_args=[
+                (run_e2e_tests.cleanup_portserver, mock_process),
+                (mock_cleanup,),
+                ]))
+        self.exit_stack.enter_context(
+            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'build_js_files', mock_build_js_files,
+            expected_args=[(True,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'start_webdriver_manager',
+            mock_start_webdriver_manager,
+            expected_args=[(CHROME_DRIVER_VERSION,)]))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_elasticsearch_dev_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_firebase_auth_emulator',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_dev_appserver',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_redis_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_webpack_compiler',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'get_e2e_test_parameters',
+            mock_get_e2e_test_parameters,
+            expected_args=[(3, 'full', True)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            subprocess, 'Popen', mock_popen, expected_args=[
+                ([
+                    'python', '-m',
+                    'scripts.run_portserver',
+                    '--portserver_unix_socket_address',
+                    run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
                     ],),
-                    ([
-                        common.NODE_BIN_PATH,
-                        '--unhandled-rejections=strict',
-                        run_e2e_tests.PROTRACTOR_BIN_PATH,
-                        'commands',
+                ([
+                    common.NODE_BIN_PATH,
+                    '--unhandled-rejections=strict',
+                    run_e2e_tests.PROTRACTOR_BIN_PATH,
+                    'commands',
                     ],),
-                ]),
-            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci),
-            self.swap_with_checks(
-                flake_checker, 'report_pass', mock_report_pass,
-                expected_args=[('full',)]),
-            self.swap_with_checks(
-                sys, 'exit', mock_exit, expected_args=[(0,)]),
-        ]
+                ]))
+        self.exit_stack.enter_context(
+            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            flake_checker, 'report_pass', mock_report_pass,
+            expected_args=[('full',)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(0,)]))
 
-        with contextlib2.ExitStack() as stack:
-            for context in swap_contexts:
-                stack.enter_context(context)
-
-            run_e2e_tests.main(args=[])
+        run_e2e_tests.main(args=[])
 
     def test_work_with_non_ascii_chars(self):
 
@@ -979,9 +936,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_webdriver_manager(unused_arg):
             return
 
-        def mock_wait_for_port_to_be_in_use(unused_port):
-            return
-
         def mock_get_e2e_test_parameters(
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
@@ -999,69 +953,60 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
 
-        swap_contexts = [
-            self.swap(
-                run_e2e_tests, 'get_chrome_driver_version',
-                mock_get_chrome_driver_version),
-            self.swap_with_checks(
-                run_e2e_tests, 'is_oppia_server_already_running',
-                mock_is_oppia_server_already_running),
-            self.swap_with_checks(
-                run_e2e_tests, 'setup_and_install_dependencies',
-                mock_setup_and_install_dependencies, expected_args=[(False,)]),
-            self.swap_with_checks(
-                atexit, 'register', mock_register, expected_args=[
-                    (mock_cleanup,),
-                ]),
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup),
-            self.swap_with_checks(
-                run_e2e_tests, 'build_js_files', mock_build_js_files,
-                expected_args=[(True,)]),
-            self.swap_with_checks(
-                run_e2e_tests, 'start_webdriver_manager',
-                mock_start_webdriver_manager,
-                expected_args=[(CHROME_DRIVER_VERSION,)]),
-            self.swap_to_always_return(
-                common, 'managed_elasticsearch_dev_server',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_firebase_auth_emulator',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_dev_appserver',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_redis_server',
-                value=contextlib2.nullcontext()),
-            self.swap_with_checks(
-                common, 'wait_for_port_to_be_in_use',
-                mock_wait_for_port_to_be_in_use,
-                expected_args=[
-                    (feconf.ES_LOCALHOST_PORT,),
-                    (run_e2e_tests.WEB_DRIVER_PORT,),
-                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,)]),
-            self.swap_with_checks(
-                run_e2e_tests, 'get_e2e_test_parameters',
-                mock_get_e2e_test_parameters,
-                expected_args=[(3, 'full', True)]),
-            self.swap_with_checks(
-                subprocess, 'Popen', mock_popen, expected_args=[
-                    ([
-                        common.NODE_BIN_PATH,
-                        '--unhandled-rejections=strict',
-                        run_e2e_tests.PROTRACTOR_BIN_PATH,
-                        'commands',
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'get_chrome_driver_version',
+            mock_get_chrome_driver_version))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'is_oppia_server_already_running',
+            mock_is_oppia_server_already_running))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'setup_and_install_dependencies',
+            mock_setup_and_install_dependencies, expected_args=[(False,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            atexit, 'register', mock_register, expected_args=[
+                (mock_cleanup,),
+                ]))
+        self.exit_stack.enter_context(
+            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'build_js_files', mock_build_js_files,
+            expected_args=[(True,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'start_webdriver_manager',
+            mock_start_webdriver_manager,
+            expected_args=[(CHROME_DRIVER_VERSION,)]))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_elasticsearch_dev_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_firebase_auth_emulator',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_dev_appserver',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_redis_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_webpack_compiler',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'get_e2e_test_parameters',
+            mock_get_e2e_test_parameters,
+            expected_args=[(3, 'full', True)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            subprocess, 'Popen', mock_popen, expected_args=[
+                ([
+                    common.NODE_BIN_PATH,
+                    '--unhandled-rejections=strict',
+                    run_e2e_tests.PROTRACTOR_BIN_PATH,
+                    'commands',
                     ],),
                 ],
-            ),
-        ]
+            ))
         args = run_e2e_tests._PARSER.parse_args(args=[])  # pylint: disable=protected-access
 
-        with contextlib2.ExitStack() as stack:
-            for context in swap_contexts:
-                stack.enter_context(context)
-
-            lines, _ = run_e2e_tests.run_tests(args)
+        lines, _ = run_e2e_tests.run_tests(args)
 
         self.assertEqual(lines, ['sample', u'✓', 'output'])
 
@@ -1094,36 +1039,34 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_portserver():
             return mock_portserver
 
-        start_portserver_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'start_portserver', mock_start_portserver,
-            expected_args=[tuple()])
-        cleanup_portserver_swap = self.swap(
+            expected_args=[tuple()]))
+        self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
-            mock_cleanup_portserver)
-        register_swap = self.swap_with_checks(
+            mock_cleanup_portserver))
+        self.exit_stack.enter_context(self.swap_with_checks(
             atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)])
-        run_swap = self.swap(
-            run_e2e_tests, 'run_tests', mock_run_tests)
-        is_test_output_flaky_swap = self.swap_with_checks(
+                (mock_cleanup_portserver, mock_portserver)]))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'run_tests', mock_run_tests))
+        self.exit_stack.enter_context(self.swap_with_checks(
             flake_checker, 'is_test_output_flaky',
             mock_is_test_output_flaky,
             expected_args=[
                 ('sample\noutput', 'mySuite'),
                 ('sample\noutput', 'mySuite'),
                 ('sample\noutput', 'mySuite'),
-            ])
-        on_ci_swap = self.swap(
-            flake_checker, 'check_if_on_ci', mock_check_if_on_ci)
-        cleanup_swap = self.swap_with_checks(
+                ]))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'cleanup', mock_cleanup, expected_args=[
-                tuple(), tuple(), tuple()])
-        exit_swap = self.swap_with_checks(
-            sys, 'exit', mock_exit, expected_args=[(1,)])
-        with register_swap, run_swap, is_test_output_flaky_swap:
-            with start_portserver_swap, cleanup_portserver_swap:
-                with on_ci_swap, cleanup_swap, exit_swap:
-                    run_e2e_tests.main(args=['--suite', 'mySuite'])
+                tuple(), tuple(), tuple()]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(1,)]))
+
+        run_e2e_tests.main(args=['--suite', 'mySuite'])
 
     def test_do_not_rerun_when_tests_fail(self):
 
@@ -1154,35 +1097,32 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_portserver():
             return mock_portserver
 
-        start_portserver_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'start_portserver', mock_start_portserver,
-            expected_args=[tuple()])
-        cleanup_portserver_swap = self.swap(
+            expected_args=[tuple()]))
+        self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
-            mock_cleanup_portserver)
-        register_swap = self.swap_with_checks(
+            mock_cleanup_portserver))
+        self.exit_stack.enter_context(self.swap_with_checks(
             atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)])
-        run_swap = self.swap(
-            run_e2e_tests, 'run_tests', mock_run_tests)
-        is_test_output_flaky_swap = self.swap_with_checks(
+                (mock_cleanup_portserver, mock_portserver)]))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'run_tests', mock_run_tests))
+        self.exit_stack.enter_context(self.swap_with_checks(
             flake_checker, 'is_test_output_flaky',
             mock_is_test_output_flaky,
             expected_args=[
-                ('sample\noutput', 'mySuite')])
-        on_ci_swap = self.swap(
-            flake_checker, 'check_if_on_ci', mock_check_if_on_ci)
-        cleanup_swap = self.swap(
-            run_e2e_tests, 'cleanup', mock_cleanup)
-        exit_swap = self.swap_with_checks(
-            sys, 'exit', mock_exit, expected_args=[(1,)])
-        rerun_non_flaky_swap = self.swap(
-            run_e2e_tests, 'RERUN_NON_FLAKY', False)
-        with register_swap, run_swap, is_test_output_flaky_swap:
-            with start_portserver_swap, cleanup_portserver_swap:
-                with on_ci_swap, cleanup_swap, exit_swap:
-                    with rerun_non_flaky_swap:
-                        run_e2e_tests.main(args=['--suite', 'mySuite'])
+                ('sample\noutput', 'mySuite')]))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'cleanup', mock_cleanup))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(1,)]))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'RERUN_NON_FLAKY', False))
+
+        run_e2e_tests.main(args=['--suite', 'mySuite'])
 
     def test_rerun_when_tests_flake(self):
 
@@ -1213,36 +1153,34 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_portserver():
             return mock_portserver
 
-        start_portserver_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'start_portserver', mock_start_portserver,
-            expected_args=[tuple()])
-        cleanup_portserver_swap = self.swap(
+            expected_args=[tuple()]))
+        self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
-            mock_cleanup_portserver)
-        register_swap = self.swap_with_checks(
+            mock_cleanup_portserver))
+        self.exit_stack.enter_context(self.swap_with_checks(
             atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)])
-        run_swap = self.swap(
-            run_e2e_tests, 'run_tests', mock_run_tests)
-        is_test_output_flaky_swap = self.swap_with_checks(
+                (mock_cleanup_portserver, mock_portserver)]))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'run_tests', mock_run_tests))
+        self.exit_stack.enter_context(self.swap_with_checks(
             flake_checker, 'is_test_output_flaky',
             mock_is_test_output_flaky,
             expected_args=[
                 ('sample\noutput', 'mySuite'),
                 ('sample\noutput', 'mySuite'),
                 ('sample\noutput', 'mySuite'),
-            ])
-        on_ci_swap = self.swap(
-            flake_checker, 'check_if_on_ci', mock_check_if_on_ci)
-        cleanup_swap = self.swap_with_checks(
+                ]))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'cleanup', mock_cleanup, expected_args=[
-                tuple(), tuple(), tuple()])
-        exit_swap = self.swap_with_checks(
-            sys, 'exit', mock_exit, expected_args=[(1,)])
-        with register_swap, run_swap, is_test_output_flaky_swap:
-            with start_portserver_swap, cleanup_portserver_swap:
-                with on_ci_swap, cleanup_swap, exit_swap:
-                    run_e2e_tests.main(args=['--suite', 'mySuite'])
+                tuple(), tuple(), tuple()]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(1,)]))
+
+        run_e2e_tests.main(args=['--suite', 'mySuite'])
 
     def test_no_reruns_off_ci_fail(self):
 
@@ -1273,30 +1211,28 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_portserver():
             return mock_portserver
 
-        start_portserver_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'start_portserver', mock_start_portserver,
-            expected_args=[tuple()])
-        cleanup_portserver_swap = self.swap(
+            expected_args=[tuple()]))
+        self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
-            mock_cleanup_portserver)
-        register_swap = self.swap_with_checks(
+            mock_cleanup_portserver))
+        self.exit_stack.enter_context(self.swap_with_checks(
             atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)])
-        run_swap = self.swap(
-            run_e2e_tests, 'run_tests', mock_run_tests)
-        is_test_output_flaky_swap = self.swap(
+                (mock_cleanup_portserver, mock_portserver)]))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'run_tests', mock_run_tests))
+        self.exit_stack.enter_context(self.swap(
             flake_checker, 'is_test_output_flaky',
-            mock_is_test_output_flaky)
-        on_ci_swap = self.swap(
-            flake_checker, 'check_if_on_ci', mock_check_if_on_ci)
-        cleanup_swap = self.swap(
-            run_e2e_tests, 'cleanup', mock_cleanup)
-        exit_swap = self.swap_with_checks(
-            sys, 'exit', mock_exit, expected_args=[(1,)])
-        with register_swap, run_swap, is_test_output_flaky_swap:
-            with start_portserver_swap, cleanup_portserver_swap:
-                with on_ci_swap, cleanup_swap, exit_swap:
-                    run_e2e_tests.main(args=['--suite', 'mySuite'])
+            mock_is_test_output_flaky))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'cleanup', mock_cleanup))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(1,)]))
+
+        run_e2e_tests.main(args=['--suite', 'mySuite'])
 
     def test_no_reruns_off_ci_pass(self):
 
@@ -1326,29 +1262,27 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_portserver():
             return mock_portserver
 
-        start_portserver_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'start_portserver', mock_start_portserver,
-            expected_args=[tuple()])
-        cleanup_portserver_swap = self.swap(
+            expected_args=[tuple()]))
+        self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
-            mock_cleanup_portserver)
-        register_swap = self.swap_with_checks(
+            mock_cleanup_portserver))
+        self.exit_stack.enter_context(self.swap_with_checks(
             atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)])
-        run_swap = self.swap(
-            run_e2e_tests, 'run_tests', mock_run_tests)
-        report_pass_swap = self.swap(
-            flake_checker, 'report_pass', mock_report_pass)
-        on_ci_swap = self.swap(
-            flake_checker, 'check_if_on_ci', mock_check_if_on_ci)
-        cleanup_swap = self.swap(
-            run_e2e_tests, 'cleanup', mock_cleanup)
-        exit_swap = self.swap_with_checks(
-            sys, 'exit', mock_exit, expected_args=[(0,)])
-        with register_swap, run_swap, report_pass_swap:
-            with start_portserver_swap, cleanup_portserver_swap:
-                with on_ci_swap, cleanup_swap, exit_swap:
-                    run_e2e_tests.main(args=['--suite', 'mySuite'])
+                (mock_cleanup_portserver, mock_portserver)]))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'run_tests', mock_run_tests))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'report_pass', mock_report_pass))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'cleanup', mock_cleanup))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(0,)]))
+
+        run_e2e_tests.main(args=['--suite', 'mySuite'])
 
     def test_start_tests_skip_build(self):
 
@@ -1375,9 +1309,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_webdriver_manager(unused_arg):
             return
 
-        def mock_wait_for_port_to_be_in_use(unused_port):
-            return
-
         def mock_get_e2e_test_parameters(
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
@@ -1399,93 +1330,84 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_report_pass(unused_suite_name):
             return
 
-        swap_contexts = [
-            self.swap(
-                run_e2e_tests, 'get_chrome_driver_version',
-                mock_get_chrome_driver_version),
-            self.swap_with_checks(
-                run_e2e_tests, 'is_oppia_server_already_running',
-                mock_is_oppia_server_already_running),
-            self.swap_with_checks(
-                run_e2e_tests, 'setup_and_install_dependencies',
-                mock_setup_and_install_dependencies, expected_args=[(True,)]),
-            self.swap_with_checks(
-                atexit, 'register', mock_register, expected_args=[
-                    (run_e2e_tests.cleanup_portserver, mock_process),
-                    (mock_cleanup,),
-                ]),
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup),
-            self.swap_with_checks(
-                build, 'modify_constants', mock_modify_constants,
-                expected_kwargs=[{'prod_env': False}]),
-            self.swap_with_checks(
-                run_e2e_tests, 'start_webdriver_manager',
-                mock_start_webdriver_manager,
-                expected_args=[(CHROME_DRIVER_VERSION,)]),
-            self.swap_to_always_return(
-                common, 'managed_elasticsearch_dev_server',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_firebase_auth_emulator',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_dev_appserver',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_redis_server',
-                value=contextlib2.nullcontext()),
-            self.swap_with_checks(
-                common, 'wait_for_port_to_be_in_use',
-                mock_wait_for_port_to_be_in_use,
-                expected_args=[
-                    (feconf.ES_LOCALHOST_PORT,),
-                    (run_e2e_tests.WEB_DRIVER_PORT,),
-                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
-                ]),
-            self.swap_with_checks(
-                run_e2e_tests, 'get_e2e_test_parameters',
-                mock_get_e2e_test_parameters,
-                expected_args=[(3, 'full', True)]),
-            self.swap_with_checks(
-                subprocess, 'Popen', mock_popen, expected_args=[
-                    ([
-                        'python', '-m',
-                        'scripts.run_portserver',
-                        '--portserver_unix_socket_address',
-                        run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'get_chrome_driver_version',
+            mock_get_chrome_driver_version))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'is_oppia_server_already_running',
+            mock_is_oppia_server_already_running))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'setup_and_install_dependencies',
+            mock_setup_and_install_dependencies, expected_args=[(True,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            atexit, 'register', mock_register, expected_args=[
+                (run_e2e_tests.cleanup_portserver, mock_process),
+                (mock_cleanup,),
+                ]))
+        self.exit_stack.enter_context(
+            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            build, 'modify_constants', mock_modify_constants,
+            expected_kwargs=[{'prod_env': False}]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'start_webdriver_manager',
+            mock_start_webdriver_manager,
+            expected_args=[(CHROME_DRIVER_VERSION,)]))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_elasticsearch_dev_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_firebase_auth_emulator',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_dev_appserver',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_redis_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_webpack_compiler',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'get_e2e_test_parameters',
+            mock_get_e2e_test_parameters,
+            expected_args=[(3, 'full', True)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            subprocess, 'Popen', mock_popen, expected_args=[
+                ([
+                    'python', '-m',
+                    'scripts.run_portserver',
+                    '--portserver_unix_socket_address',
+                    run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
                     ],),
-                    ([
-                        common.NODE_BIN_PATH,
-                        '--unhandled-rejections=strict',
-                        run_e2e_tests.PROTRACTOR_BIN_PATH,
-                        'commands'
+                ([
+                    common.NODE_BIN_PATH,
+                    '--unhandled-rejections=strict',
+                    run_e2e_tests.PROTRACTOR_BIN_PATH,
+                    'commands'
                     ],),
                 ],
-            ),
-            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci),
-            self.swap_with_checks(
-                flake_checker, 'report_pass', mock_report_pass,
-                expected_args=[('full',)]),
-            self.swap_with_checks(
-                sys, 'exit', mock_exit, expected_args=[(0,)]),
-        ]
+            ))
+        self.exit_stack.enter_context(
+            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            flake_checker, 'report_pass', mock_report_pass,
+            expected_args=[('full',)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(0,)]))
 
-        with contextlib2.ExitStack() as stack:
-            for context in swap_contexts:
-                stack.enter_context(context)
-
-            run_e2e_tests.main(args=['--skip-install', '--skip-build'])
+        run_e2e_tests.main(args=['--skip-install', '--skip-build'])
 
     def test_linux_chrome_version_command_not_found_failure(self):
-        os_name_swap = self.swap(common, 'OS_NAME', 'Linux')
+        self.exit_stack.enter_context(self.swap(common, 'OS_NAME', 'Linux'))
 
         def mock_popen(unused_commands, stdout):
             self.assertEqual(stdout, -1)
             raise OSError('google-chrome not found')
 
-        popen_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             subprocess, 'Popen', mock_popen, expected_args=[([
-                'google-chrome', '--version'],)])
+                'google-chrome', '--version'],)]))
         expected_message = (
             'Failed to execute "google-chrome --version" command. This is '
             'used to determine the chromedriver version to use. Please set '
@@ -1494,12 +1416,11 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             'follow the instructions mentioned in the following URL:\n'
             'https://chromedriver.chromium.org/downloads/version-selection')
 
-        with os_name_swap, popen_swap, self.assertRaisesRegexp(
-            Exception, expected_message):
+        with self.assertRaisesRegexp(Exception, expected_message):
             run_e2e_tests.get_chrome_driver_version()
 
     def test_mac_chrome_version_command_not_found_failure(self):
-        os_name_swap = self.swap(common, 'OS_NAME', 'Darwin')
+        self.exit_stack.enter_context(self.swap(common, 'OS_NAME', 'Darwin'))
 
         def mock_popen(unused_commands, stdout):
             self.assertEqual(stdout, -1)
@@ -1507,10 +1428,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 r'/Applications/Google\ Chrome.app/Contents/MacOS/Google\ '
                 'Chrome not found')
 
-        popen_swap = self.swap_with_checks(
+        self.exit_stack.enter_context(self.swap_with_checks(
             subprocess, 'Popen', mock_popen, expected_args=[([
                 '/Applications/Google Chrome.app/Contents/MacOS/Google '
-                'Chrome', '--version'],)])
+                'Chrome', '--version'],)]))
         expected_message = (
             r'Failed to execute "/Applications/Google\\ '
             r'Chrome.app/Contents/MacOS/Google\\ Chrome --version" command. '
@@ -1521,8 +1442,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             'in the following URL:\n'
             'https://chromedriver.chromium.org/downloads/version-selection')
 
-        with os_name_swap, popen_swap, self.assertRaisesRegexp(
-            Exception, expected_message):
+        with self.assertRaisesRegexp(Exception, expected_message):
             run_e2e_tests.get_chrome_driver_version()
 
     def test_start_tests_in_debug_mode(self):
@@ -1551,9 +1471,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_webdriver_manager(unused_arg):
             return
 
-        def mock_wait_for_port_to_be_in_use(unused_port):
-            return
-
         def mock_get_e2e_test_parameters(
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
@@ -1575,83 +1492,74 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_report_pass(unused_suite_name):
             return
 
-        swap_contexts = [
-            self.swap(
-                run_e2e_tests, 'get_chrome_driver_version',
-                mock_get_chrome_driver_version),
-            self.swap_with_checks(
-                run_e2e_tests, 'is_oppia_server_already_running',
-                mock_is_oppia_server_already_running),
-            self.swap_with_checks(
-                run_e2e_tests, 'setup_and_install_dependencies',
-                mock_setup_and_install_dependencies, expected_args=[(False,)]),
-            self.swap_with_checks(
-                atexit, 'register', mock_register, expected_args=[
-                    (run_e2e_tests.cleanup_portserver, mock_process),
-                    (mock_cleanup,),
-                ]),
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup),
-            self.swap_with_checks(
-                run_e2e_tests, 'build_js_files', mock_build_js_files,
-                expected_args=[(True,)]),
-            self.swap_with_checks(
-                run_e2e_tests, 'start_webdriver_manager',
-                mock_start_webdriver_manager,
-                expected_args=[(CHROME_DRIVER_VERSION,)]),
-            self.swap_to_always_return(
-                common, 'managed_elasticsearch_dev_server',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_firebase_auth_emulator',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_dev_appserver',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_redis_server',
-                value=contextlib2.nullcontext()),
-            self.swap_with_checks(
-                common, 'wait_for_port_to_be_in_use',
-                mock_wait_for_port_to_be_in_use,
-                expected_args=[
-                    (feconf.ES_LOCALHOST_PORT,),
-                    (run_e2e_tests.WEB_DRIVER_PORT,),
-                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
-                ]),
-            self.swap_with_checks(
-                run_e2e_tests, 'get_e2e_test_parameters',
-                mock_get_e2e_test_parameters,
-                expected_args=[(3, 'full', True)]),
-            self.swap_with_checks(
-                subprocess, 'Popen', mock_popen, expected_args=[
-                    ([
-                        'python', '-m',
-                        'scripts.run_portserver',
-                        '--portserver_unix_socket_address',
-                        run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'get_chrome_driver_version',
+            mock_get_chrome_driver_version))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'is_oppia_server_already_running',
+            mock_is_oppia_server_already_running))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'setup_and_install_dependencies',
+            mock_setup_and_install_dependencies, expected_args=[(False,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            atexit, 'register', mock_register, expected_args=[
+                (run_e2e_tests.cleanup_portserver, mock_process),
+                (mock_cleanup,),
+                ]))
+        self.exit_stack.enter_context(
+            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'build_js_files', mock_build_js_files,
+            expected_args=[(True,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'start_webdriver_manager',
+            mock_start_webdriver_manager,
+            expected_args=[(CHROME_DRIVER_VERSION,)]))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_elasticsearch_dev_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_firebase_auth_emulator',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_dev_appserver',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_redis_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_webpack_compiler',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'get_e2e_test_parameters',
+            mock_get_e2e_test_parameters,
+            expected_args=[(3, 'full', True)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            subprocess, 'Popen', mock_popen, expected_args=[
+                ([
+                    'python', '-m',
+                    'scripts.run_portserver',
+                    '--portserver_unix_socket_address',
+                    run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
                     ],),
-                    ([
-                        common.NODE_BIN_PATH,
-                        '--inspect-brk',
-                        '--unhandled-rejections=strict',
-                        run_e2e_tests.PROTRACTOR_BIN_PATH,
-                        'commands',
+                ([
+                    common.NODE_BIN_PATH,
+                    '--inspect-brk',
+                    '--unhandled-rejections=strict',
+                    run_e2e_tests.PROTRACTOR_BIN_PATH,
+                    'commands',
                     ],),
                 ],
-            ),
-            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci),
-            self.swap_with_checks(
-                flake_checker, 'report_pass', mock_report_pass,
-                expected_args=[('full',)]),
-            self.swap_with_checks(
-                sys, 'exit', mock_exit, expected_args=[(0,)]),
-        ]
+            ))
+        self.exit_stack.enter_context(
+            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            flake_checker, 'report_pass', mock_report_pass,
+            expected_args=[('full',)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(0,)]))
 
-        with contextlib2.ExitStack() as stack:
-            for context in swap_contexts:
-                stack.enter_context(context)
-
-            run_e2e_tests.main(args=['--debug_mode'])
+        run_e2e_tests.main(args=['--debug_mode'])
 
     def test_start_tests_in_with_chromedriver_flag(self):
 
@@ -1679,9 +1587,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_start_webdriver_manager(unused_arg):
             return
 
-        def mock_wait_for_port_to_be_in_use(unused_port):
-            return
-
         def mock_get_e2e_test_parameters(
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
@@ -1703,83 +1608,74 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_report_pass(unused_suite_name):
             return
 
-        swap_contexts = [
-            self.swap(
-                run_e2e_tests, 'get_chrome_driver_version',
-                mock_get_chrome_driver_version),
-            self.swap_with_checks(
-                run_e2e_tests, 'is_oppia_server_already_running',
-                mock_is_oppia_server_already_running),
-            self.swap_with_checks(
-                run_e2e_tests, 'setup_and_install_dependencies',
-                mock_setup_and_install_dependencies, expected_args=[(False,)]),
-            self.swap_with_checks(
-                atexit, 'register', mock_register, expected_args=[
-                    (run_e2e_tests.cleanup_portserver, mock_process),
-                    (mock_cleanup,),
-                ]),
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup),
-            self.swap_with_checks(
-                run_e2e_tests, 'build_js_files', mock_build_js_files,
-                expected_args=[(True,)]),
-            self.swap_with_checks(
-                run_e2e_tests, 'start_webdriver_manager',
-                mock_start_webdriver_manager,
-                expected_args=[(CHROME_DRIVER_VERSION,)]),
-            self.swap_to_always_return(
-                common, 'managed_elasticsearch_dev_server',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_firebase_auth_emulator',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_dev_appserver',
-                value=contextlib2.nullcontext()),
-            self.swap_to_always_return(
-                common, 'managed_redis_server',
-                value=contextlib2.nullcontext()),
-            self.swap_with_checks(
-                common, 'wait_for_port_to_be_in_use',
-                mock_wait_for_port_to_be_in_use,
-                expected_args=[
-                    (feconf.ES_LOCALHOST_PORT,),
-                    (run_e2e_tests.WEB_DRIVER_PORT,),
-                    (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
-                ]),
-            self.swap_with_checks(
-                run_e2e_tests, 'get_e2e_test_parameters',
-                mock_get_e2e_test_parameters,
-                expected_args=[(3, 'full', True)]),
-            self.swap_with_checks(
-                subprocess, 'Popen', mock_popen, expected_args=[
-                    ([
-                        'python', '-m',
-                        'scripts.run_portserver',
-                        '--portserver_unix_socket_address',
-                        run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
+        self.exit_stack.enter_context(self.swap(
+            run_e2e_tests, 'get_chrome_driver_version',
+            mock_get_chrome_driver_version))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'is_oppia_server_already_running',
+            mock_is_oppia_server_already_running))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'setup_and_install_dependencies',
+            mock_setup_and_install_dependencies, expected_args=[(False,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            atexit, 'register', mock_register, expected_args=[
+                (run_e2e_tests.cleanup_portserver, mock_process),
+                (mock_cleanup,),
+                ]))
+        self.exit_stack.enter_context(
+            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'build_js_files', mock_build_js_files,
+            expected_args=[(True,)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'start_webdriver_manager',
+            mock_start_webdriver_manager,
+            expected_args=[(CHROME_DRIVER_VERSION,)]))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_elasticsearch_dev_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_firebase_auth_emulator',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_dev_appserver',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_redis_server',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            common, 'managed_webpack_compiler',
+            value=contextlib2.nullcontext()))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            run_e2e_tests, 'get_e2e_test_parameters',
+            mock_get_e2e_test_parameters,
+            expected_args=[(3, 'full', True)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            subprocess, 'Popen', mock_popen, expected_args=[
+                ([
+                    'python', '-m',
+                    'scripts.run_portserver',
+                    '--portserver_unix_socket_address',
+                    run_e2e_tests.PORTSERVER_SOCKET_FILEPATH,
                     ],),
-                    ([
-                        common.NODE_BIN_PATH,
-                        '--unhandled-rejections=strict',
-                        run_e2e_tests.PROTRACTOR_BIN_PATH,
-                        'commands',
+                ([
+                    common.NODE_BIN_PATH,
+                    '--unhandled-rejections=strict',
+                    run_e2e_tests.PROTRACTOR_BIN_PATH,
+                    'commands',
                     ],),
                 ],
-            ),
-            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci),
-            self.swap_with_checks(
-                flake_checker, 'report_pass', mock_report_pass,
-                expected_args=[('full',)]),
-            self.swap_with_checks(
-                sys, 'exit', mock_exit, expected_args=[(0,)]),
-        ]
+            ))
+        self.exit_stack.enter_context(
+            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            flake_checker, 'report_pass', mock_report_pass,
+            expected_args=[('full',)]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit, expected_args=[(0,)]))
 
-        with contextlib2.ExitStack() as stack:
-            for context in swap_contexts:
-                stack.enter_context(context)
-
-            run_e2e_tests.main(
-                args=['--chrome_driver_version', CHROME_DRIVER_VERSION])
+        run_e2e_tests.main(
+            args=['--chrome_driver_version', CHROME_DRIVER_VERSION])
 
     def test_cleanup_portserver_when_server_shuts_down_cleanly(self):
         process = MockProcessClass(clean_shutdown=True)

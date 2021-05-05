@@ -27,6 +27,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 
 import constants
@@ -112,6 +113,8 @@ FRONTEND_DIR = os.path.join(CURR_DIR, 'core', 'templates')
 YARN_PATH = os.path.join(OPPIA_TOOLS_DIR, 'yarn-%s' % YARN_VERSION)
 FIREBASE_PATH = os.path.join(
     NODE_MODULES_PATH, 'firebase-tools', 'lib', 'bin', 'firebase.js')
+WEBPACK_PATH = os.path.join(
+    NODE_MODULES_PATH, 'webpack', 'bin', 'webpack.js')
 OS_NAME = platform.system()
 ARCHITECTURE = platform.machine()
 PSUTIL_DIR = os.path.join(OPPIA_TOOLS_DIR, 'psutil-%s' % PSUTIL_VERSION)
@@ -160,6 +163,11 @@ COMPILED_REQUIREMENTS_FILE_PATH = os.path.join(CURR_DIR, 'requirements.txt')
 # will be identical.
 REQUIREMENTS_FILE_PATH = os.path.join(CURR_DIR, 'requirements.in')
 
+WEBPACK_DEV_CONFIG = 'webpack.dev.config.ts'
+WEBPACK_DEV_SOURCE_MAPS_CONFIG = 'webpack.dev.sourcemap.config.ts'
+WEBPACK_PROD_CONFIG = 'webpack.prod.config.ts'
+WEBPACK_PROD_SOURCE_MAPS_CONFIG = 'webpack.prod.sourcemap.config.ts'
+
 DIRS_TO_ADD_TO_SYS_PATH = [
     GOOGLE_APP_ENGINE_SDK_HOME,
     PYLINT_PATH,
@@ -178,6 +186,14 @@ DIRS_TO_ADD_TO_SYS_PATH = [
     CURR_DIR,
     THIRD_PARTY_PYTHON_LIBS_DIR
 ]
+
+# TODO(#11549): Stop doing this.
+if PSUTIL_DIR not in sys.path:
+    sys.path.insert(1, PSUTIL_DIR)
+import psutil # pylint: disable=wrong-import-position
+
+# Swapping target for unit tests.
+POPEN = psutil.Popen
 
 
 def is_windows_os():
@@ -563,10 +579,6 @@ def kill_processes_based_on_regex(pattern):
         pattern: str. Pattern for searching processes.
     """
     regex = re.compile(pattern)
-    # TODO(#11549): Move this to top of the file.
-    if PSUTIL_DIR not in sys.path:
-        sys.path.insert(1, PSUTIL_DIR)
-    import psutil
     for process in psutil.process_iter():
         try:
             cmdline = ' '.join(process.cmdline())
@@ -757,13 +769,15 @@ def swap_env(key, value):
 
 
 @contextlib.contextmanager
-def managed_process(command_args, shell=False, timeout_secs=60, **kwargs):
+def managed_process(
+        command_args, title='Process', shell=False, timeout_secs=60, **kwargs):
     """Context manager for starting and stopping a process gracefully.
 
     Args:
         command_args: list(int|str). A sequence of program arguments, where the
             program to execute is the first item. Ints are allowed in order to
             accomodate e.g. port numbers.
+        title: str. The title of the process. Used to improve debug messages.
         shell: bool. Whether the command should be run inside of its own shell.
             WARNING: Executing shell commands that incorporate unsanitized input
             from an untrusted source makes a program vulnerable to
@@ -779,17 +793,13 @@ def managed_process(command_args, shell=False, timeout_secs=60, **kwargs):
     Yields:
         psutil.Process. The process managed by the context manager.
     """
-    # TODO(#11549): Move this to top of the file.
-    if PSUTIL_DIR not in sys.path:
-        sys.path.insert(1, PSUTIL_DIR)
-    import psutil
 
     stripped_args = (('%s' % arg).strip() for arg in command_args)
     non_empty_args = (s for s in stripped_args if s)
 
     command = ' '.join(non_empty_args) if shell else list(non_empty_args)
-    python_utils.PRINT('Starting new process: %s' % command)
-    popen_proc = psutil.Popen(command, shell=shell, **kwargs)
+    python_utils.PRINT('Starting new %s: %s' % (title, command))
+    popen_proc = POPEN(command, shell=shell, **kwargs)
 
     try:
         yield popen_proc
@@ -803,7 +813,7 @@ def managed_process(command_args, shell=False, timeout_secs=60, **kwargs):
         procs_to_kill.append(popen_proc)
 
         get_debug_info = lambda proc: (
-            'Process(name=%r, pid=%d)' % (proc.name(), proc.pid)
+            '%s(name=%r, pid=%d)' % (title, proc.name(), proc.pid)
             if proc.is_running() else 'Process(pid=%d)' % (proc.pid,))
 
         procs_still_alive = []
@@ -878,7 +888,10 @@ def managed_dev_appserver(
     # OK to use shell=True here because we are not passing anything that came
     # from an untrusted user, only other callers of the script, so there's no
     # risk of shell-injection attacks.
-    with managed_process(dev_appserver_args, shell=True, env=env) as proc:
+    proc_context = managed_process(
+        dev_appserver_args, title='GAE development server', shell=True, env=env)
+    with proc_context as proc:
+        wait_for_port_to_be_in_use(port)
         yield proc
 
 
@@ -905,7 +918,9 @@ def managed_firebase_auth_emulator(recover_users=False):
 
     # OK to use shell=True here because we are passing string literals and
     # constants, so there is no risk of a shell-injection attack.
-    with managed_process(emulator_args, shell=True) as proc:
+    proc_context = (
+        managed_process(emulator_args, title='Firebase emulator', shell=True))
+    with proc_context as proc:
         wait_for_port_to_be_in_use(feconf.FIREBASE_EMULATOR_PORT)
         yield proc
 
@@ -926,7 +941,10 @@ def managed_elasticsearch_dev_server():
     es_args = ['%s/bin/elasticsearch' % ES_PATH, '-q'] # -q is the quiet flag.
     # Override the default path to ElasticSearch config files.
     es_env = {'ES_PATH_CONF': ES_PATH_CONFIG_DIR}
-    with managed_process(es_args, env=es_env, shell=True) as proc:
+    proc_context = managed_process(
+        es_args, title='ElasticSearch server', env=es_env, shell=True)
+    with proc_context as proc:
+        wait_for_port_to_be_in_use(feconf.ES_LOCALHOST_PORT)
         yield proc
 
 
@@ -964,7 +982,8 @@ def managed_cloud_datastore_emulator(clear_datastore=False):
         elif not data_dir_exists:
             os.makedirs(CLOUD_DATASTORE_EMULATOR_DATA_DIR)
 
-        proc = stack.enter_context(managed_process(emulator_args, shell=True))
+        proc = stack.enter_context(managed_process(
+            emulator_args, title='Cloud datastore emulator', shell=True))
 
         wait_for_port_to_be_in_use(feconf.CLOUD_DATASTORE_EMULATOR_PORT)
 
@@ -1002,7 +1021,9 @@ def managed_redis_server():
 
     # Start the redis local development server. Redis doesn't run on
     # Windows machines.
-    with managed_process([REDIS_SERVER_PATH, REDIS_CONF_PATH]) as proc:
+    proc_context = managed_process(
+        [REDIS_SERVER_PATH, REDIS_CONF_PATH], title='Redis server', shell=True)
+    with proc_context as proc:
         wait_for_port_to_be_in_use(feconf.REDISPORT)
         yield proc
 
@@ -1024,8 +1045,87 @@ def create_managed_web_browser(port):
         if any(re.match('.*VBOX.*', d) for d in os.listdir('/dev/disk/by-id/')):
             return None
         else:
-            return managed_process(['xdg-open', target])
+            return managed_process(['xdg-open', target], title='Web browser')
     elif is_mac_os():
-        return managed_process(['open', target])
+        return managed_process(['open', target], title='Web browser')
     else:
         return None
+
+
+@contextlib.contextmanager
+def managed_webpack_compiler(
+        config_path=None, use_prod_env=False, use_source_maps=False,
+        watch_mode=False, max_old_space_size=None):
+    """Returns context manager to start/stop the webpack compiler gracefully.
+
+    Args:
+        config_path: str|None. Path to an explicit webpack config, or None to
+            determine it from the other args.
+        use_prod_env: bool. Whether to compile for use in production. Only
+            respected if config_path is None.
+        use_source_maps: bool. Whether to compile with source maps. Only
+            respected if config_path is None.
+        watch_mode: bool. Run the compiler in watch mode, which rebuilds on file
+            change.
+        max_old_space_size: int|None. Sets the max memory size of the compiler's
+            "old memory" section. As memory consumption approaches the limit,
+            the compiler will spend more time on garbage collection in an effort
+            to free unused memory.
+
+    Yields:
+        psutil.Process. The Webpack compiler process.
+    """
+    if config_path is not None:
+        pass
+    elif use_prod_env:
+        config_path = (
+            WEBPACK_PROD_SOURCE_MAPS_CONFIG if use_source_maps else
+            WEBPACK_PROD_CONFIG)
+    else:
+        config_path = (
+            WEBPACK_DEV_SOURCE_MAPS_CONFIG if use_source_maps else
+            WEBPACK_DEV_CONFIG)
+
+    compiler_args = [NODE_BIN_PATH, WEBPACK_PATH, '--config', config_path]
+    if max_old_space_size:
+        # NOTE: --max-old-space-size is a flag for Node.js, not the Webpack
+        # compiler, so we insert it immediately after the Node.js bin's path.
+        compiler_args.insert(1, '--max-old-space-size=%d' % max_old_space_size)
+    if watch_mode:
+        compiler_args.extend(['--color', '--watch', '--progress'])
+
+    proc_context = managed_process(
+        compiler_args, title='Webpack compiler', shell=True,
+        # Capture the compiler's output to detect when builds have completed.
+        stdout=subprocess.PIPE)
+
+    with proc_context as proc:
+        if watch_mode:
+            # Iterate until an empty string is printed, which signals the end of
+            # the output.
+            for line in iter(proc.stdout.readline, b''):
+                sys.stdout.write(line)
+                # Message printed when a compilation has succeeded. We break at
+                # the first one so that developers can use the site immediately.
+                if 'Built at: ' in line:
+                    break
+            else:
+                # If the code never ran `break`, raise an error because the
+                # build didn't complete.
+                raise IOError('First build never completed')
+
+        def print_proc_output():
+            """Prints the proc's output until it is exhausted."""
+            # Iterate until an empty string is printed, which signals the end of
+            # the output.
+            for line in iter(proc.stdout.readline, b''):
+                sys.stdout.write(line)
+
+        # Start a thread to print the rest of the compiler's output to stdout.
+        printer_thread = threading.Thread(target=print_proc_output)
+        printer_thread.start()
+
+        yield proc
+
+    # Finally, wait for the printer thread to finish working.
+    printer_thread.join()

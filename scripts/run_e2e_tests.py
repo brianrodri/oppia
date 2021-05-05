@@ -28,7 +28,6 @@ import sys
 import time
 
 from constants import constants
-import feconf
 import python_utils
 from scripts import build
 from scripts import common
@@ -38,7 +37,6 @@ from scripts import install_third_party_libs
 
 MAX_RETRY_COUNT = 3
 RERUN_NON_FLAKY = True
-WEB_DRIVER_PORT = 4444
 OPPIA_SERVER_PORT = 8181
 GOOGLE_APP_ENGINE_PORT = 9001
 ELASTICSEARCH_SERVER_PORT = 9200
@@ -234,12 +232,10 @@ def run_webpack_compilation(source_maps=False):
     webpack_bundles_dir_name = 'webpack_bundles'
     for _ in python_utils.RANGE(max_tries):
         try:
-            webpack_config_file = (
-                build.WEBPACK_DEV_SOURCE_MAPS_CONFIG if source_maps
-                else build.WEBPACK_DEV_CONFIG)
-            subprocess.check_call([
-                common.NODE_BIN_PATH, WEBPACK_BIN_PATH, '--config',
-                webpack_config_file])
+            managed_webpack_compiler = (
+                common.managed_webpack_compiler(use_source_maps=source_maps))
+            with managed_webpack_compiler as proc:
+                proc.wait()
         except subprocess.CalledProcessError as error:
             python_utils.PRINT(error.output)
             sys.exit(error.returncode)
@@ -551,9 +547,6 @@ def run_tests(args):
         python_utils.PRINT('Waiting for servers to come up...')
 
         # Wait for the servers to come up.
-        common.wait_for_port_to_be_in_use(feconf.ES_LOCALHOST_PORT)
-        common.wait_for_port_to_be_in_use(WEB_DRIVER_PORT)
-        common.wait_for_port_to_be_in_use(GOOGLE_APP_ENGINE_PORT)
         python_utils.PRINT('Servers have come up.')
         python_utils.PRINT(
             'Note: If ADD_SCREENSHOT_REPORTER is set to true in '

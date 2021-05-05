@@ -24,7 +24,6 @@ import http.server
 import os
 import re
 import shutil
-import signal
 import socketserver
 import stat
 import subprocess
@@ -826,7 +825,8 @@ class ManagedProcessTests(test_utils.TestBase):
 
     @contextlib.contextmanager
     def _swap_popen(
-            self, make_procs_unresponsive=False, num_children=0, delay_secs=30):
+            self, make_procs_unresponsive=False, num_children=0, delay_secs=30,
+            outputs=()):
         """Returns values for inspecting and mocking calls to psutil.Popen.
 
         Args:
@@ -838,10 +838,11 @@ class ManagedProcessTests(test_utils.TestBase):
                 behavior.
             delay_secs: int. The number of seconds before the process ends
                 naturally.
+            outputs: list(str). The outputs of the mock process.
 
         Returns:
             Context manager. A context manager in which calls to psutil.Popen
-            create a simple program that simply waits and then exits.
+            create a simple program that waits and then exits.
 
         Yields:
             list(POPEN_CALL). A list with the most up-to-date arguments passed
@@ -849,65 +850,70 @@ class ManagedProcessTests(test_utils.TestBase):
         """
         popen_calls = []
 
-        def popen_mock(program_args, **kwargs):
+        def popen_test_process(program_args, **kwargs):
             """Mock of psutil.Popen that creates processes using os.fork().
 
             The processes created will always terminate within ~1 minute.
 
             Args:
                 program_args: list(*). Unused program arguments that would
-                    otherwise be used by psutil.Popen.
-                **kwargs: dict(str: *). Unused keyword arguments that would
-                    otherwise be used by psutil.Popen.
+                    otherwise be passed to Popen.
+                **kwargs: dict(str: *). Keyword arguments passed to Popen.
 
             Returns:
-                psutil.Process. Handle for the parent of the new process tree.
+                psutil.Process. The return value of psutil.Popen.
             """
-            child_pid = os.fork()
-            if child_pid != 0:
-                popen_calls.append(self.POPEN_CALL(program_args, kwargs))
-                time.sleep(1) # Give child a chance to start running.
-                return psutil.Process(pid=child_pid)
+            popen_calls.append(self.POPEN_CALL(program_args, kwargs.copy()))
+            # Discard the shell kwarg if it's present.
+            kwargs.pop('shell', None)
 
-            for _ in python_utils.RANGE(num_children):
-                if os.fork() == 0:
-                    break
-
+            simple_process_args = [
+                common.CURRENT_PYTHON_BIN,
+                # NOTE: This is a real Python file in the repository.
+                '-m', 'core.tests.data.test_process',
+                '--delay_secs=%d' % delay_secs,
+                '--num_children=%d' % num_children,
+            ]
             if make_procs_unresponsive:
-                # Register an unresponsive function as the SIGTERM handler.
-                signal.signal(signal.SIGTERM, lambda *_: time.sleep(delay_secs))
+                simple_process_args.append('--unresponsive')
+            if outputs:
+                simple_process_args.append('--outputs')
+                simple_process_args.extend(outputs)
 
-            time.sleep(delay_secs)
-            sys.exit()
+            proc = psutil.Popen(simple_process_args, **kwargs)
+            # Give the process some time to run.
+            time.sleep(1)
+            return proc
 
-        with self.swap(psutil, 'Popen', popen_mock):
+        with self.swap(common, 'POPEN', popen_test_process):
             yield popen_calls
 
     def test_does_not_raise_when_psutil_not_in_path(self):
-        with contextlib2.ExitStack() as stack:
-            stack.enter_context(self.swap(sys, 'path', []))
-            stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            exit_stack.enter_context(self.swap(sys, 'path', []))
+            exit_stack.enter_context(self._swap_popen())
 
             # Entering the context should not raise.
-            stack.enter_context(common.managed_process(['a'], timeout_secs=10))
+            exit_stack.enter_context(
+                common.managed_process(['a'], timeout_secs=10))
 
     def test_concats_command_args_when_shell_is_true(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            popen_calls = stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            popen_calls = exit_stack.enter_context(self._swap_popen())
 
-            proc = stack.enter_context(
+            proc = exit_stack.enter_context(
                 common.managed_process(['a', 1], shell=True, timeout_secs=10))
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
         self.assertEqual(popen_calls, [self.POPEN_CALL('a 1', {'shell': True})])
 
     def test_passes_command_args_as_list_of_strings_when_shell_is_false(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            popen_calls = stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            popen_calls = exit_stack.enter_context(self._swap_popen())
 
-            proc = stack.enter_context(
+            proc = exit_stack.enter_context(
                 common.managed_process(['a', 1], shell=False, timeout_secs=10))
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
@@ -915,22 +921,22 @@ class ManagedProcessTests(test_utils.TestBase):
             popen_calls, [self.POPEN_CALL(['a', '1'], {'shell': False})])
 
     def test_filters_empty_strings_from_command_args_when_shell_is_true(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            popen_calls = stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            popen_calls = exit_stack.enter_context(self._swap_popen())
 
-            proc = stack.enter_context(common.managed_process(
+            proc = exit_stack.enter_context(common.managed_process(
                 ['', 'a', '', 1], shell=True, timeout_secs=10))
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
         self.assertEqual(popen_calls, [self.POPEN_CALL('a 1', {'shell': True})])
 
     def test_filters_empty_strings_from_command_args_when_shell_is_false(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            popen_calls = stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            popen_calls = exit_stack.enter_context(self._swap_popen())
 
-            proc = stack.enter_context(common.managed_process(
+            proc = exit_stack.enter_context(common.managed_process(
                 ['', 'a', '', 1], shell=False, timeout_secs=10))
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
@@ -938,11 +944,12 @@ class ManagedProcessTests(test_utils.TestBase):
             popen_calls, [self.POPEN_CALL(['a', '1'], {'shell': False})])
 
     def test_reports_killed_processes_as_warnings(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            stack.enter_context(self._swap_popen(make_procs_unresponsive=True))
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            exit_stack.enter_context(
+                self._swap_popen(make_procs_unresponsive=True))
 
-            proc = stack.enter_context(
+            proc = exit_stack.enter_context(
                 common.managed_process(['a'], timeout_secs=10))
 
         self.assert_proc_was_managed_as_expected(
@@ -951,11 +958,11 @@ class ManagedProcessTests(test_utils.TestBase):
             manager_should_have_sent_kill_signal=True)
 
     def test_terminates_child_processes(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            stack.enter_context(self._swap_popen(num_children=3))
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            exit_stack.enter_context(self._swap_popen(num_children=3))
 
-            proc = stack.enter_context(
+            proc = exit_stack.enter_context(
                 common.managed_process(['a'], timeout_secs=10))
             pids = [c.pid for c in proc.children()] + [proc.pid]
 
@@ -964,12 +971,12 @@ class ManagedProcessTests(test_utils.TestBase):
             self.assert_proc_was_managed_as_expected(logs, pid)
 
     def test_kills_child_processes(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            stack.enter_context(self._swap_popen(
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            exit_stack.enter_context(self._swap_popen(
                 num_children=3, make_procs_unresponsive=True))
 
-            proc = stack.enter_context(
+            proc = exit_stack.enter_context(
                 common.managed_process(['a'], timeout_secs=10))
             pids = [c.pid for c in proc.children()] + [proc.pid]
 
@@ -981,11 +988,11 @@ class ManagedProcessTests(test_utils.TestBase):
                 manager_should_have_sent_kill_signal=True)
 
     def test_respects_processes_that_are_killed_early(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            exit_stack.enter_context(self._swap_popen())
 
-            proc = stack.enter_context(common.managed_process(
+            proc = exit_stack.enter_context(common.managed_process(
                 ['a'], timeout_secs=10))
             time.sleep(1)
             proc.kill()
@@ -996,11 +1003,11 @@ class ManagedProcessTests(test_utils.TestBase):
             manager_should_have_sent_terminate_signal=False)
 
     def test_respects_processes_that_are_killed_after_delay(self):
-        with contextlib2.ExitStack() as stack:
-            logs = stack.enter_context(self.capture_logging())
-            stack.enter_context(self._swap_popen(make_procs_unresponsive=True))
+        with contextlib2.ExitStack() as exit_stack:
+            logs = exit_stack.enter_context(self.capture_logging())
+            exit_stack.enter_context(self._swap_popen(make_procs_unresponsive=True))
 
-            proc = stack.enter_context(common.managed_process(
+            proc = exit_stack.enter_context(common.managed_process(
                 ['a'], timeout_secs=10))
 
             def _kill_after_delay():
@@ -1019,12 +1026,12 @@ class ManagedProcessTests(test_utils.TestBase):
             manager_should_have_sent_kill_signal=False)
 
     def test_managed_firebase_emulator(self):
-        with contextlib2.ExitStack() as stack:
-            popen_calls = stack.enter_context(self._swap_popen())
-            stack.enter_context(self.swap_to_always_return(
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
-            stack.enter_context(common.managed_firebase_auth_emulator())
+            exit_stack.enter_context(common.managed_firebase_auth_emulator())
 
         self.assertEqual(len(popen_calls), 1)
         self.assertIn('firebase', popen_calls[0].program_args)
@@ -1055,22 +1062,22 @@ class ManagedProcessTests(test_utils.TestBase):
         new_makedirs = test_utils.CallCounter(
             lambda p, **kw: None if is_data_dir(p) else old_makedirs(p, **kw))
 
-        with contextlib2.ExitStack() as stack:
-            stack.enter_context(self.swap(os.path, 'exists', new_exists))
-            stack.enter_context(self.swap(shutil, 'rmtree', new_rmtree))
-            stack.enter_context(self.swap(os, 'makedirs', new_makedirs))
+        with contextlib2.ExitStack() as exit_stack:
+            exit_stack.enter_context(self.swap(os.path, 'exists', new_exists))
+            exit_stack.enter_context(self.swap(shutil, 'rmtree', new_rmtree))
+            exit_stack.enter_context(self.swap(os, 'makedirs', new_makedirs))
             yield new_rmtree, new_makedirs
 
     def test_managed_cloud_datastore_emulator(self):
-        with contextlib2.ExitStack() as stack:
-            popen_calls = stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
 
-            stack.enter_context(
+            exit_stack.enter_context(
                 self.swap_managed_cloud_datastore_emulator_io_operations(True))
-            stack.enter_context(self.swap_to_always_return(
+            exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
-            stack.enter_context(common.managed_cloud_datastore_emulator())
+            exit_stack.enter_context(common.managed_cloud_datastore_emulator())
 
         self.assertEqual(len(popen_calls), 1)
         self.assertIn(
@@ -1078,54 +1085,56 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertEqual(popen_calls[0].kwargs, {'shell': True})
 
     def test_managed_cloud_datastore_emulator_creates_missing_data_dir(self):
-        with contextlib2.ExitStack() as stack:
-            stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            exit_stack.enter_context(self._swap_popen())
 
-            rmtree_counter, makedirs_counter = stack.enter_context(
+            rmtree_counter, makedirs_counter = exit_stack.enter_context(
                 self.swap_managed_cloud_datastore_emulator_io_operations(False))
-            stack.enter_context(self.swap_to_always_return(
+            exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
-            stack.enter_context(common.managed_cloud_datastore_emulator())
+            exit_stack.enter_context(common.managed_cloud_datastore_emulator())
 
         self.assertEqual(rmtree_counter.times_called, 0)
         self.assertEqual(makedirs_counter.times_called, 1)
 
     def test_managed_cloud_datastore_emulator_clears_data_dir(self):
-        with contextlib2.ExitStack() as stack:
-            stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            exit_stack.enter_context(self._swap_popen())
 
-            rmtree_counter, makedirs_counter = stack.enter_context(
+            rmtree_counter, makedirs_counter = exit_stack.enter_context(
                 self.swap_managed_cloud_datastore_emulator_io_operations(True))
-            stack.enter_context(self.swap_to_always_return(
+            exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
-            stack.enter_context(
+            exit_stack.enter_context(
                 common.managed_cloud_datastore_emulator(clear_datastore=True))
 
         self.assertEqual(rmtree_counter.times_called, 1)
         self.assertEqual(makedirs_counter.times_called, 1)
 
     def test_managed_cloud_datastore_emulator_acknowledges_data_dir(self):
-        with contextlib2.ExitStack() as stack:
-            stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            exit_stack.enter_context(self._swap_popen())
 
-            rmtree_counter, makedirs_counter = stack.enter_context(
+            rmtree_counter, makedirs_counter = exit_stack.enter_context(
                 self.swap_managed_cloud_datastore_emulator_io_operations(True))
-            stack.enter_context(self.swap_to_always_return(
+            exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
-            stack.enter_context(
+            exit_stack.enter_context(
                 common.managed_cloud_datastore_emulator(clear_datastore=False))
 
         self.assertEqual(rmtree_counter.times_called, 0)
         self.assertEqual(makedirs_counter.times_called, 0)
 
     def test_managed_dev_appserver(self):
-        with contextlib2.ExitStack() as stack:
-            popen_calls = stack.enter_context(self._swap_popen())
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'wait_for_port_to_be_in_use'))
 
-            stack.enter_context(
+            exit_stack.enter_context(
                 common.managed_dev_appserver('app.yaml', env=None))
 
         self.assertEqual(len(popen_calls), 1)
@@ -1133,9 +1142,12 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertEqual(popen_calls[0].kwargs, {'shell': True, 'env': None})
 
     def test_managed_elasticsearch_dev_server(self):
-        with contextlib2.ExitStack() as stack:
-            popen_calls = stack.enter_context(self._swap_popen())
-            stack.enter_context(common.managed_elasticsearch_dev_server())
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'wait_for_port_to_be_in_use'))
+
+            exit_stack.enter_context(common.managed_elasticsearch_dev_server())
 
         self.assertEqual(
             popen_calls[0].program_args,
@@ -1171,27 +1183,33 @@ class ManagedProcessTests(test_utils.TestBase):
                     return '', ''
             return Ret()
 
-        swap_call = self.swap(subprocess, 'call', mock_call)
-        swap_os_remove = self.swap(shutil, 'rmtree', mock_os_remove_files)
-        swap_os_path_exists = self.swap(os.path, 'exists', mock_os_path_exists)
-        stack = contextlib2.ExitStack()
-        with swap_call, swap_os_remove, swap_os_path_exists, stack:
-            stack.enter_context(self._swap_popen())
-            stack.enter_context(common.managed_elasticsearch_dev_server())
+        with contextlib2.ExitStack() as exit_stack:
+            exit_stack.enter_context(self._swap_popen())
+            exit_stack.enter_context(self.swap(subprocess, 'call', mock_call))
+            exit_stack.enter_context(self.swap(
+                shutil, 'rmtree', mock_os_remove_files))
+            exit_stack.enter_context(self.swap(
+                os.path, 'exists', mock_os_path_exists))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'wait_for_port_to_be_in_use'))
+
+            exit_stack.enter_context(common.managed_elasticsearch_dev_server())
 
         self.assertTrue(check_function_calls['shutil_rmtree_is_called'])
 
     def test_managed_redis_server_throws_exception_when_on_windows_os(self):
-        window_os_context = (
-            self.swap_to_always_return(common, 'is_windows_os', value=True))
-        assert_context = self.assertRaisesRegexp(
-            Exception,
-            'The redis command line interface is not installed because your '
-            'machine is on the Windows operating system. The redis server '
-            'cannot start.')
-        with window_os_context, assert_context, common.managed_redis_server():
-            # The `assert_context` will handle test results.
-            pass
+        with contextlib2.ExitStack() as exit_stack:
+            exit_stack.enter_context(
+                self.swap_to_always_return(common, 'is_windows_os', value=True))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'wait_for_port_to_be_in_use'))
+
+            self.assertRaisesRegexp(
+                Exception,
+                'The redis command line interface is not installed because '
+                'your machine is on the Windows operating system. The redis '
+                'server cannot start.',
+                lambda: exit_stack.enter_context(common.managed_redis_server()))
 
     def test_managed_redis_server(self):
         is_redis_dump_path = lambda p, *_, **__: p == common.REDIS_DUMP_PATH
@@ -1210,8 +1228,8 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertEqual(len(popen_calls), 1)
         self.assertEqual(
             popen_calls[0].program_args,
-            [common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH])
-        self.assertEqual(popen_calls[0].kwargs, {'shell': False})
+            '%s %s' % (common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH))
+        self.assertEqual(popen_calls[0].kwargs, {'shell': True})
 
     def test_managed_redis_server_deletes_redis_dump_when_it_exists(self):
         is_redis_dump_path = lambda p, *_, **__: p == common.REDIS_DUMP_PATH
@@ -1231,8 +1249,8 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertEqual(len(popen_calls), 1)
         self.assertEqual(
             popen_calls[0].program_args,
-            [common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH])
-        self.assertEqual(popen_calls[0].kwargs, {'shell': False})
+            '%s %s' % (common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH))
+        self.assertEqual(popen_calls[0].kwargs, {'shell': True})
         self.assertEqual(os_remove_mock.times_called, 1)
 
     def test_managed_web_browser_on_linux_os(self):
@@ -1308,3 +1326,132 @@ class ManagedProcessTests(test_utils.TestBase):
             self.assertIsNone(managed_web_browser)
 
         self.assertEqual(len(popen_calls), 0)
+
+    def test_managed_webpack_compiler_in_watch_mode_when_build_succeeds(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(
+                self._swap_popen(outputs=['abc', 'Built at: 123', 'def']))
+
+            str_io = python_utils.string_io()
+            exit_stack.enter_context(contextlib2.redirect_stdout(str_io))
+            logs = exit_stack.enter_context(self.capture_logging())
+
+            proc = exit_stack.enter_context(
+                common.managed_webpack_compiler(watch_mode=True))
+
+        self.assert_proc_was_managed_as_expected(
+            logs, proc.pid, manager_should_have_sent_terminate_signal=False)
+        self.assertEqual(len(popen_calls), 1)
+        self.assertIn('--color', popen_calls[0].program_args)
+        self.assertIn('--watch', popen_calls[0].program_args)
+        self.assertIn('--progress', popen_calls[0].program_args)
+        self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
+            'Starting new Webpack compiler',
+            'abc',
+            'Built at: 123',
+            'def',
+        ])
+
+    def test_managed_webpack_compiler_in_watch_mode_raises_when_not_built(self):
+        with contextlib2.ExitStack() as exit_stack:
+            # NOTE: The 'Built at: ' message is never printed.
+            exit_stack.enter_context(self._swap_popen(outputs=['abc', 'def']))
+
+            str_io = python_utils.string_io()
+            exit_stack.enter_context(contextlib2.redirect_stdout(str_io))
+
+            self.assertRaisesRegexp(
+                IOError, 'First build never completed',
+                lambda: exit_stack.enter_context(
+                    common.managed_webpack_compiler(watch_mode=True)))
+
+        self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
+            'Starting new Webpack compiler',
+            'abc',
+            'def',
+        ])
+
+    def test_managed_webpack_compiler_uses_explicit_config_path(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(
+                self._swap_popen(outputs=['Built at: 123']))
+
+            exit_stack.enter_context(
+                common.managed_webpack_compiler(config_path='config.json'))
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args,
+            '%s %s --config config.json' % (
+                common.NODE_BIN_PATH, common.WEBPACK_PATH))
+
+    def test_managed_webpack_compiler_uses_prod_source_maps_config(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(
+                self._swap_popen(outputs=['Built at: 123']))
+
+            exit_stack.enter_context(common.managed_webpack_compiler(
+                use_prod_env=True, use_source_maps=True))
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args,
+            '%s %s --config %s' % (
+                common.NODE_BIN_PATH, common.WEBPACK_PATH,
+                common.WEBPACK_PROD_SOURCE_MAPS_CONFIG))
+
+    def test_managed_webpack_compiler_uses_prod_config(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(
+                self._swap_popen(outputs=['Built at: 123']))
+
+            exit_stack.enter_context(common.managed_webpack_compiler(
+                use_prod_env=True, use_source_maps=False))
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args,
+            '%s %s --config %s' % (
+                common.NODE_BIN_PATH, common.WEBPACK_PATH,
+                common.WEBPACK_PROD_CONFIG))
+
+    def test_managed_webpack_compiler_uses_dev_source_maps_config(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(
+                self._swap_popen(outputs=['Built at: 123']))
+
+            exit_stack.enter_context(common.managed_webpack_compiler(
+                use_prod_env=False, use_source_maps=True))
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args,
+            '%s %s --config %s' % (
+                common.NODE_BIN_PATH, common.WEBPACK_PATH,
+                common.WEBPACK_DEV_SOURCE_MAPS_CONFIG))
+
+    def test_managed_webpack_compiler_uses_dev_config(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(
+                self._swap_popen(outputs=['Built at: 123']))
+
+            exit_stack.enter_context(common.managed_webpack_compiler(
+                use_prod_env=False, use_source_maps=False))
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(
+            popen_calls[0].program_args,
+            '%s %s --config %s' % (
+                common.NODE_BIN_PATH, common.WEBPACK_PATH,
+                common.WEBPACK_DEV_CONFIG))
+
+    def test_managed_webpack_compiler_with_max_old_space_size(self):
+        with contextlib2.ExitStack() as exit_stack:
+            popen_calls = exit_stack.enter_context(
+                self._swap_popen(outputs=['Built at: 123']))
+
+            exit_stack.enter_context(common.managed_webpack_compiler(
+                max_old_space_size=2056))
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertIn('--max-old-space-size=2056', popen_calls[0].program_args)

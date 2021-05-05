@@ -140,11 +140,11 @@ def main(args=None):
     # TODO(#11549): Move this to top of the file.
     import contextlib2
 
-    # NOTE: The position of alert_on_exit() is important because we want the
+    # NOTE: The ordering of alert_on_exit() is important because we want the
     # alert to be printed _before_ the ExitStack unwinds, hence its placement as
     # the "latter" context (context managers exit in reverse-order).
     with contextlib2.ExitStack() as stack, alert_on_exit():
-        # ExitStack unwinds in reverse-order, so this is the final action taken.
+        # ExitStack unwinds in reverse-order, so this will be the final action.
         stack.callback(notify_successful_shutdown)
 
         build_args = []

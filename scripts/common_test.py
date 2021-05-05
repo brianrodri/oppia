@@ -1005,7 +1005,8 @@ class ManagedProcessTests(test_utils.TestBase):
     def test_respects_processes_that_are_killed_after_delay(self):
         with contextlib2.ExitStack() as exit_stack:
             logs = exit_stack.enter_context(self.capture_logging())
-            exit_stack.enter_context(self._swap_popen(make_procs_unresponsive=True))
+            exit_stack.enter_context(
+                self._swap_popen(make_procs_unresponsive=True))
 
             proc = exit_stack.enter_context(common.managed_process(
                 ['a'], timeout_secs=10))

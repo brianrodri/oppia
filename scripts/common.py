@@ -190,7 +190,7 @@ DIRS_TO_ADD_TO_SYS_PATH = [
 # TODO(#11549): Stop doing this.
 if PSUTIL_DIR not in sys.path:
     sys.path.insert(1, PSUTIL_DIR)
-import psutil # pylint: disable=wrong-import-position
+import psutil # isort:skip  pylint: disable=wrong-import-position
 
 # Swapping target for unit tests.
 POPEN = psutil.Popen

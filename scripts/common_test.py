@@ -367,13 +367,27 @@ class CommonTests(test_utils.GenericTestBase):
             common.verify_current_branch_name('test')
 
     def test_is_port_in_use(self):
-        self.assertFalse(common.is_port_in_use(4444))
 
-        handler = http.server.SimpleHTTPRequestHandler
-        httpd = socketserver.TCPServer(('', 4444), handler)
+        @contextlib.contextmanager
+        def tcp_server():
+            """Context manager for starting and stoping an HTTP TCP server.
 
-        self.assertTrue(common.is_port_in_use(4444))
-        httpd.server_close()
+            Yields:
+                int. The port number of the server.
+            """
+            handler = http.server.SimpleHTTPRequestHandler
+            # NOTE: Binding to port 0 causes the OS to select a random free port
+            # between 1024 to 65535.
+            server = socketserver.TCPServer(('localhost', 0), handler)
+            try:
+                yield server.server_address[1]
+            finally:
+                server.server_close()
+
+        with tcp_server() as port:
+            self.assertTrue(common.is_port_in_use(port))
+
+        self.assertFalse(common.is_port_in_use(port))
 
     def test_wait_for_port_to_not_be_in_use_port_never_closes(self):
         def mock_sleep(unused_seconds):

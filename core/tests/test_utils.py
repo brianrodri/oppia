@@ -1088,17 +1088,18 @@ class TestBase(unittest.TestCase):
         This function can be used when the target being swapped is used by
         unrelated code. For example, os.path.exists() is used extensively by
         psutil to manage processes. If we swap it to always return True or
-        False, then the process management will result in bugs or exceptions.
+        False, then the process management will result in errors.
 
         Args:
             obj: *. The object whose attribute will be swapped.
             attr: str. The attribute of the object to swap.
-            returns: *. The value returned when the condition is met.
-            condition: callable|None. A function which returns True or False
-                depending on the arguments passed to the original function.
-                When None, the original function is always used.
-            use_call_counter: bool. Whether the function swap should be an
-                instance of CallCounter.
+            returns: *. The value returned by the swapped-in function when the
+                condition is met.
+            condition: callable|None. A predicate function which returns True or
+                False depending on the arguments passed to the original
+                function. When None, the original function is never swapped.
+            use_call_counter: bool. Whether the swapped-in function should be
+                wrapped by a CallCounter.
 
         Yields:
             callable. The function object which has been swapped in.

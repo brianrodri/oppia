@@ -99,6 +99,8 @@ GOOGLE_CLOUD_SDK_HOME = os.path.join(
 GOOGLE_APP_ENGINE_SDK_HOME = os.path.join(
     GOOGLE_CLOUD_SDK_HOME, 'platform', 'google_appengine')
 GOOGLE_CLOUD_SDK_BIN = os.path.join(GOOGLE_CLOUD_SDK_HOME, 'bin')
+WEBPACK_BIN_PATH = os.path.join(
+    CURR_DIR, 'node_modules', 'webpack', 'bin', 'webpack.js')
 DEV_APPSERVER_PATH = (
     os.path.join(GOOGLE_APP_ENGINE_SDK_HOME, 'dev_appserver.py'))
 GCLOUD_PATH = os.path.join(GOOGLE_CLOUD_SDK_BIN, 'gcloud')
@@ -167,6 +169,19 @@ WEBPACK_DEV_CONFIG = 'webpack.dev.config.ts'
 WEBPACK_DEV_SOURCE_MAPS_CONFIG = 'webpack.dev.sourcemap.config.ts'
 WEBPACK_PROD_CONFIG = 'webpack.prod.config.ts'
 WEBPACK_PROD_SOURCE_MAPS_CONFIG = 'webpack.prod.sourcemap.config.ts'
+
+PORTSERVER_SOCKET_FILEPATH = os.path.join(os.getcwd(), 'portserver.socket')
+
+WEBDRIVER_HOME_PATH = os.path.join(
+    NODE_MODULES_PATH, 'webdriver-manager')
+WEBDRIVER_MANAGER_BIN_PATH = os.path.join(
+    WEBDRIVER_HOME_PATH, 'bin', 'webdriver-manager')
+WEBDRIVER_PROVIDER_PATH = (
+    os.path.join(WEBDRIVER_HOME_PATH, 'dist', 'lib', 'provider'))
+GECKO_PROVIDER_FILE_PATH = (
+    os.path.join(WEBDRIVER_PROVIDER_PATH, 'geckodriver.js'))
+CHROME_PROVIDER_FILE_PATH = (
+    os.path.join(WEBDRIVER_PROVIDER_PATH, 'chromedriver.js'))
 
 DIRS_TO_ADD_TO_SYS_PATH = [
     GOOGLE_APP_ENGINE_SDK_HOME,
@@ -662,6 +677,39 @@ def inplace_replace_file(filename, regex_pattern, replacement_string):
         raise
 
 
+@contextlib.contextmanager
+def inplace_replace_file_context(filename, regex_pattern, replacement_string):
+    """Context manager in which the file's content is replaced according to the
+    given regex pattern. This function should only be used with files that are
+    processed line by line.
+
+    Args:
+        filename: str. The name of the file to be changed.
+        regex_pattern: str. The pattern to check.
+        replacement_string: str. The content to be replaced.
+
+    Yields:
+        None. Nothing.
+    """
+    backup_filename = '%s.bak' % filename
+
+    try:
+        shutil.copyfile(filename, backup_filename)
+        new_contents = []
+        regex = re.compile(regex_pattern)
+        with python_utils.open_file(backup_filename, 'r') as f:
+            for line in f:
+                new_contents.append(regex.sub(replacement_string, line))
+        with python_utils.open_file(filename, 'w') as f:
+            for line in new_contents:
+                f.write(line)
+        yield
+    finally:
+        if os.path.isfile(filename) and os.path.isfile(backup_filename):
+            os.remove(filename)
+            shutil.move(backup_filename, filename)
+
+
 def wait_for_port_to_be_in_use(port_number):
     """Wait until the port is in use and exit if port isn't open after
     MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS seconds.
@@ -1143,3 +1191,71 @@ def managed_webpack_compiler(
         exit_stack.callback(printer_thread.join)
 
         yield proc
+
+
+@contextlib.contextmanager
+def managed_portserver():
+    """Returns context manager to start/stop the portserver gracefully.
+
+    The portserver listens at PORTSERVER_SOCKET_FILEPATH and allocates free
+    ports to clients. This prevents race conditions when two clients request
+    ports in quick succession. The local Google App Engine server that we use to
+    serve the development version of Oppia uses python_portpicker, which is
+    compatible with the portserver this function starts, to request ports.
+
+    By "compatible" we mean that python_portpicker requests a port by sending a
+    request consisting of the PID of the requesting process and expects a
+    response consisting of the allocated port number. This is the interface
+    provided by this portserver.
+
+    Yields:
+        psutil.Popen. The Popen subprocess object.
+    """
+    portserver_args = [
+        'python', '-m', 'scripts.run_portserver',
+        '--portserver_unix_socket_address', PORTSERVER_SOCKET_FILEPATH,
+    ]
+    with managed_process(portserver_args, title='Portserver') as p:
+        yield p
+
+
+@contextlib.contextmanager
+def managed_webdriver(chrome_version):
+    """TODO."""
+    # TODO(#11549): Move this to top of the file.
+    import contextlib2
+
+    subprocess.check_call([
+        NODE_BIN_PATH, WEBDRIVER_MANAGER_BIN_PATH, 'update',
+        '--versions.chrome', chrome_version,
+    ])
+
+    with contextlib2.ExitStack() as exit_stack:
+        if is_windows_os():
+            # NOTE: webdriver-manager (version 13.0.0) uses `os.arch()` to
+            # determine the architecture of the operating system, however, this
+            # function can only be used to determine the architecture of the
+            # machine that compiled `node`. In the case of Windows, we are using
+            # the portable version, which was compiled on `ia32` machine so that
+            # is the value returned by this `os.arch` function. Unfortunately,
+            # webdriver-manager seems to assume that Windows wouldn't run on the
+            # ia32 architecture, so its help function used to determine download
+            # link returns null for this, which means that the application has
+            # no idea about where to download the correct version.
+            #
+            # https://github.com/angular/webdriver-manager/blob/b7539a5a3897a8a76abae7245f0de8175718b142/lib/provider/chromedriver.ts#L16
+            # https://github.com/angular/webdriver-manager/blob/b7539a5a3897a8a76abae7245f0de8175718b142/lib/provider/geckodriver.ts#L21
+            # https://github.com/angular/webdriver-manager/blob/b7539a5a3897a8a76abae7245f0de8175718b142/lib/provider/chromedriver.ts#L167
+            # https://github.com/nodejs/node/issues/17036
+            regex_pattern = re.escape('this.osArch = os.arch();')
+            arch = 'x64' if is_x64_architecture() else 'x86'
+            replace = 'this.osArch = "%s";' % arch
+            exit_stack.enter_context(inplace_replace_file_context(
+                CHROME_PROVIDER_FILE_PATH, regex_pattern, replace))
+            exit_stack.enter_context(inplace_replace_file_context(
+                GECKO_PROVIDER_FILE_PATH, regex_pattern, replace))
+
+        yield exit_stack.enter_context(managed_process([
+            NODE_BIN_PATH, WEBDRIVER_MANAGER_BIN_PATH, 'start',
+            '--versions.chrome', chrome_version, '--detach', '--quiet',
+        ], title='Webdriver manager'))

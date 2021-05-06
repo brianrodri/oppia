@@ -158,10 +158,6 @@ _PARSER.add_argument(
     help='Build webpack with source maps.',
     action='store_true')
 
-# This list contains the sub process triggered by this script. This includes
-# the oppia web server.
-SUBPROCESSES = []
-
 
 def _kill_process(process):
     """Try to kill a process with SIGINT. If that fails, kill."""
@@ -177,36 +173,6 @@ def _kill_process(process):
         process.kill()
     except OSError:
         pass  # Indicates process already dead.
-
-
-def cleanup():
-    """Kill the running subprocesses and server fired in this program, set
-    constants back to default values.
-    """
-    google_app_engine_path = '%s/' % common.GOOGLE_APP_ENGINE_SDK_HOME
-    webdriver_download_path = '%s/selenium' % WEBDRIVER_HOME_PATH
-    elasticsearch_path = '%s/' % common.ES_PATH
-    if common.is_windows_os():
-        # In windows system, the java command line will use absolute path.
-        webdriver_download_path = os.path.abspath(webdriver_download_path)
-    processes_to_kill = [
-        '.*%s.*' % re.escape(google_app_engine_path),
-        '.*%s.*' % re.escape(webdriver_download_path),
-        '.*%s.*' % re.escape(elasticsearch_path),
-    ]
-    for p in SUBPROCESSES:
-        _kill_process(p)
-
-    for p in processes_to_kill:
-        common.kill_processes_based_on_regex(p)
-
-    build.set_constants_to_default()
-
-    for port in PORTS_USED_BY_OPPIA_PROCESSES:
-        if not common.wait_for_port_to_not_be_in_use(port):
-            raise RuntimeError(
-                'Port {} failed to close within {} seconds.'.format(
-                    port, common.MAX_WAIT_TIME_FOR_PORT_TO_CLOSE_SECS))
 
 
 def is_oppia_server_already_running():
@@ -257,8 +223,8 @@ def run_webdriver_manager(parameters):
     """
     web_driver_command = [common.NODE_BIN_PATH, WEBDRIVER_MANAGER_BIN_PATH]
     web_driver_command.extend(parameters)
-    p = subprocess.Popen(web_driver_command)
-    p.communicate()
+    with common.managed_process(web_driver_command) as p:
+        p.communicate()
 
 
 def setup_and_install_dependencies(skip_install):
@@ -426,6 +392,11 @@ def get_chrome_driver_version():
     This method follows the steps mentioned here:
     https://chromedriver.chromium.org/downloads/version-selection
     """
+    # TODO(#11549): Move this to top of the file.
+    if common.PSUTIL_DIR not in sys.path:
+        sys.path.insert(1, common.PSUTIL_DIR)
+    import psutil
+
     popen_args = ['google-chrome', '--version']
     if common.is_mac_os():
         # There are spaces between Google and Chrome in the path. Spaces don't
@@ -436,8 +407,10 @@ def get_chrome_driver_version():
             '--version'
         ]
     try:
-        proc = subprocess.Popen(popen_args, stdout=subprocess.PIPE)
-        output = proc.stdout.readline()
+        proc_context = (
+            common.managed_process(popen_args, stdout=subprocess.PIPE))
+        with proc_context as proc:
+            output = proc.stdout.readline()
     except OSError:
         # For the error message for the mac command, we need to add the
         # backslashes in. This is because it is likely that a user will try to
@@ -483,7 +456,12 @@ def start_portserver():
     Returns:
         subprocess.Popen. The Popen subprocess object.
     """
-    process = subprocess.Popen([
+    # TODO(#11549): Move this to top of the file.
+    if common.PSUTIL_DIR not in sys.path:
+        sys.path.insert(1, common.PSUTIL_DIR)
+    import psutil
+
+    process = psutil.Popen([
         'python', '-m',
         '.'.join(['scripts', 'run_portserver']),
         '--portserver_unix_socket_address',
@@ -509,42 +487,41 @@ def cleanup_portserver(portserver_process):
 
 def run_tests(args):
     """Run the scripts to start end-to-end tests."""
-    oppia_instance_is_already_running = is_oppia_server_already_running()
-
-    if oppia_instance_is_already_running:
+    if is_oppia_server_already_running():
         sys.exit(1)
+
     setup_and_install_dependencies(args.skip_install)
 
-    atexit.register(cleanup)
-
     dev_mode = not args.prod_env
-
     if args.skip_build:
         build.modify_constants(prod_env=args.prod_env)
     else:
         build_js_files(
             dev_mode, deparallelize_terser=args.deparallelize_terser,
             source_maps=args.source_maps)
+
     version = args.chrome_driver_version or get_chrome_driver_version()
     python_utils.PRINT('\n\nCHROMEDRIVER VERSION: %s\n\n' % version)
     start_webdriver_manager(version)
 
     # TODO(#11549): Move this to top of the file.
     import contextlib2
-    managed_dev_appserver = common.managed_dev_appserver(
-        'app.yaml' if args.prod_env else 'app_dev.yaml',
-        port=GOOGLE_APP_ENGINE_PORT, log_level=args.server_log_level,
-        clear_datastore=True, skip_sdk_update_check=True,
-        env={'PORTSERVER_ADDRESS': PORTSERVER_SOCKET_FILEPATH})
 
     with contextlib2.ExitStack() as stack:
+        stack.callback(build.set_constants_to_default)
+
+        python_utils.PRINT('Waiting for servers to come up...')
+
         stack.enter_context(common.managed_redis_server())
         stack.enter_context(common.managed_elasticsearch_dev_server())
         if constants.EMULATOR_MODE:
             stack.enter_context(common.managed_firebase_auth_emulator())
-        stack.enter_context(managed_dev_appserver)
 
-        python_utils.PRINT('Waiting for servers to come up...')
+        stack.enter_context(common.managed_dev_appserver(
+            'app.yaml' if args.prod_env else 'app_dev.yaml',
+            port=GOOGLE_APP_ENGINE_PORT, log_level=args.server_log_level,
+            clear_datastore=True, skip_sdk_update_check=True,
+            env={'PORTSERVER_ADDRESS': PORTSERVER_SOCKET_FILEPATH}))
 
         # Wait for the servers to come up.
         python_utils.PRINT('Servers have come up.')
@@ -562,20 +539,14 @@ def run_tests(args):
         commands.extend(get_e2e_test_parameters(
             args.sharding_instances, args.suite, dev_mode))
 
-        p = subprocess.Popen(commands, stdout=subprocess.PIPE)
         output_lines = []
-        while True:
-            nextline = p.stdout.readline()
-            if len(nextline) == 0 and p.poll() is not None:
-                break
-            if isinstance(nextline, str):
-                # This is a failsafe line in case we get non-unicode input,
-                # but the tests provide all strings as unicode.
-                nextline = nextline.decode('utf-8')  # pragma: nocover
-            output_lines.append(nextline.rstrip())
-            # Replaces non-ASCII characters with '?'.
-            sys.stdout.write(nextline.encode('ascii', errors='replace'))
-
+        with common.managed_process(commands, stdout=subprocess.PIPE) as p:
+            while p.poll() is None:
+                # Keep reading until an empty string is returned.
+                for line in iter(p.stdout.readline, ''):
+                    output_lines.append(line.rstrip())
+                    # Replaces non-ASCII characters with '?'.
+                    sys.stdout.write(line.encode('ascii', errors='replace'))
         return output_lines, p.returncode
 
 
@@ -603,8 +574,6 @@ def main(args=None):
         # rerunning non-flaky tests.
         if not flaky and not RERUN_NON_FLAKY:
             break
-        # Prepare for rerun.
-        cleanup()
 
     sys.exit(return_code)
 

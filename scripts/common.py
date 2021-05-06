@@ -187,13 +187,15 @@ DIRS_TO_ADD_TO_SYS_PATH = [
     THIRD_PARTY_PYTHON_LIBS_DIR
 ]
 
-# TODO(#11549): Stop doing this.
-if PSUTIL_DIR not in sys.path:
-    sys.path.insert(1, PSUTIL_DIR)
-import psutil # isort:skip  pylint: disable=wrong-import-position
 
-# Swapping target for unit tests.
-POPEN = psutil.Popen
+def _popen(*args, **kwargs):
+    """Swapping hook to help unit tests mock out process creation."""
+    # TODO(#11549): Move this to top of the file.
+    if PSUTIL_DIR not in sys.path:
+        sys.path.insert(1, PSUTIL_DIR)
+    import psutil
+
+    return psutil.Popen(*args, **kwargs)
 
 
 def is_windows_os():
@@ -578,7 +580,13 @@ def kill_processes_based_on_regex(pattern):
     Args:
         pattern: str. Pattern for searching processes.
     """
+    # TODO(#11549): Move this to top of the file.
+    if PSUTIL_DIR not in sys.path:
+        sys.path.insert(1, PSUTIL_DIR)
+    import psutil
+
     regex = re.compile(pattern)
+
     for process in psutil.process_iter():
         try:
             cmdline = ' '.join(process.cmdline())
@@ -793,13 +801,17 @@ def managed_process(
     Yields:
         psutil.Process. The process managed by the context manager.
     """
+    # TODO(#11549): Move this to top of the file.
+    if PSUTIL_DIR not in sys.path:
+        sys.path.insert(1, PSUTIL_DIR)
+    import psutil
 
     stripped_args = (('%s' % arg).strip() for arg in command_args)
     non_empty_args = (s for s in stripped_args if s)
 
     command = ' '.join(non_empty_args) if shell else list(non_empty_args)
     python_utils.PRINT('Starting new %s: %s' % (title, command))
-    popen_proc = POPEN(command, shell=shell, **kwargs)
+    popen_proc = _popen(command, shell=shell, **kwargs)
 
     try:
         yield popen_proc
@@ -1040,14 +1052,15 @@ def create_managed_web_browser(port):
         context manager|None. The context manager to a web browser window, or
         None if the current operating system does not support web browsers.
     """
-    target = 'http://localhost:%s/' % port
+    url = 'http://localhost:%s/' % port
+    title = 'Web browser'
     if is_linux_os():
         if any(re.match('.*VBOX.*', d) for d in os.listdir('/dev/disk/by-id/')):
             return None
         else:
-            return managed_process(['xdg-open', target], title='Web browser')
+            return managed_process(['xdg-open', url], title=title)
     elif is_mac_os():
-        return managed_process(['open', target], title='Web browser')
+        return managed_process(['open', url], title=title)
     else:
         return None
 
@@ -1075,6 +1088,9 @@ def managed_webpack_compiler(
     Yields:
         psutil.Process. The Webpack compiler process.
     """
+    # TODO(#11549): Move this to top of the file.
+    import contextlib2
+
     if config_path is not None:
         pass
     elif use_prod_env:
@@ -1089,43 +1105,41 @@ def managed_webpack_compiler(
     compiler_args = [NODE_BIN_PATH, WEBPACK_PATH, '--config', config_path]
     if max_old_space_size:
         # NOTE: --max-old-space-size is a flag for Node.js, not the Webpack
-        # compiler, so we insert it immediately after the Node.js bin's path.
+        # compiler, so we insert it immediately after NODE_BIN_PATH.
         compiler_args.insert(1, '--max-old-space-size=%d' % max_old_space_size)
     if watch_mode:
         compiler_args.extend(['--color', '--watch', '--progress'])
 
-    proc_context = managed_process(
-        compiler_args, title='Webpack compiler', shell=True,
-        # Capture the compiler's output to detect when builds have completed.
-        stdout=subprocess.PIPE)
+    with contextlib2.ExitStack() as exit_stack:
+        proc = exit_stack.enter_context(managed_process(
+            compiler_args, title='Webpack compiler', shell=True,
+            # Capture compiler's output to detect when builds have completed.
+            stdout=subprocess.PIPE))
 
-    with proc_context as proc:
         if watch_mode:
             # Iterate until an empty string is printed, which signals the end of
             # the output.
-            for line in iter(proc.stdout.readline, b''):
+            for line in iter(proc.stdout.readline, ''):
                 sys.stdout.write(line)
-                # Message printed when a compilation has succeeded. We break at
-                # the first one so that developers can use the site immediately.
+                # Message printed when a compilation has succeeded. We break
+                # after the first one to ensure the site is ready to be visited.
                 if 'Built at: ' in line:
                     break
             else:
-                # If the code never ran `break`, raise an error because the
-                # build didn't complete.
+                # If the code never ran `break`, raise an error because the code
+                # hasn't been compiled.
                 raise IOError('First build never completed')
 
         def print_proc_output():
             """Prints the proc's output until it is exhausted."""
             # Iterate until an empty string is printed, which signals the end of
             # the output.
-            for line in iter(proc.stdout.readline, b''):
+            for line in iter(proc.stdout.readline, ''):
                 sys.stdout.write(line)
 
         # Start a thread to print the rest of the compiler's output to stdout.
         printer_thread = threading.Thread(target=print_proc_output)
         printer_thread.start()
+        exit_stack.callback(printer_thread.join)
 
         yield proc
-
-    # Finally, wait for the printer thread to finish working.
-    printer_thread.join()

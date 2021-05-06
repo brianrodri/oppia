@@ -19,9 +19,7 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import argparse
-import atexit
 import os
-import re
 import subprocess
 import sys
 
@@ -39,7 +37,6 @@ LIGHTHOUSE_MODE_ACCESSIBILITY = 'accessibility'
 SERVER_MODE_PROD = 'dev'
 SERVER_MODE_DEV = 'prod'
 GOOGLE_APP_ENGINE_PORT = 8181
-SUBPROCESSES = []
 LIGHTHOUSE_CONFIG_FILENAMES = {
     LIGHTHOUSE_MODE_PERFORMANCE: '.lighthouserc.js',
     LIGHTHOUSE_MODE_ACCESSIBILITY: '.lighthouserc-accessibility.js'
@@ -68,18 +65,7 @@ def cleanup():
     pattern = '"ENABLE_ACCOUNT_DELETION": .*'
     replace = '"ENABLE_ACCOUNT_DELETION": false,'
     common.inplace_replace_file(common.CONSTANTS_FILE_PATH, pattern, replace)
-
     build.set_constants_to_default()
-
-    google_app_engine_path = '%s/' % common.GOOGLE_APP_ENGINE_SDK_HOME
-    processes_to_kill = [
-        '.*%s.*' % re.escape(google_app_engine_path),
-    ]
-    for p in SUBPROCESSES:
-        p.kill()
-
-    for p in processes_to_kill:
-        common.kill_processes_based_on_regex(p)
 
 
 def run_lighthouse_puppeteer_script():
@@ -183,7 +169,6 @@ def main(args=None):
             'from \'accessibility\' or \'performance\'' % parsed_args.mode)
 
     enable_webpages()
-    atexit.register(cleanup)
 
     if lighthouse_mode == LIGHTHOUSE_MODE_PERFORMANCE:
         python_utils.PRINT('Building files in production mode.')
@@ -206,6 +191,7 @@ def main(args=None):
         clear_datastore=True, log_level='critical', skip_sdk_update_check=True)
 
     with contextlib2.ExitStack() as stack:
+        stack.callback(cleanup)
         stack.enter_context(common.managed_redis_server())
         stack.enter_context(common.managed_elasticsearch_dev_server())
         if constants.EMULATOR_MODE:

@@ -18,11 +18,9 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import atexit
 import contextlib
 import functools
 import os
-import re
 import signal
 import subprocess
 import sys
@@ -38,50 +36,112 @@ from scripts import install_third_party_libs
 from scripts import run_e2e_tests
 
 import contextlib2
+import psutil
 
 
 CHROME_DRIVER_VERSION = '77.0.3865.40'
 
 
 class MockProcessClass(python_utils.OBJECT):
+    """Mocks a process to make unit testing less expensive.
+
+    Attributes:
+        pid: int. The ID of the process.
+        pname: str. The name of the process.
+        return_code: int. The return code of the process.
+        poll_count: int. The number of times poll() has been called.
+        signals_received: list(int). List of received signals (as ints) in order
+            of receipt.
+        kill_count: int. Number of times kill() has been called.
+        alive: bool. Whether the process should be considered to be alive.
+        clean_shutdown: bool. Whether to shut down when signal.SIGINT signal is
+            received.
+        stdout: str. The text written to standard output by the process.
+        stdout: str. The text written to standard error output by the process.
+        accept_signal: bool. Whether to raise OSError in send_signal().
+        accept_terminate: bool. Whether to raise OSError in terminate().
+        accept_kill: bool. Whether to raise OSError in kill().
+        child_procs: list(MockProcessClass). Child processes (processes spawned
+            by self).
+    """
 
     def __init__(
-            self, clean_shutdown=True, stdout='',
-            accept_signal=True, accept_kill=True):
+            self, pid=1, name='process', stdout='', stderr='', return_code=0,
+            accept_signal=True, accept_terminate=True, accept_kill=True,
+            clean_shutdown=True):
         """Create a mock process object.
-        Attributes:
-            poll_count: int. The number of times poll() has been called.
-            signals_received: list(int). List of received signals (as
-                ints) in order of receipt.
-            kill_count: int. Number of times kill() has been called.
-            poll_return: bool. The return value for poll().
-            clean_shutdown: bool. Whether to shut down when signal.SIGINT
-                signal is received.
-            stdout: str. The text written to standard output by the
-                process.
-            accept_signal: bool. Whether to raise OSError in
-                send_signal.
-            accept_kill: bool. Whether to raise OSError in
-                kill().
 
         Args:
-            clean_shutdown: bool. Whether to shut down when SIGINT received.
-            stdout: str. The text written to standard output by the
+            pid: int. The ID of the process.
+            name: str. The name of the process.
+            stdout: str. The text written to standard output by the process.
+            stderr: str. The text written to standard error output by the
                 process.
-            accept_signal: bool. Whether to raise OSError in
-                send_signal.
-            accept_kill: bool. Whether to raise OSError in
-                kill().
+            return_code: int. The return code of the process.
+            accept_signal: bool. Whether to raise OSError in send_signal().
+            accept_terminate: bool. Whether to raise OSError in terminate().
+            accept_kill: bool. Whether to raise OSError in kill().
+            clean_shutdown: bool. Whether to shut down when SIGINT received.
         """
+        self.pid = pid
+        self.pname = name
+        self.return_code = return_code
         self.poll_count = 0
         self.signals_received = []
+        self.terminate_count = 0
         self.kill_count = 0
-        self.poll_return = True
+        self.alive = True
         self.clean_shutdown = clean_shutdown
         self.accept_signal = accept_signal
+        self.accept_terminate = accept_terminate
         self.accept_kill = accept_kill
+        self.child_procs = []
 
         self.stdout = python_utils.string_io(buffer_value=stdout)
+        self.stderr = python_utils.string_io(buffer_value=stderr)
+
+    @property
+    def returncode(self):
+        """Returns the return code of the process.
+
+        Returns:
+            int. The return code of the process.
+        """
+        return self.return_code
+
+    def name(self):
+        """Returns the name of the process.
+
+        Returns:
+            str. The name of the process.
+        """
+        return self.pname
+
+    def children(self, recursive=False):
+        """Returns the children spawned by this process.
+
+        Args:
+            recursive: bool. Whether to also return non-direct decendants from
+                self (i.e. children of children).
+
+        Returns:
+            list(MockProcessClass). A list of the child processes.
+        """
+        children = []
+        for child in self.child_procs:
+            children.append(child)
+            if recursive:
+                children.extend(child.children(recursive=True))
+        return children
+
+    def terminate(self):
+        """Increment terminate_count.
+
+        Mocks the process being terminated.
+        """
+        self.terminate_count += 1
+        if not self.accept_terminate:
+            raise OSError()
 
     def kill(self):
         """Increment kill_count.
@@ -92,24 +152,33 @@ class MockProcessClass(python_utils.OBJECT):
         if not self.accept_kill:
             raise OSError()
 
+    def is_running(self):
+        """Returns whether the process is running.
+
+        Returns:
+            bool. The value of self.alive, which mocks whether the process is
+            still alive.
+        """
+        return self.alive
+
     def poll(self):
         """Increment poll_count.
 
         Mocks checking whether the process is still alive.
 
         Returns:
-            bool. The value of self.poll_return, which mocks whether the
-            process is still alive.
+            bool. The value of self.alive, which mocks whether the process is
+            still alive.
         """
         self.poll_count += 1
-        return self.poll_return
+        return self.alive
 
     def send_signal(self, signal_number):
         """Append signal to self.signals_received.
 
-        Mocks receiving a process signal. If a SIGINT signal is received
-        (e.g. from ctrl-C) and self.clean_shutdown is True, then we set
-        self.poll_return to False to mimic the process shutting down.
+        Mocks receiving a process signal. If a SIGINT signal is received (e.g.
+        from ctrl-C) and self.clean_shutdown is True, then we set self.alive to
+        False to mimic the process shutting down.
 
         Args:
             signal_number: int. The number of the received signal.
@@ -118,14 +187,28 @@ class MockProcessClass(python_utils.OBJECT):
         if not self.accept_signal:
             raise OSError()
         if signal_number == signal.SIGINT and self.clean_shutdown:
-            self.poll_return = False
+            self.alive = False
 
-    def wait(self):
+    def wait(self, timeout=0): # pylint: disable=unused-argument
         """Wait for the process completion.
 
         Mocks the process waiting for completion before it continues execution.
+
+        Args:
+            timeout: int. Unused because wait() returns immediately.
         """
         return
+
+    def communicate(self, input=None): # pylint: disable=unused-argument, redefined-builtin
+        """Mocks interaction with the process.
+
+        Args:
+            input: str|None. Unused because the process isn't real.
+
+        Returns:
+            tuple(str, str). The stdout and stderr of the process, respectively.
+        """
+        return self.stdout.getvalue(), self.stderr.getvalue()
 
 
 class RunE2ETestsTests(test_utils.GenericTestBase):
@@ -145,8 +228,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_build_main(args):  # pylint: disable=unused-argument
             pass
 
-        def mock_popen(args, env, shell):  # pylint: disable=unused-argument
-            return
+        def mock_popen(args, env, shell=False):  # pylint: disable=unused-argument
+            return MockProcessClass()
 
         def mock_remove(unused_path):
             pass
@@ -156,7 +239,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             return
 
         self.popen_swap = functools.partial(
-            self.swap_with_checks, subprocess, 'Popen', mock_popen)
+            self.swap_with_checks, psutil, 'Popen', mock_popen)
         self.inplace_replace_swap = functools.partial(
             self.swap_with_checks, common, 'inplace_replace_file',
             mock_inplace_replace)
@@ -183,153 +266,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             self.exit_stack.close()
         finally:
             super(RunE2ETestsTests, self).tearDown()
-
-    def test_cleanup_when_no_subprocess(self):
-
-        def mock_kill_process_based_on_regex(unused_regex):
-            return
-
-        def mock_is_windows_os():
-            return False
-
-        def mock_set_constants_to_default():
-            return
-
-        self.exit_stack.enter_context(
-            self.swap(run_e2e_tests, 'SUBPROCESSES', []))
-
-        google_app_engine_path = '%s/' % (
-            common.GOOGLE_APP_ENGINE_SDK_HOME)
-        webdriver_download_path = '%s/selenium' % (
-            run_e2e_tests.WEBDRIVER_HOME_PATH)
-        elasticsearch_path = '%s/' % common.ES_PATH
-        process_pattern = [
-            ('.*%s.*' % re.escape(google_app_engine_path),),
-            ('.*%s.*' % re.escape(webdriver_download_path),),
-            ('.*%s.*' % re.escape(elasticsearch_path),),
-        ]
-
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'kill_processes_based_on_regex',
-            mock_kill_process_based_on_regex,
-            expected_args=process_pattern))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'is_windows_os', mock_is_windows_os))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            build, 'set_constants_to_default', mock_set_constants_to_default))
-
-        run_e2e_tests.cleanup()
-
-    def test_cleanup_when_subprocesses_exist(self):
-
-        def mock_kill_process_based_on_regex(unused_regex):
-            mock_kill_process_based_on_regex.called_times += 1
-            return True
-        mock_kill_process_based_on_regex.called_times = 0
-
-        def mock_set_constants_to_default():
-            return
-
-        def mock_wait_for_port_to_not_be_in_use(unused_port):
-            return True
-
-        mock_processes = [
-            MockProcessClass(), MockProcessClass(), MockProcessClass()]
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'SUBPROCESSES', mock_processes))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'kill_processes_based_on_regex',
-            mock_kill_process_based_on_regex))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            build, 'set_constants_to_default', mock_set_constants_to_default))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'wait_for_port_to_not_be_in_use',
-            mock_wait_for_port_to_not_be_in_use,
-            expected_args=[
-                (run_e2e_tests.OPPIA_SERVER_PORT,),
-                (run_e2e_tests.GOOGLE_APP_ENGINE_PORT,),
-                (run_e2e_tests.ELASTICSEARCH_SERVER_PORT,)]))
-
-        run_e2e_tests.cleanup()
-
-        self.assertEqual(
-            mock_kill_process_based_on_regex.called_times, len(mock_processes))
-
-    def test_cleanup_when_port_fails_to_close(self):
-
-        def mock_kill_process_based_on_regex(unused_regex):
-            return
-
-        def mock_is_windows_os():
-            return False
-
-        def mock_set_constants_to_default():
-            return
-
-        def mock_wait_for_port_to_not_be_in_use(unused_port):
-            return False
-
-        self.exit_stack.enter_context(
-            self.swap(run_e2e_tests, 'SUBPROCESSES', []))
-
-        google_app_engine_path = '%s/' % (
-            common.GOOGLE_APP_ENGINE_SDK_HOME)
-        webdriver_download_path = '%s/selenium' % (
-            run_e2e_tests.WEBDRIVER_HOME_PATH)
-        elasticsearch_path = '%s/' % common.ES_PATH
-        process_pattern = [
-            ('.*%s.*' % re.escape(google_app_engine_path),),
-            ('.*%s.*' % re.escape(webdriver_download_path),),
-            ('.*%s.*' % re.escape(elasticsearch_path),),
-        ]
-
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'kill_processes_based_on_regex',
-            mock_kill_process_based_on_regex,
-            expected_args=process_pattern))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'is_windows_os', mock_is_windows_os))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            build, 'set_constants_to_default', mock_set_constants_to_default))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'wait_for_port_to_not_be_in_use',
-            mock_wait_for_port_to_not_be_in_use,
-            expected_args=[
-                (run_e2e_tests.OPPIA_SERVER_PORT,)]))
-        expected_error = (
-            '^Port {} failed to close within {} seconds.$'.format(
-                run_e2e_tests.OPPIA_SERVER_PORT,
-                common.MAX_WAIT_TIME_FOR_PORT_TO_CLOSE_SECS))
-
-        with self.assertRaisesRegexp(RuntimeError, expected_error):
-            run_e2e_tests.cleanup()
-
-    def test_cleanup_on_windows(self):
-        elasticsearch_path = '%s/' % common.ES_PATH
-        google_app_engine_path = '%s/' % common.GOOGLE_APP_ENGINE_SDK_HOME
-        webdriver_download_abspath = (
-            os.path.abspath('%s/selenium' % run_e2e_tests.WEBDRIVER_HOME_PATH))
-
-        self.exit_stack.enter_context(
-            self.swap(run_e2e_tests, 'SUBPROCESSES', []))
-        self.exit_stack.enter_context(
-            self.swap_to_always_return(common, 'is_windows_os', value=True))
-        self.exit_stack.enter_context(
-            self.swap_to_always_return(build, 'set_constants_to_default'))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'kill_processes_based_on_regex', lambda _: None,
-            expected_args=[
-                ('.*%s.*' % re.escape(google_app_engine_path),),
-                ('.*%s.*' % re.escape(webdriver_download_abspath),),
-                ('.*%s.*' % re.escape(elasticsearch_path),),
-                ]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'wait_for_port_to_not_be_in_use', lambda _: True,
-            expected_args=[
-                (p,) for p in run_e2e_tests.PORTS_USED_BY_OPPIA_PROCESSES
-                ]))
-
-        run_e2e_tests.cleanup()
 
     def test_is_oppia_server_already_running_when_ports_closed(self):
         self.exit_stack.enter_context(self.swap_to_always_return(
@@ -417,7 +353,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         run_e2e_tests.run_webpack_compilation()
 
     def test_get_chrome_driver_version(self):
-        def mock_popen(unused_arg):
+        def mock_os_popen(unused_arg, shell=False): # pylint: disable=unused-argument
             class Ret(python_utils.OBJECT):
                 """Return object with required attributes."""
 
@@ -426,7 +362,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                     return '77.0.3865'
             return Ret()
 
-        self.exit_stack.enter_context(self.swap(os, 'popen', mock_popen))
+        self.exit_stack.enter_context(self.swap(os, 'popen', mock_os_popen))
         def mock_url_open(unused_arg):
             class Ret(python_utils.OBJECT):
                 """Return object with required attributes."""
@@ -469,19 +405,11 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
     def test_run_webdriver_manager(self):
 
-        def mock_popen(unused_command):
-            class Ret(python_utils.OBJECT):
-                """Return object with required attributes."""
-
-                def __init__(self):
-                    self.returncode = 0
-                def communicate(self):
-                    """Return required method."""
-                    return '', ''
-            return Ret()
+        def mock_popen(unused_command, shell=False): # pylint: disable=unused-argument
+            return MockProcessClass()
 
         self.exit_stack.enter_context(
-            self.swap_with_checks(subprocess, 'Popen', mock_popen))
+            self.swap_with_checks(psutil, 'Popen', mock_popen))
 
         run_e2e_tests.run_webdriver_manager(['start', '--detach'])
 
@@ -799,18 +727,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
     def test_start_tests_when_no_other_instance_running(self):
 
-        mock_process = MockProcessClass()
-
         def mock_is_oppia_server_already_running(*unused_args):
             return False
 
         def mock_setup_and_install_dependencies(unused_arg):
-            return
-
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup():
             return
 
         def mock_exit(unused_exit_code):
@@ -827,15 +747,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
 
-        def mock_popen(unused_commands, stdout=None): # pylint: disable=unused-argument
-            def mock_communicate():
-                return
-            result = mock_process
-            result.communicate = mock_communicate # pylint: disable=attribute-defined-outside-init
-            result.returncode = 0 # pylint: disable=attribute-defined-outside-init
-            result.stdout = python_utils.string_io(
-                buffer_value='sample output\n')
-            return result
+        def mock_popen(unused_commands, stdout=None, shell=False): # pylint: disable=unused-argument
+            return MockProcessClass(stdout='sample output\n')
 
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
@@ -855,13 +768,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'setup_and_install_dependencies',
             mock_setup_and_install_dependencies, expected_args=[(False,)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (run_e2e_tests.cleanup_portserver, mock_process),
-                (mock_cleanup,),
-                ]))
-        self.exit_stack.enter_context(
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'build_js_files', mock_build_js_files,
             expected_args=[(True,)]))
@@ -889,7 +795,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             mock_get_e2e_test_parameters,
             expected_args=[(3, 'full', True)]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'Popen', mock_popen, expected_args=[
+            psutil, 'Popen', mock_popen, expected_args=[
                 ([
                     'python', '-m',
                     'scripts.run_portserver',
@@ -915,18 +821,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
     def test_work_with_non_ascii_chars(self):
 
-        mock_process = MockProcessClass()
-
         def mock_is_oppia_server_already_running(*unused_args):
             return False
 
         def mock_setup_and_install_dependencies(unused_arg):
-            return
-
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup():
             return
 
         def mock_build_js_files(
@@ -940,15 +838,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
 
-        def mock_popen(unused_commands, stdout=None): # pylint: disable=unused-argument
-            def mock_communicate():
-                return
-            result = mock_process
-            result.communicate = mock_communicate # pylint: disable=attribute-defined-outside-init
-            result.returncode = 0 # pylint: disable=attribute-defined-outside-init
-            result.stdout = python_utils.string_io(
-                buffer_value='sample\n✓\noutput\n')
-            return result
+        def mock_popen(unused_commands, stdout=None, shell=False): # pylint: disable=unused-argument
+            return MockProcessClass(stdout='sample\n✓\noutput\n')
 
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
@@ -962,12 +853,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'setup_and_install_dependencies',
             mock_setup_and_install_dependencies, expected_args=[(False,)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup,),
-                ]))
-        self.exit_stack.enter_context(
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'build_js_files', mock_build_js_files,
             expected_args=[(True,)]))
@@ -995,7 +880,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             mock_get_e2e_test_parameters,
             expected_args=[(3, 'full', True)]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'Popen', mock_popen, expected_args=[
+            psutil, 'Popen', mock_popen, expected_args=[
                 ([
                     common.NODE_BIN_PATH,
                     '--unhandled-rejections=strict',
@@ -1027,13 +912,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_output, unused_suite_name):
             return False
 
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup_portserver():
-            return
-
-        def mock_cleanup():
+        def mock_cleanup_portserver(_):
             return
 
         def mock_start_portserver():
@@ -1045,9 +924,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
             mock_cleanup_portserver))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)]))
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -1060,9 +936,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 ]))
         self.exit_stack.enter_context(self.swap(
             flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            run_e2e_tests, 'cleanup', mock_cleanup, expected_args=[
-                tuple(), tuple(), tuple()]))
         self.exit_stack.enter_context(self.swap_with_checks(
             sys, 'exit', mock_exit, expected_args=[(1,)]))
 
@@ -1085,13 +958,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_output, unused_suite_name):
             return False
 
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup_portserver():
-            return
-
-        def mock_cleanup():
+        def mock_cleanup_portserver(_):
             return
 
         def mock_start_portserver():
@@ -1103,9 +970,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
             mock_cleanup_portserver))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)]))
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -1115,8 +979,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 ('sample\noutput', 'mySuite')]))
         self.exit_stack.enter_context(self.swap(
             flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'cleanup', mock_cleanup))
         self.exit_stack.enter_context(self.swap_with_checks(
             sys, 'exit', mock_exit, expected_args=[(1,)]))
         self.exit_stack.enter_context(self.swap(
@@ -1141,13 +1003,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_output, unused_suite_name):
             return True
 
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup_portserver():
-            return
-
-        def mock_cleanup():
+        def mock_cleanup_portserver(_):
             return
 
         def mock_start_portserver():
@@ -1159,9 +1015,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
             mock_cleanup_portserver))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)]))
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -1174,9 +1027,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 ]))
         self.exit_stack.enter_context(self.swap(
             flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            run_e2e_tests, 'cleanup', mock_cleanup, expected_args=[
-                tuple(), tuple(), tuple()]))
         self.exit_stack.enter_context(self.swap_with_checks(
             sys, 'exit', mock_exit, expected_args=[(1,)]))
 
@@ -1199,13 +1049,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_output, unused_suite_name):
             raise AssertionError('Tried to Check Flakiness.')
 
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup_portserver():
-            return
-
-        def mock_cleanup():
+        def mock_cleanup_portserver(_):
             return
 
         def mock_start_portserver():
@@ -1217,9 +1061,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
             mock_cleanup_portserver))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)]))
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap(
@@ -1227,8 +1068,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             mock_is_test_output_flaky))
         self.exit_stack.enter_context(self.swap(
             flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'cleanup', mock_cleanup))
         self.exit_stack.enter_context(self.swap_with_checks(
             sys, 'exit', mock_exit, expected_args=[(1,)]))
 
@@ -1250,13 +1089,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_report_pass(unused_suite_name):
             raise AssertionError('Tried to Report Pass')
 
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup_portserver():
-            return
-
-        def mock_cleanup():
+        def mock_cleanup_portserver(_):
             return
 
         def mock_start_portserver():
@@ -1268,17 +1101,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'cleanup_portserver',
             mock_cleanup_portserver))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (mock_cleanup_portserver, mock_portserver)]))
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap(
             flake_checker, 'report_pass', mock_report_pass))
         self.exit_stack.enter_context(self.swap(
             flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'cleanup', mock_cleanup))
         self.exit_stack.enter_context(self.swap_with_checks(
             sys, 'exit', mock_exit, expected_args=[(0,)]))
 
@@ -1286,18 +1114,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
     def test_start_tests_skip_build(self):
 
-        mock_process = MockProcessClass()
-
         def mock_is_oppia_server_already_running(*unused_args):
             return False
 
         def mock_setup_and_install_dependencies(unused_arg):
-            return
-
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup():
             return
 
         def mock_exit(unused_exit_code):
@@ -1313,13 +1133,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
 
-        def mock_popen(unused_commands, stdout=None):  #pylint: disable=unused-argument
-            def mock_communicate():
-                return
-            result = mock_process
-            result.communicate = mock_communicate # pylint: disable=attribute-defined-outside-init
-            result.returncode = 0 # pylint: disable=attribute-defined-outside-init
-            return result
+        def mock_popen(unused_commands, stdout=None, shell=False):  #pylint: disable=unused-argument
+            return MockProcessClass()
 
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
@@ -1339,13 +1154,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'setup_and_install_dependencies',
             mock_setup_and_install_dependencies, expected_args=[(True,)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (run_e2e_tests.cleanup_portserver, mock_process),
-                (mock_cleanup,),
-                ]))
-        self.exit_stack.enter_context(
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
         self.exit_stack.enter_context(self.swap_with_checks(
             build, 'modify_constants', mock_modify_constants,
             expected_kwargs=[{'prod_env': False}]))
@@ -1373,7 +1181,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             mock_get_e2e_test_parameters,
             expected_args=[(3, 'full', True)]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'Popen', mock_popen, expected_args=[
+            psutil, 'Popen', mock_popen, expected_args=[
                 ([
                     'python', '-m',
                     'scripts.run_portserver',
@@ -1401,12 +1209,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
     def test_linux_chrome_version_command_not_found_failure(self):
         self.exit_stack.enter_context(self.swap(common, 'OS_NAME', 'Linux'))
 
-        def mock_popen(unused_commands, stdout):
+        def mock_popen(unused_commands, stdout, shell=False): # pylint: disable=unused-argument
             self.assertEqual(stdout, -1)
             raise OSError('google-chrome not found')
 
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'Popen', mock_popen, expected_args=[([
+            psutil, 'Popen', mock_popen, expected_args=[([
                 'google-chrome', '--version'],)]))
         expected_message = (
             'Failed to execute "google-chrome --version" command. This is '
@@ -1422,14 +1230,14 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
     def test_mac_chrome_version_command_not_found_failure(self):
         self.exit_stack.enter_context(self.swap(common, 'OS_NAME', 'Darwin'))
 
-        def mock_popen(unused_commands, stdout):
+        def mock_popen(unused_commands, stdout, shell=False): # pylint: disable=unused-argument
             self.assertEqual(stdout, -1)
             raise OSError(
                 r'/Applications/Google\ Chrome.app/Contents/MacOS/Google\ '
                 'Chrome not found')
 
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'Popen', mock_popen, expected_args=[([
+            psutil, 'Popen', mock_popen, expected_args=[([
                 '/Applications/Google Chrome.app/Contents/MacOS/Google '
                 'Chrome', '--version'],)]))
         expected_message = (
@@ -1447,18 +1255,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
     def test_start_tests_in_debug_mode(self):
 
-        mock_process = MockProcessClass()
-
         def mock_is_oppia_server_already_running(*unused_args):
             return False
 
         def mock_setup_and_install_dependencies(unused_arg):
-            return
-
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup():
             return
 
         def mock_exit(unused_exit_code):
@@ -1475,13 +1275,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
 
-        def mock_popen(unused_commands, stdout=None):  # pylint: disable=unused-argument
-            def mock_communicate():
-                return
-            result = mock_process
-            result.communicate = mock_communicate # pylint: disable=attribute-defined-outside-init
-            result.returncode = 0 # pylint: disable=attribute-defined-outside-init
-            return result
+        def mock_popen(unused_commands, stdout=None, shell=False):  # pylint: disable=unused-argument
+            return MockProcessClass()
 
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
@@ -1501,13 +1296,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'setup_and_install_dependencies',
             mock_setup_and_install_dependencies, expected_args=[(False,)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (run_e2e_tests.cleanup_portserver, mock_process),
-                (mock_cleanup,),
-                ]))
-        self.exit_stack.enter_context(
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'build_js_files', mock_build_js_files,
             expected_args=[(True,)]))
@@ -1535,7 +1323,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             mock_get_e2e_test_parameters,
             expected_args=[(3, 'full', True)]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'Popen', mock_popen, expected_args=[
+            psutil, 'Popen', mock_popen, expected_args=[
                 ([
                     'python', '-m',
                     'scripts.run_portserver',
@@ -1563,18 +1351,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
     def test_start_tests_in_with_chromedriver_flag(self):
 
-        mock_process = MockProcessClass()
-
         def mock_is_oppia_server_already_running(*unused_args):
             return False
 
         def mock_setup_and_install_dependencies(unused_arg):
-            return
-
-        def mock_register(unused_func, unused_arg=None):
-            return
-
-        def mock_cleanup():
             return
 
         def mock_exit(unused_exit_code):
@@ -1591,13 +1371,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_sharding_instances, unused_suite, unused_dev_mode):
             return ['commands']
 
-        def mock_popen(unused_commands, stdout=None):  # pylint: disable=unused-argument
-            def mock_communicate():
-                return
-            result = mock_process
-            result.communicate = mock_communicate # pylint: disable=attribute-defined-outside-init
-            result.returncode = 0 # pylint: disable=attribute-defined-outside-init
-            return result
+        def mock_popen(unused_commands, stdout=None, shell=False):  # pylint: disable=unused-argument
+            return MockProcessClass()
 
         def mock_get_chrome_driver_version():
             return CHROME_DRIVER_VERSION
@@ -1617,13 +1392,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'setup_and_install_dependencies',
             mock_setup_and_install_dependencies, expected_args=[(False,)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            atexit, 'register', mock_register, expected_args=[
-                (run_e2e_tests.cleanup_portserver, mock_process),
-                (mock_cleanup,),
-                ]))
-        self.exit_stack.enter_context(
-            self.swap(run_e2e_tests, 'cleanup', mock_cleanup))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'build_js_files', mock_build_js_files,
             expected_args=[(True,)]))
@@ -1651,7 +1419,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             mock_get_e2e_test_parameters,
             expected_args=[(3, 'full', True)]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'Popen', mock_popen, expected_args=[
+            psutil, 'Popen', mock_popen, expected_args=[
                 ([
                     'python', '-m',
                     'scripts.run_portserver',
@@ -1676,40 +1444,3 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         run_e2e_tests.main(
             args=['--chrome_driver_version', CHROME_DRIVER_VERSION])
-
-    def test_cleanup_portserver_when_server_shuts_down_cleanly(self):
-        process = MockProcessClass(clean_shutdown=True)
-        run_e2e_tests.cleanup_portserver(process)
-        self.assertEqual(process.kill_count, 0)
-        # Server gets polled twice. Once to break out of wait loop and
-        # again to check that the process shut down and does not need to
-        # be killed.
-        self.assertEqual(process.poll_count, 1)
-        self.assertEqual(process.signals_received, [signal.SIGINT])
-
-    def test_cleanup_portserver_when_server_shutdown_fails(self):
-        process = MockProcessClass(clean_shutdown=False)
-        run_e2e_tests.cleanup_portserver(process)
-        self.assertEqual(process.kill_count, 1)
-        # Server gets polled 11 times. 1 for each second of the wait
-        # loop and again to see that the process did not shut down and
-        # therefore needs to be killed.
-        self.assertEqual(
-            process.poll_count, run_e2e_tests.KILL_TIMEOUT_SECS)
-        self.assertEqual(process.signals_received, [signal.SIGINT])
-
-    def test_cleanup_portserver_when_server_already_shutdown(self):
-        process = MockProcessClass(accept_signal=False)
-        run_e2e_tests.cleanup_portserver(process)
-        self.assertEqual(process.kill_count, 0)
-        self.assertEqual(process.poll_count, 0)
-        self.assertEqual(process.signals_received, [signal.SIGINT])
-
-    def test_cleanup_portserver_when_server_kill_fails(self):
-        process = MockProcessClass(
-            accept_kill=False, clean_shutdown=False)
-        run_e2e_tests.cleanup_portserver(process)
-        self.assertEqual(process.kill_count, 1)
-        self.assertEqual(
-            process.poll_count, run_e2e_tests.KILL_TIMEOUT_SECS)
-        self.assertEqual(process.signals_received, [signal.SIGINT])

@@ -885,7 +885,7 @@ class ManagedProcessTests(test_utils.TestBase):
             time.sleep(1)
             return proc
 
-        with self.swap(common, 'POPEN', popen_test_process):
+        with self.swap(common, '_popen', popen_test_process):
             yield popen_calls
 
     def test_does_not_raise_when_psutil_not_in_path(self):
@@ -1213,7 +1213,9 @@ class ManagedProcessTests(test_utils.TestBase):
                 lambda: exit_stack.enter_context(common.managed_redis_server()))
 
     def test_managed_redis_server(self):
-        is_redis_dump_path = lambda p, *_, **__: p == common.REDIS_DUMP_PATH
+        def is_redis_dump_path(path, *_, **__):
+            """Returns whether the input path is the REDIS_DUMP_PATH."""
+            return path == common.REDIS_DUMP_PATH
 
         with contextlib2.ExitStack() as exit_stack:
             popen_calls = exit_stack.enter_context(self._swap_popen())
@@ -1233,7 +1235,9 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertEqual(popen_calls[0].kwargs, {'shell': True})
 
     def test_managed_redis_server_deletes_redis_dump_when_it_exists(self):
-        is_redis_dump_path = lambda p, *_, **__: p == common.REDIS_DUMP_PATH
+        def is_redis_dump_path(path, *_, **__):
+            """Returns whether the input path is the REDIS_DUMP_PATH."""
+            return path == common.REDIS_DUMP_PATH
 
         with contextlib2.ExitStack() as exit_stack:
             popen_calls = exit_stack.enter_context(self._swap_popen())

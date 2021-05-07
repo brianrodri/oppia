@@ -54,11 +54,10 @@ _PARSER.add_argument(
     action='store_true')
 _PARSER.add_argument(
     '--disable_host_checking',
-    help=(
-        'optional; if specified, disables host checking so that the dev '
-        'server can be accessed by any device on the same network using the '
-        'host device\'s IP address. DO NOT use this flag if you\'re running '
-        'on an untrusted network.'),
+    help='optional; if specified, disables host checking so that the dev '
+         'server can be accessed by any device on the same network using the '
+         'host device\'s IP address. DO NOT use this flag if you\'re running '
+         'on an untrusted network.',
     action='store_true')
 _PARSER.add_argument(
     '--prod_env',
@@ -74,14 +73,12 @@ _PARSER.add_argument(
     action='store_true')
 _PARSER.add_argument(
     '--no_auto_restart',
-    help=(
-        'optional; if specified, does not automatically restart when files are '
-        'changed.'),
+    help='optional; if specified, does not automatically restart when files '
+         'are changed.',
     action='store_true')
 _PARSER.add_argument(
     '--source_maps',
-    help=(
-        'optional; if specified, build webpack with source maps.'),
+    help='optional; if specified, build webpack with source maps.',
     action='store_true')
 
 PORT_NUMBER_FOR_GAE_SERVER = 8181
@@ -159,6 +156,7 @@ def main(args=None):
 
         stack.enter_context(common.managed_redis_server())
         stack.enter_context(common.managed_elasticsearch_dev_server())
+
         if constants.EMULATOR_MODE:
             stack.enter_context(common.managed_firebase_auth_emulator(
                 recover_users=parsed_args.save_datastore))

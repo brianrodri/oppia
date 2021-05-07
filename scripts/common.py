@@ -34,7 +34,6 @@ import constants
 import feconf
 import python_utils
 
-
 AFFIRMATIVE_CONFIRMATIONS = ['y', 'ye', 'yes']
 
 CURRENT_PYTHON_BIN = sys.executable
@@ -183,6 +182,11 @@ GECKO_PROVIDER_FILE_PATH = (
 CHROME_PROVIDER_FILE_PATH = (
     os.path.join(WEBDRIVER_PROVIDER_PATH, 'chromedriver.js'))
 
+PROTRACTOR_BIN_PATH = os.path.join(
+    NODE_MODULES_PATH, 'protractor', 'bin', 'protractor')
+PROTRACTOR_CONFIG_FILE_PATH = os.path.join(
+    'core', 'tests', 'protractor.conf.js')
+
 DIRS_TO_ADD_TO_SYS_PATH = [
     GOOGLE_APP_ENGINE_SDK_HOME,
     PYLINT_PATH,
@@ -199,7 +203,7 @@ DIRS_TO_ADD_TO_SYS_PATH = [
     os.path.join(
         OPPIA_TOOLS_DIR, 'pip-tools-%s' % PIP_TOOLS_VERSION),
     CURR_DIR,
-    THIRD_PARTY_PYTHON_LIBS_DIR
+    THIRD_PARTY_PYTHON_LIBS_DIR,
 ]
 
 
@@ -239,8 +243,10 @@ NODE_BIN_PATH = os.path.join(
 
 # Add path for node which is required by the node_modules.
 os.environ['PATH'] = os.pathsep.join([
-    os.path.dirname(NODE_BIN_PATH), os.path.join(YARN_PATH, 'bin'),
-    os.environ['PATH']])
+    os.path.dirname(NODE_BIN_PATH),
+    os.path.join(YARN_PATH, 'bin'),
+    os.environ['PATH'],
+])
 
 
 def run_cmd(cmd_tokens):
@@ -1220,11 +1226,52 @@ def managed_portserver():
 
 
 @contextlib.contextmanager
-def managed_webdriver(chrome_version):
-    """TODO."""
+def managed_webdriver(chrome_version=None):
+    """Returns context manager to start/stop the Webdriver server gracefully.
+
+    This context manager updates Google Chrome before starting the server.
+
+    Args:
+        chrome_version: str|None. The version of Google Chrome to run the tests
+            on. If None, then the currently-installed version of Google Chrome
+            is used instead.
+
+    Yields:
+        psutil.Process. The Webdriver process.
+    """
     # TODO(#11549): Move this to top of the file.
     import contextlib2
 
+    if chrome_version is None:
+        chrome_path = (
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+            if is_mac_os() else 'google-chrome')
+        try:
+            output = subprocess.check_output([chrome_path, '--version'])
+        except OSError:
+            # For the error message for the mac command, we need to add the
+            # backslashes in. This is because it is likely that a user will try
+            # to run the command on their terminal and, as mentioned above, the
+            # mac get chrome version command has spaces in the path which need
+            # to be escaped for successful terminal use.
+            raise Exception(
+                'Failed to execute "%s --version" command. This is used to '
+                'determine the chromedriver version to use. Please set the '
+                'chromedriver version manually using --chrome_driver_version '
+                'flag. To determine the chromedriver version to be used, '
+                'please follow the instructions mentioned in the following '
+                'URL:\n'
+                'https://chromedriver.chromium.org/downloads/version-selection'
+                % chrome_path.replace(' ', r'\ '))
+
+        installed_version_parts = ''.join(re.findall(r'[0-9\.]', output))
+        installed_version = '.'.join(installed_version_parts.split('.')[:-1])
+        response = python_utils.url_open(
+            'https://chromedriver.storage.googleapis.com/LATEST_RELEASE_%s' % (
+                installed_version))
+        chrome_version = response.read()
+
+    python_utils.PRINT('\n\nCHROME VERSION: %s' % chrome_version)
     subprocess.check_call([
         NODE_BIN_PATH, WEBDRIVER_MANAGER_BIN_PATH, 'update',
         '--versions.chrome', chrome_version,
@@ -1259,3 +1306,48 @@ def managed_webdriver(chrome_version):
             NODE_BIN_PATH, WEBDRIVER_MANAGER_BIN_PATH, 'start',
             '--versions.chrome', chrome_version, '--detach', '--quiet',
         ], title='Webdriver manager'))
+
+
+@contextlib.contextmanager
+def managed_protractor(
+        suite_name='full', dev_mode=True, debug_mode=False,
+        sharding_instances=0, **kwargs):
+    """Returns context manager to start/stop the Protractor server gracefully.
+
+    Args:
+        suite_name: str. The suite name whose tests should be run. If the value
+            is `full`, all tests will run.
+        dev_mode: bool. Whether the test is running on dev_mode.
+        debug_mode: bool. Whether to run the protractor tests in debugging mode.
+            Read the following instructions to learn how to run e2e tests in
+            debugging mode:
+            https://www.protractortest.org/#/debugging#disabled-control-flow.
+        sharding_instances: int. How many sharding instances to be running.
+        **kwargs: dict(str: *). Keyword arguments passed to psutil.Popen.
+
+    Yields:
+        psutil.Process. The protractor process.
+    """
+    if sharding_instances <= 0:
+        raise ValueError('Sharding instance should be larger than 0')
+
+    protractor_args = [
+        NODE_BIN_PATH,
+        # This flag ensures tests fail if the `waitFor` calls time out.
+        '--unhandled-rejections=strict',
+        PROTRACTOR_BIN_PATH, PROTRACTOR_CONFIG_FILE_PATH,
+        '--params.devMode=%s' % dev_mode,
+        '--suite', suite_name,
+    ]
+
+    if debug_mode:
+        protractor_args.insert(1, '--inspect-brk')
+
+    if sharding_instances > 0:
+        protractor_args.extend([
+            '--capabilities.shardTestFiles=True',
+            '--capabilities.maxInstances=%d' % sharding_instances,
+        ])
+
+    with managed_process(protractor_args, **kwargs) as p:
+        yield p

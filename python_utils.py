@@ -409,7 +409,7 @@ def convert_to_bytes(string_to_convert):
     Returns:
         bytes. The encoded string.
     """
-    if isinstance(string_to_convert, (UNICODE, str)):
+    if isinstance(string_to_convert, UNICODE):
         return string_to_convert.encode('utf-8')
     return bytes(string_to_convert)
 

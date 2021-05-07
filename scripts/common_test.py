@@ -908,16 +908,16 @@ class ManagedProcessTests(test_utils.TestBase):
             exit_stack.enter_context(self._swap_popen())
 
             # Entering the context should not raise.
-            exit_stack.enter_context(
-                common.managed_process(['a'], timeout_secs=10))
+            exit_stack.enter_context(common.managed_process(
+                ['a'], timeout_secs=10))
 
     def test_concats_command_args_when_shell_is_true(self):
         with contextlib2.ExitStack() as exit_stack:
             logs = exit_stack.enter_context(self.capture_logging())
             popen_calls = exit_stack.enter_context(self._swap_popen())
 
-            proc = exit_stack.enter_context(
-                common.managed_process(['a', 1], shell=True, timeout_secs=10))
+            proc = exit_stack.enter_context(common.managed_process(
+                ['a', 1], shell=True, timeout_secs=10))
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
         self.assertEqual(popen_calls, [self.POPEN_CALL('a 1', {'shell': True})])
@@ -927,8 +927,8 @@ class ManagedProcessTests(test_utils.TestBase):
             logs = exit_stack.enter_context(self.capture_logging())
             popen_calls = exit_stack.enter_context(self._swap_popen())
 
-            proc = exit_stack.enter_context(
-                common.managed_process(['a', 1], shell=False, timeout_secs=10))
+            proc = exit_stack.enter_context(common.managed_process(
+                ['a', 1], shell=False, timeout_secs=10))
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
         self.assertEqual(
@@ -960,11 +960,11 @@ class ManagedProcessTests(test_utils.TestBase):
     def test_reports_killed_processes_as_warnings(self):
         with contextlib2.ExitStack() as exit_stack:
             logs = exit_stack.enter_context(self.capture_logging())
-            exit_stack.enter_context(
-                self._swap_popen(make_procs_unresponsive=True))
+            exit_stack.enter_context(self._swap_popen(
+                make_procs_unresponsive=True))
 
-            proc = exit_stack.enter_context(
-                common.managed_process(['a'], timeout_secs=10))
+            proc = exit_stack.enter_context(common.managed_process(
+                ['a'], timeout_secs=10))
 
         self.assert_proc_was_managed_as_expected(
             logs, proc.pid,
@@ -976,8 +976,8 @@ class ManagedProcessTests(test_utils.TestBase):
             logs = exit_stack.enter_context(self.capture_logging())
             exit_stack.enter_context(self._swap_popen(num_children=3))
 
-            proc = exit_stack.enter_context(
-                common.managed_process(['a'], timeout_secs=10))
+            proc = exit_stack.enter_context(common.managed_process(
+                ['a'], timeout_secs=10))
             pids = [c.pid for c in proc.children()] + [proc.pid]
 
         self.assertEqual(len(set(pids)), 4)
@@ -990,8 +990,8 @@ class ManagedProcessTests(test_utils.TestBase):
             exit_stack.enter_context(self._swap_popen(
                 num_children=3, make_procs_unresponsive=True))
 
-            proc = exit_stack.enter_context(
-                common.managed_process(['a'], timeout_secs=10))
+            proc = exit_stack.enter_context(common.managed_process(
+                ['a'], timeout_secs=10))
             pids = [c.pid for c in proc.children()] + [proc.pid]
 
         self.assertEqual(len(set(pids)), 4)
@@ -1019,8 +1019,8 @@ class ManagedProcessTests(test_utils.TestBase):
     def test_respects_processes_that_are_killed_after_delay(self):
         with contextlib2.ExitStack() as exit_stack:
             logs = exit_stack.enter_context(self.capture_logging())
-            exit_stack.enter_context(
-                self._swap_popen(make_procs_unresponsive=True))
+            exit_stack.enter_context(self._swap_popen(
+                make_procs_unresponsive=True))
 
             proc = exit_stack.enter_context(common.managed_process(
                 ['a'], timeout_secs=10))
@@ -1122,8 +1122,8 @@ class ManagedProcessTests(test_utils.TestBase):
             exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
-            exit_stack.enter_context(
-                common.managed_cloud_datastore_emulator(clear_datastore=True))
+            exit_stack.enter_context(common.managed_cloud_datastore_emulator(
+                clear_datastore=True))
 
         self.assertEqual(rmtree_counter.times_called, 1)
         self.assertEqual(makedirs_counter.times_called, 1)
@@ -1137,8 +1137,8 @@ class ManagedProcessTests(test_utils.TestBase):
             exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
-            exit_stack.enter_context(
-                common.managed_cloud_datastore_emulator(clear_datastore=False))
+            exit_stack.enter_context(common.managed_cloud_datastore_emulator(
+                clear_datastore=False))
 
         self.assertEqual(rmtree_counter.times_called, 0)
         self.assertEqual(makedirs_counter.times_called, 0)
@@ -1149,8 +1149,8 @@ class ManagedProcessTests(test_utils.TestBase):
             exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
-            exit_stack.enter_context(
-                common.managed_dev_appserver('app.yaml', env=None))
+            exit_stack.enter_context(common.managed_dev_appserver(
+                'app.yaml', env=None))
 
         self.assertEqual(len(popen_calls), 1)
         self.assertIn('dev_appserver.py', popen_calls[0].program_args)
@@ -1214,8 +1214,8 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_redis_server_throws_exception_when_on_windows_os(self):
         with contextlib2.ExitStack() as exit_stack:
-            exit_stack.enter_context(
-                self.swap_to_always_return(common, 'is_windows_os', value=True))
+            exit_stack.enter_context(self.swap_to_always_return(
+                common, 'is_windows_os', value=True))
             exit_stack.enter_context(self.swap_to_always_return(
                 common, 'wait_for_port_to_be_in_use'))
 
@@ -1348,15 +1348,15 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_in_watch_mode_when_build_succeeds(self):
         with contextlib2.ExitStack() as exit_stack:
-            popen_calls = exit_stack.enter_context(
-                self._swap_popen(outputs=['abc', 'Built at: 123', 'def']))
+            popen_calls = exit_stack.enter_context(self._swap_popen(
+                outputs=['abc', 'Built at: 123', 'def']))
 
             str_io = python_utils.string_io()
             exit_stack.enter_context(contextlib2.redirect_stdout(str_io))
             logs = exit_stack.enter_context(self.capture_logging())
 
-            proc = exit_stack.enter_context(
-                common.managed_webpack_compiler(watch_mode=True))
+            proc = exit_stack.enter_context(common.managed_webpack_compiler(
+                watch_mode=True))
 
         self.assert_proc_was_managed_as_expected(
             logs, proc.pid, manager_should_have_sent_terminate_signal=False)
@@ -1392,11 +1392,11 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_explicit_config_path(self):
         with contextlib2.ExitStack() as exit_stack:
-            popen_calls = exit_stack.enter_context(
-                self._swap_popen(outputs=['Built at: 123']))
+            popen_calls = exit_stack.enter_context(self._swap_popen(
+                outputs=['Built at: 123']))
 
-            exit_stack.enter_context(
-                common.managed_webpack_compiler(config_path='config.json'))
+            exit_stack.enter_context(common.managed_webpack_compiler(
+                config_path='config.json'))
 
         self.assertEqual(len(popen_calls), 1)
         self.assertEqual(
@@ -1406,8 +1406,8 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_prod_source_maps_config(self):
         with contextlib2.ExitStack() as exit_stack:
-            popen_calls = exit_stack.enter_context(
-                self._swap_popen(outputs=['Built at: 123']))
+            popen_calls = exit_stack.enter_context(self._swap_popen(
+                outputs=['Built at: 123']))
 
             exit_stack.enter_context(common.managed_webpack_compiler(
                 use_prod_env=True, use_source_maps=True))
@@ -1421,8 +1421,8 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_prod_config(self):
         with contextlib2.ExitStack() as exit_stack:
-            popen_calls = exit_stack.enter_context(
-                self._swap_popen(outputs=['Built at: 123']))
+            popen_calls = exit_stack.enter_context(self._swap_popen(
+                outputs=['Built at: 123']))
 
             exit_stack.enter_context(common.managed_webpack_compiler(
                 use_prod_env=True, use_source_maps=False))
@@ -1436,8 +1436,8 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_dev_source_maps_config(self):
         with contextlib2.ExitStack() as exit_stack:
-            popen_calls = exit_stack.enter_context(
-                self._swap_popen(outputs=['Built at: 123']))
+            popen_calls = exit_stack.enter_context(self._swap_popen(
+                outputs=['Built at: 123']))
 
             exit_stack.enter_context(common.managed_webpack_compiler(
                 use_prod_env=False, use_source_maps=True))
@@ -1451,8 +1451,8 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_dev_config(self):
         with contextlib2.ExitStack() as exit_stack:
-            popen_calls = exit_stack.enter_context(
-                self._swap_popen(outputs=['Built at: 123']))
+            popen_calls = exit_stack.enter_context(self._swap_popen(
+                outputs=['Built at: 123']))
 
             exit_stack.enter_context(common.managed_webpack_compiler(
                 use_prod_env=False, use_source_maps=False))
@@ -1466,8 +1466,8 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_with_max_old_space_size(self):
         with contextlib2.ExitStack() as exit_stack:
-            popen_calls = exit_stack.enter_context(
-                self._swap_popen(outputs=['Built at: 123']))
+            popen_calls = exit_stack.enter_context(self._swap_popen(
+                outputs=['Built at: 123']))
 
             exit_stack.enter_context(common.managed_webpack_compiler(
                 max_old_space_size=2056))

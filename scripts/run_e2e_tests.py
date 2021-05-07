@@ -19,7 +19,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import argparse
 import os
-import re
 import subprocess
 import sys
 
@@ -30,19 +29,17 @@ from scripts import common
 from scripts import flake_checker
 from scripts import install_third_party_libs
 
-
 MAX_RETRY_COUNT = 3
 RERUN_NON_FLAKY = True
+
 OPPIA_SERVER_PORT = 8181
 GOOGLE_APP_ENGINE_PORT = 9001
 ELASTICSEARCH_SERVER_PORT = 9200
 PORTS_USED_BY_OPPIA_PROCESSES = [
-    OPPIA_SERVER_PORT, GOOGLE_APP_ENGINE_PORT, ELASTICSEARCH_SERVER_PORT]
-PROTRACTOR_BIN_PATH = os.path.join(
-    common.NODE_MODULES_PATH, 'protractor', 'bin', 'protractor')
-
-PROTRACTOR_CONFIG_FILE_PATH = os.path.join(
-    'core', 'tests', 'protractor.conf.js')
+    OPPIA_SERVER_PORT,
+    GOOGLE_APP_ENGINE_PORT,
+    ELASTICSEARCH_SERVER_PORT,
+]
 
 _PARSER = argparse.ArgumentParser(
     description="""
@@ -54,7 +51,6 @@ The root folder MUST be named 'oppia'.
 NOTE: You can replace 'it' with 'fit' or 'describe' with 'fdescribe' to run a
 single test or test suite.
 """)
-
 
 _PARSER.add_argument(
     '--skip-install',
@@ -129,9 +125,14 @@ def is_oppia_server_already_running():
 
 
 def run_webpack_compilation(source_maps=False):
-    """Runs webpack compilation."""
+    """Runs webpack compilation.
+
+    Args:
+        source_maps: bool. Whether to compile with source maps.
+    """
     max_tries = 5
     webpack_bundles_dir_name = 'webpack_bundles'
+
     for _ in python_utils.RANGE(max_tries):
         try:
             managed_webpack_compiler = (
@@ -151,148 +152,39 @@ def run_webpack_compilation(source_maps=False):
 
 
 def install_third_party_libraries(skip_install):
-    """Run the setup and installation scripts."""
+    """Run the installation script.
+
+    Args:
+        skip_install: bool. Whether to skip running the installation script.
+    """
     if not skip_install:
         install_third_party_libs.main()
 
 
-def build_js_files(
-        dev_mode_setting, deparallelize_terser=False, source_maps=False):
+def build_js_files(dev_mode, deparallelize_terser=False, source_maps=False):
     """Build the javascript files.
 
     Args:
-        dev_mode_setting: bool. Represents whether to run the related commands
-            in dev mode.
+        dev_mode: bool. Represents whether to run the related commands in dev
+            mode.
         deparallelize_terser: bool. Represents whether to use webpack
             compilation config that disables parallelism on terser plugin.
         source_maps: bool. Represents whether to use source maps while
             building webpack.
     """
-    if not dev_mode_setting:
-        python_utils.PRINT('  Generating files for production mode...')
-        build_args = ['--prod_env']
+    if not dev_mode:
+        python_utils.PRINT('Generating files for production mode...')
 
+        build_args = ['--prod_env']
         if deparallelize_terser:
             build_args.append('--deparallelize_terser')
         if source_maps:
             build_args.append('--source_maps')
-
         build.main(args=build_args)
+
     else:
         build.main(args=[])
         run_webpack_compilation(source_maps=source_maps)
-
-
-def get_parameter_for_sharding(sharding_instances):
-    """Return the parameter for sharding, based on the given number of
-    sharding instances.
-
-    Args:
-        sharding_instances: int. How many sharding instances to be running.
-
-    Returns:
-        list(str). A list of parameters to represent the sharding configuration.
-    """
-    if sharding_instances <= 0:
-        raise ValueError('Sharding instance should be larger than 0')
-    if sharding_instances == 1:
-        return []
-    else:
-        return ['--capabilities.shardTestFiles=True',
-                '--capabilities.maxInstances=%s' % sharding_instances]
-
-
-def get_parameter_for_dev_mode(dev_mode_setting):
-    """Return parameter for whether the test should be running on dev_mode.
-
-    Args:
-        dev_mode_setting: bool. Whether the test is running on dev_mode.
-
-    Returns:
-        str. A string for the testing mode command line parameter.
-    """
-    return '--params.devMode=%s' % dev_mode_setting
-
-
-def get_parameter_for_suite(suite_name):
-    """Return a parameter for which suite to run the tests for.
-
-    Args:
-        suite_name: str. The suite name whose tests should be run. If the value
-            is `full`, all tests will run.
-
-    Returns:
-        list(str). A list of command line parameters for the suite.
-    """
-    return ['--suite', suite_name]
-
-
-def get_e2e_test_parameters(
-        sharding_instances, suite_name, dev_mode_setting):
-    """Return parameters for the end-2-end tests.
-
-    Args:
-        sharding_instances: str. Sets the number of parallel browsers to open
-            while sharding.
-        suite_name: str. Performs test for different suites.
-        dev_mode_setting: bool. Represents whether run the related commands in
-            dev mode.
-
-    Returns:
-        list(str). Parameters for running the tests.
-    """
-    sharding_parameters = get_parameter_for_sharding(sharding_instances)
-    dev_mode_parameters = get_parameter_for_dev_mode(dev_mode_setting)
-    suite_parameter = get_parameter_for_suite(suite_name)
-
-    cmd_args = [PROTRACTOR_CONFIG_FILE_PATH]
-    cmd_args.extend(sharding_parameters)
-    cmd_args.extend(suite_parameter)
-    cmd_args.append(dev_mode_parameters)
-
-    return cmd_args
-
-
-def get_chrome_driver_version():
-    """Fetches the latest supported version of chromedriver depending on the
-    Chrome version.
-    This method follows the steps mentioned here:
-    https://chromedriver.chromium.org/downloads/version-selection
-    """
-    cmd_args = (
-        # Although there are spaces between Google and Chrome in the path, they
-        # don't need to be escaped outside of the terminal, i.e. shell=False for
-        # Popen, by default.
-        ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-         '--version']
-        if common.is_mac_os() else ['google-chrome', '--version'])
-
-    try:
-        with common.managed_process(cmd_args, stdout=subprocess.PIPE) as proc:
-            output = proc.stdout.readline()
-    except OSError:
-        # For the error message for the mac command, we need to add the
-        # backslashes in. This is because it is likely that a user will try to
-        # run the command on their terminal and, as mentioned above, the mac
-        # get chrome version command has spaces in the path which need to be
-        # escaped for successful terminal use.
-        raise Exception(
-            'Failed to execute "%s" command. This is used to determine the '
-            'chromedriver version to use. Please set the chromedriver version '
-            'manually using --chrome_driver_version flag. To determine the '
-            'chromedriver version to be used, please follow the instructions '
-            'mentioned in the following URL:\n'
-            'https://chromedriver.chromium.org/downloads/version-selection' % (
-                ' '.join(arg.replace(' ', r'\ ') for arg in cmd_args)))
-
-    chrome_version = ''.join(re.findall(r'([0-9]|\.)', output))
-    chrome_version = '.'.join(chrome_version.split('.')[:-1])
-    response = python_utils.url_open(
-        'https://chromedriver.storage.googleapis.com/LATEST_RELEASE_%s'
-        % chrome_version)
-    chrome_driver_version = response.read()
-    python_utils.PRINT('\n\nCHROME VERSION: %s' % chrome_version)
-    return chrome_driver_version
 
 
 def run_tests(args):
@@ -323,44 +215,45 @@ def run_tests(args):
         if constants.EMULATOR_MODE:
             stack.enter_context(common.managed_firebase_auth_emulator())
 
+        app_yaml_path = 'app.yaml' if args.prod_env else 'app_dev.yaml'
         stack.enter_context(common.managed_dev_appserver(
-            'app.yaml' if args.prod_env else 'app_dev.yaml',
-            port=GOOGLE_APP_ENGINE_PORT, log_level=args.server_log_level,
-            clear_datastore=True, skip_sdk_update_check=True,
+            app_yaml_path,
+            port=GOOGLE_APP_ENGINE_PORT,
+            log_level=args.server_log_level,
+            clear_datastore=True,
+            skip_sdk_update_check=True,
             env={'PORTSERVER_ADDRESS': common.PORTSERVER_SOCKET_FILEPATH}))
 
-        version = args.chrome_driver_version or get_chrome_driver_version()
-        stack.enter_context(common.managed_webdriver(version))
+        stack.enter_context(
+            common.managed_webdriver(chrome_version=args.chrome_driver_version))
+
+        managed_protractor = stack.enter_context(common.managed_protractor(
+            suite_name=args.suite,
+            dev_mode=dev_mode,
+            debug_mode=args.debug_mode,
+            sharding_instances=args.sharding_instances))
 
         # Wait for the servers to come up.
-        python_utils.PRINT('Servers have come up.')
         python_utils.PRINT(
+            'Servers have come up.\n'
             'Note: If ADD_SCREENSHOT_REPORTER is set to true in '
-            'core/tests/protractor.conf.js, you can view screenshots '
-            'of the failed tests in ../protractor-screenshots/')
-
-        cmd_args = [common.NODE_BIN_PATH]
-        if args.debug_mode:
-            cmd_args.append('--inspect-brk')
-        # This flag ensures tests fail if waitFor calls time out.
-        cmd_args.append('--unhandled-rejections=strict')
-        cmd_args.append(PROTRACTOR_BIN_PATH)
-        cmd_args.extend(get_e2e_test_parameters(
-            args.sharding_instances, args.suite, dev_mode))
+            'core/tests/protractor.conf.js, you can view screenshots of the '
+            'failed tests in ../protractor-screenshots/')
 
         output_lines = []
-        with common.managed_process(cmd_args, stdout=subprocess.PIPE) as p:
-            # Keep reading until an empty string is returned (process ends).
-            for line in iter(p.stdout.readline, b''):
-                if isinstance(line, str):
-                    # This is a failsafe line in case we get non-unicode
-                    # input. Our unit tests always provide unicode strings,
-                    # however.
-                    line = line.decode('utf-8') # pragma: nocover
-                output_lines.append(line.rstrip())
-                # Replaces non-ASCII characters with '?'.
-                sys.stdout.write(line.encode('ascii', errors='replace'))
-        return output_lines, p.returncode
+        # Keep reading lines until an empty string is returned. Empty strings
+        # signal that the process has ended.
+        for line in iter(managed_protractor.stdout.readline, b''):
+            if isinstance(line, str):
+                # Although our unit tests always provide unicode strings, the
+                # actual server needs this failsafe since it can output
+                # non-unicode strings.
+                line = line.decode('utf-8') # pragma: nocover
+            output_lines.append(line.rstrip())
+            # Replaces non-ASCII characters with '?'.
+            sys.stdout.write(line.encode('ascii', errors='replace'))
+
+        return output_lines, managed_protractor.returncode
 
 
 def main(args=None):
@@ -368,22 +261,26 @@ def main(args=None):
     parsed_args = _PARSER.parse_args(args=args)
 
     with common.managed_portserver():
-        for attempt_num in python_utils.RANGE(MAX_RETRY_COUNT):
-            python_utils.PRINT('***Attempt %s.***' % (attempt_num + 1))
+        for attempt_num in python_utils.RANGE(1, MAX_RETRY_COUNT + 1):
+            python_utils.PRINT('***Attempt %d.***' % attempt_num)
+
             output, return_code = run_tests(parsed_args)
-            # Don't rerun off of CI.
+
             if not flake_checker.check_if_on_ci():
+                # Don't rerun off of CI.
                 python_utils.PRINT('No reruns because not running on CI.')
                 break
-            # Don't rerun passing tests.
+
             if return_code == 0:
+                # Don't rerun passing tests.
                 flake_checker.report_pass(parsed_args.suite)
                 break
-            flaky = flake_checker.is_test_output_flaky(
-                output, parsed_args.suite)
-            # Don't rerun if the test was non-flaky and we are not rerunning
-            # non-flaky tests.
-            if not flaky and not RERUN_NON_FLAKY:
+
+            test_is_flaky = (
+                flake_checker.is_test_output_flaky(output, parsed_args.suite))
+            if not test_is_flaky and not RERUN_NON_FLAKY:
+                # Don't rerun if the test was non-flaky and we are not rerunning
+                # non-flaky tests.
                 break
 
     sys.exit(return_code)

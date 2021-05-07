@@ -34,8 +34,6 @@ from scripts import install_third_party_libs
 from scripts import run_e2e_tests
 
 import contextlib2
-import psutil
-
 
 CHROME_DRIVER_VERSION = '77.0.3865.40'
 
@@ -165,8 +163,8 @@ class MockProcessClass(python_utils.OBJECT):
         Mocks checking whether the process is still alive.
 
         Returns:
-            bool. The value of self.alive, which mocks whether the process is
-            still alive.
+            int|None. The return code of the process if it has ended, otherwise
+            None.
         """
         self.poll_count += 1
         return None if self.alive else self.return_code
@@ -198,7 +196,7 @@ class MockProcessClass(python_utils.OBJECT):
         return
 
     def communicate(self, input=None): # pylint: disable=unused-argument, redefined-builtin
-        """Mocks interaction with the process.
+        """Mocks an interaction with the process.
 
         Args:
             input: str|None. Unused because the process isn't real.
@@ -243,6 +241,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.mock_process = MockProcessClass()
         self.mock_managed_process = mock_managed_process
 
+
     def tearDown(self):
         try:
             self.exit_stack.close()
@@ -257,10 +256,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
     def test_is_oppia_server_already_running_when_a_port_is_open(self):
         running_port = run_e2e_tests.GOOGLE_APP_ENGINE_PORT
+
         def mock_is_port_in_use(port):
-            if port == running_port:
-                return True
-            return False
+            return port == running_port
 
         self.exit_stack.enter_context(self.swap_with_checks(
             common, 'is_port_in_use', mock_is_port_in_use))
@@ -268,11 +266,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.assertTrue(run_e2e_tests.is_oppia_server_already_running())
 
     def test_wait_for_port_to_be_in_use_when_port_successfully_opened(self):
+
         def mock_is_port_in_use(unused_port):
             mock_is_port_in_use.wait_time += 1
-            if mock_is_port_in_use.wait_time > 10:
-                return True
-            return False
+            return mock_is_port_in_use.wait_time > 10
         mock_is_port_in_use.wait_time = 0
 
         def mock_sleep(unused_time):
@@ -282,8 +279,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         self.exit_stack.enter_context(self.swap_with_checks(
             common, 'is_port_in_use', mock_is_port_in_use))
-        self.exit_stack.enter_context(
-            self.swap_with_checks(time, 'sleep', mock_sleep))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            time, 'sleep', mock_sleep))
 
         common.wait_for_port_to_be_in_use(1)
 
@@ -291,6 +288,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.assertEqual(mock_sleep.called_times, 10)
 
     def test_wait_for_port_to_be_in_use_when_port_failed_to_open(self):
+
         def mock_is_port_in_use(unused_port):
             return False
 
@@ -304,52 +302,23 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         self.exit_stack.enter_context(self.swap(
             common, 'is_port_in_use', mock_is_port_in_use))
-        self.exit_stack.enter_context(
-            self.swap_with_checks(time, 'sleep', mock_sleep))
-        self.exit_stack.enter_context(
-            self.swap_with_checks(sys, 'exit', mock_exit))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            time, 'sleep', mock_sleep))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            sys, 'exit', mock_exit))
 
         common.wait_for_port_to_be_in_use(1)
 
         self.assertEqual(
-            mock_sleep.sleep_time,
-            common.MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS)
+            mock_sleep.sleep_time, common.MAX_WAIT_TIME_FOR_PORT_TO_OPEN_SECS)
 
     def test_run_webpack_compilation_success(self):
         # The webpack compilation processes will be called 4 times as mock_isdir
         # will return true after 4 calls.
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webpack_compiler',
-            self.mock_managed_process))
+            common, 'managed_webpack_compiler', self.mock_managed_process))
 
         run_e2e_tests.run_webpack_compilation()
-
-    def test_get_chrome_driver_version(self):
-        def mock_os_popen(unused_arg, shell=False): # pylint: disable=unused-argument
-            class Ret(python_utils.OBJECT):
-                """Return object with required attributes."""
-
-                def read(self):
-                    """Return required method."""
-                    return '77.0.3865'
-            return Ret()
-
-        self.exit_stack.enter_context(self.swap(os, 'popen', mock_os_popen))
-        def mock_url_open(unused_arg):
-            class Ret(python_utils.OBJECT):
-                """Return object with required attributes."""
-
-                def read(self):
-                    """Return required method."""
-                    return CHROME_DRIVER_VERSION
-            return Ret()
-
-        self.exit_stack.enter_context(
-            self.swap(python_utils, 'url_open', mock_url_open))
-
-        version = run_e2e_tests.get_chrome_driver_version()
-
-        self.assertEqual(version, CHROME_DRIVER_VERSION)
 
     def test_run_webpack_compilation_failed(self):
 
@@ -361,8 +330,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         # The webpack compilation processes will be called five times.
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webpack_compiler',
-            self.mock_managed_process))
+            common, 'managed_webpack_compiler', self.mock_managed_process))
 
         self.exit_stack.enter_context(self.swap(os.path, 'isdir', mock_isdir))
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -392,6 +360,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         run_e2e_tests.build_js_files(True)
 
     def test_build_js_files_in_dev_mode_with_exception_raised(self):
+
         def mock_error(**_):
             raise subprocess.CalledProcessError(
                 returncode=2, cmd=[], output='ERROR')
@@ -417,7 +386,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             build, 'main', self.mock_build_main,
             expected_kwargs=[{'args': ['--prod_env']}]))
 
-
         run_e2e_tests.build_js_files(False)
 
     def test_build_js_files_in_prod_mode_with_deparallelize_terser(self):
@@ -426,12 +394,11 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         self.exit_stack.enter_context(self.swap_with_checks(
             build, 'main', self.mock_build_main,
-            expected_kwargs=[{'args': [
-                '--prod_env', '--deparallelize_terser']}]))
+            expected_kwargs=[
+                {'args': ['--prod_env', '--deparallelize_terser']},
+            ]))
 
-
-        run_e2e_tests.build_js_files(
-            False, deparallelize_terser=True)
+        run_e2e_tests.build_js_files(False, deparallelize_terser=True)
 
     def test_build_js_files_in_prod_mode_with_source_maps(self):
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -439,12 +406,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         self.exit_stack.enter_context(self.swap_with_checks(
             build, 'main', self.mock_build_main,
-            expected_kwargs=[{'args': [
-                '--prod_env', '--source_maps']}]))
+            expected_kwargs=[{'args': ['--prod_env', '--source_maps']}]))
 
-
-        run_e2e_tests.build_js_files(
-            False, source_maps=True)
+        run_e2e_tests.build_js_files(False, source_maps=True)
 
     def test_webpack_compilation_in_dev_mode_with_source_maps(self):
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -461,49 +425,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             run_e2e_tests, 'run_webpack_compilation',
             mock_run_webpack_compilation))
 
-
-        run_e2e_tests.build_js_files(
-            True, source_maps=True)
-
-    def test_get_parameter_for_one_sharding_instance(self):
-        result = run_e2e_tests.get_parameter_for_sharding(1)
-        self.assertEqual([], result)
-
-    def test_get_parameter_for_three_sharding_instances(self):
-        result = run_e2e_tests.get_parameter_for_sharding(3)
-        self.assertEqual(
-            ['--capabilities.shardTestFiles=True',
-             '--capabilities.maxInstances=3'], result)
-
-    def test_get_parameter_for_negative_sharding_instances(self):
-        with self.assertRaisesRegexp(
-            ValueError, 'Sharding instance should be larger than 0'):
-            run_e2e_tests.get_parameter_for_sharding(-3)
-
-    def test_get_parameter_for_dev_mode(self):
-        result = run_e2e_tests.get_parameter_for_dev_mode(True)
-        self.assertEqual(result, '--params.devMode=True')
-
-    def test_get_parameter_for_prod_mode(self):
-        result = run_e2e_tests.get_parameter_for_dev_mode(False)
-        self.assertEqual(result, '--params.devMode=False')
-
-    def test_get_parameter_for_suite(self):
-        result = run_e2e_tests.get_parameter_for_suite('Full')
-        self.assertEqual(result, ['--suite', 'Full'])
-
-    def test_get_e2e_test_parameters(self):
-        result = run_e2e_tests.get_e2e_test_parameters(3, 'Full', False)
-        self.assertEqual(result, [
-            run_e2e_tests.PROTRACTOR_CONFIG_FILE_PATH,
-            '--capabilities.shardTestFiles=True',
-            '--capabilities.maxInstances=3',
-            '--suite', 'Full', '--params.devMode=False',
-        ])
+        run_e2e_tests.build_js_files(True, source_maps=True)
 
     def test_start_tests_when_other_instances_not_stopped(self):
+
         def mock_exit(unused_exit_code):
             raise Exception('sys.exit(1)')
+
         def mock_is_oppia_server_already_running(*unused_args):
             return True
 
@@ -530,26 +458,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_arg, deparallelize_terser=False, source_maps=False): # pylint: disable=unused-argument
             return
 
-        def mock_get_e2e_test_parameters(
-                unused_sharding_instances, unused_suite, unused_dev_mode):
-            return ['commands']
-
-        def mock_managed_process(unused_commands, stdout=None, shell=False): # pylint: disable=unused-argument
-            return contextlib2.nullcontext(
-                enter_result=MockProcessClass(stdout='sample output\n'))
-
-        def mock_get_chrome_driver_version():
-            return CHROME_DRIVER_VERSION
-
         def mock_check_if_on_ci():
             return True
 
         def mock_report_pass(unused_suite_name):
             return
 
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'get_chrome_driver_version',
-            mock_get_chrome_driver_version))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running',
             mock_is_oppia_server_already_running))
@@ -566,30 +480,25 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             common, 'managed_firebase_auth_emulator',
             self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_dev_appserver',
-            self.mock_managed_process))
+            common, 'managed_dev_appserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_redis_server',
-            self.mock_managed_process))
+            common, 'managed_redis_server', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_portserver',
-            self.mock_managed_process))
+            common, 'managed_portserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver',
-            self.mock_managed_process))
+            common, 'managed_webdriver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            run_e2e_tests, 'get_e2e_test_parameters',
-            mock_get_e2e_test_parameters,
-            expected_args=[(3, 'full', True)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_process', mock_managed_process, expected_args=[
-                (
-                    [common.NODE_BIN_PATH, '--unhandled-rejections=strict',
-                     run_e2e_tests.PROTRACTOR_BIN_PATH, 'commands'],
-                ),
+            common, 'managed_protractor', self.mock_managed_process,
+            expected_kwargs=[
+                {
+                    'dev_mode': True,
+                    'suite_name': 'full',
+                    'sharding_instances': 3,
+                    'debug_mode': False,
+                },
             ]))
-        self.exit_stack.enter_context(
-            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
         self.exit_stack.enter_context(self.swap_with_checks(
             flake_checker, 'report_pass', mock_report_pass,
             expected_args=[('full',)]))
@@ -610,20 +519,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_arg, deparallelize_terser=False, source_maps=False): # pylint: disable=unused-argument
             return
 
-        def mock_get_e2e_test_parameters(
-                unused_sharding_instances, unused_suite, unused_dev_mode):
-            return ['commands']
-
-        def mock_managed_process(unused_commands, stdout=None, shell=False): # pylint: disable=unused-argument
+        def mock_managed_protractor(**unused_kwargs): # pylint: disable=unused-argument
             return contextlib2.nullcontext(
                 enter_result=MockProcessClass(stdout='sample\n✓\noutput\n'))
 
-        def mock_get_chrome_driver_version():
-            return CHROME_DRIVER_VERSION
-
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'get_chrome_driver_version',
-            mock_get_chrome_driver_version))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running',
             mock_is_oppia_server_already_running))
@@ -640,24 +539,20 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             common, 'managed_firebase_auth_emulator',
             self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_dev_appserver',
-            self.mock_managed_process))
+            common, 'managed_dev_appserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_redis_server',
-            self.mock_managed_process))
+            common, 'managed_redis_server', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver',
-            self.mock_managed_process))
+            common, 'managed_webdriver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            run_e2e_tests, 'get_e2e_test_parameters',
-            mock_get_e2e_test_parameters,
-            expected_args=[(3, 'full', True)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_process', mock_managed_process, expected_args=[
-                (
-                    [common.NODE_BIN_PATH, '--unhandled-rejections=strict',
-                     run_e2e_tests.PROTRACTOR_BIN_PATH, 'commands'],
-                ),
+            common, 'managed_protractor', mock_managed_protractor,
+            expected_kwargs=[
+                {
+                    'dev_mode': True,
+                    'suite_name': 'full',
+                    'sharding_instances': 3,
+                    'debug_mode': False,
+                },
             ]))
         args = run_e2e_tests._PARSER.parse_args(args=[])  # pylint: disable=protected-access
 
@@ -676,8 +571,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_run_tests(unused_args):
             return 'sample\noutput', 1
 
-        def mock_is_test_output_flaky(
-                unused_output, unused_suite_name):
+        def mock_is_test_output_flaky(unused_output, unused_suite_name):
             return False
 
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -685,8 +579,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap_with_checks(
-            flake_checker, 'is_test_output_flaky',
-            mock_is_test_output_flaky,
+            flake_checker, 'is_test_output_flaky', mock_is_test_output_flaky,
             expected_args=[
                 ('sample\noutput', 'mySuite'),
                 ('sample\noutput', 'mySuite'),
@@ -717,10 +610,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap_with_checks(
-            flake_checker, 'is_test_output_flaky',
-            mock_is_test_output_flaky,
-            expected_args=[
-                ('sample\noutput', 'mySuite')]))
+            flake_checker, 'is_test_output_flaky', mock_is_test_output_flaky,
+            expected_args=[('sample\noutput', 'mySuite')]))
         self.exit_stack.enter_context(self.swap(
             flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -748,8 +639,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap_with_checks(
-            flake_checker, 'is_test_output_flaky',
-            mock_is_test_output_flaky,
+            flake_checker, 'is_test_output_flaky', mock_is_test_output_flaky,
             expected_args=[
                 ('sample\noutput', 'mySuite'),
                 ('sample\noutput', 'mySuite'),
@@ -773,15 +663,13 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_run_tests(unused_args):
             return 'sample\noutput', 1
 
-        def mock_is_test_output_flaky(
-                unused_output, unused_suite_name):
+        def mock_is_test_output_flaky(unused_output, unused_suite_name):
             raise AssertionError('Tried to Check Flakiness.')
 
         self.exit_stack.enter_context(self.swap(
             run_e2e_tests, 'run_tests', mock_run_tests))
         self.exit_stack.enter_context(self.swap(
-            flake_checker, 'is_test_output_flaky',
-            mock_is_test_output_flaky))
+            flake_checker, 'is_test_output_flaky', mock_is_test_output_flaky))
         self.exit_stack.enter_context(self.swap(
             flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -831,25 +719,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_set_constants_to_default():
             return
 
-        def mock_get_e2e_test_parameters(
-                unused_sharding_instances, unused_suite, unused_dev_mode):
-            return ['commands']
-
-        def mock_managed_process(unused_commands, stdout=None, shell=False):  # pylint: disable=unused-argument
-            return contextlib2.nullcontext(enter_result=MockProcessClass())
-
-        def mock_get_chrome_driver_version():
-            return CHROME_DRIVER_VERSION
-
         def mock_check_if_on_ci():
             return True
 
         def mock_report_pass(unused_suite_name):
             return
 
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'get_chrome_driver_version',
-            mock_get_chrome_driver_version))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running',
             mock_is_oppia_server_already_running))
@@ -868,33 +743,28 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             common, 'managed_firebase_auth_emulator',
             self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_dev_appserver',
-            self.mock_managed_process))
+            common, 'managed_dev_appserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_redis_server',
-            self.mock_managed_process))
+            common, 'managed_redis_server', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webpack_compiler',
-            self.mock_managed_process, called=False))
+            common, 'managed_webpack_compiler', self.mock_managed_process,
+            called=False))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_portserver',
-            self.mock_managed_process))
+            common, 'managed_portserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver',
-            self.mock_managed_process))
+            common, 'managed_webdriver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            run_e2e_tests, 'get_e2e_test_parameters',
-            mock_get_e2e_test_parameters,
-            expected_args=[(3, 'full', True)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_process', mock_managed_process, expected_args=[
-                (
-                    [common.NODE_BIN_PATH, '--unhandled-rejections=strict',
-                     run_e2e_tests.PROTRACTOR_BIN_PATH, 'commands'],
-                ),
+            common, 'managed_protractor', self.mock_managed_process,
+            expected_kwargs=[
+                {
+                    'dev_mode': True,
+                    'suite_name': 'full',
+                    'sharding_instances': 3,
+                    'debug_mode': False,
+                },
             ]))
-        self.exit_stack.enter_context(
-            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
         self.exit_stack.enter_context(self.swap_with_checks(
             flake_checker, 'report_pass', mock_report_pass,
             expected_args=[('full',)]))
@@ -902,57 +772,6 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             sys, 'exit', mock_exit, expected_args=[(0,)]))
 
         run_e2e_tests.main(args=['--skip-install', '--skip-build'])
-
-    def test_linux_chrome_version_command_not_found_failure(self):
-        self.exit_stack.enter_context(self.swap(common, 'OS_NAME', 'Linux'))
-
-        def mock_popen(unused_commands, stdout, shell=False): # pylint: disable=unused-argument
-            self.assertEqual(stdout, -1)
-            raise OSError('google-chrome not found')
-
-        self.exit_stack.enter_context(self.swap_with_checks(
-            psutil, 'Popen', mock_popen,
-            expected_args=[(['google-chrome', '--version'],)]))
-        expected_message = (
-            'Failed to execute "google-chrome --version" command. This is '
-            'used to determine the chromedriver version to use. Please set '
-            'the chromedriver version manually using --chrome_driver_version '
-            'flag. To determine the chromedriver version to be used, please '
-            'follow the instructions mentioned in the following URL:\n'
-            'https://chromedriver.chromium.org/downloads/version-selection')
-
-        with self.assertRaisesRegexp(Exception, expected_message):
-            run_e2e_tests.get_chrome_driver_version()
-
-    def test_mac_chrome_version_command_not_found_failure(self):
-        self.exit_stack.enter_context(self.swap(common, 'OS_NAME', 'Darwin'))
-
-        def mock_popen(unused_commands, stdout, shell=False): # pylint: disable=unused-argument
-            self.assertEqual(stdout, -1)
-            raise OSError(
-                r'/Applications/Google\ Chrome.app/Contents/MacOS/Google\ '
-                'Chrome not found')
-
-        self.exit_stack.enter_context(self.swap_with_checks(
-            psutil, 'Popen', mock_popen,
-            expected_args=[
-                (
-                    ['/Applications/Google Chrome.app/Contents/MacOS/'
-                     'Google Chrome', '--version'],
-                ),
-            ]))
-        expected_message = (
-            r'Failed to execute "/Applications/Google\\ '
-            r'Chrome.app/Contents/MacOS/Google\\ Chrome --version" command. '
-            'This is used to determine the chromedriver version to use. '
-            'Please set the chromedriver version manually using '
-            '--chrome_driver_version flag. To determine the chromedriver '
-            'version to be used, please follow the instructions mentioned '
-            'in the following URL:\n'
-            'https://chromedriver.chromium.org/downloads/version-selection')
-
-        with self.assertRaisesRegexp(Exception, expected_message):
-            run_e2e_tests.get_chrome_driver_version()
 
     def test_start_tests_in_debug_mode(self):
 
@@ -969,25 +788,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_arg, deparallelize_terser=False, source_maps=False): # pylint: disable=unused-argument
             return
 
-        def mock_get_e2e_test_parameters(
-                unused_sharding_instances, unused_suite, unused_dev_mode):
-            return ['commands']
-
-        def mock_managed_process(unused_commands, stdout=None, shell=False):  # pylint: disable=unused-argument
-            return contextlib2.nullcontext(enter_result=MockProcessClass())
-
-        def mock_get_chrome_driver_version():
-            return CHROME_DRIVER_VERSION
-
         def mock_check_if_on_ci():
             return True
 
         def mock_report_pass(unused_suite_name):
             return
 
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'get_chrome_driver_version',
-            mock_get_chrome_driver_version))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running',
             mock_is_oppia_server_already_running))
@@ -1004,31 +810,25 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             common, 'managed_firebase_auth_emulator',
             self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_dev_appserver',
-            self.mock_managed_process))
+            common, 'managed_dev_appserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_redis_server',
-            self.mock_managed_process))
+            common, 'managed_redis_server', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_portserver',
-            self.mock_managed_process))
+            common, 'managed_portserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver',
-            self.mock_managed_process))
+            common, 'managed_webdriver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            run_e2e_tests, 'get_e2e_test_parameters',
-            mock_get_e2e_test_parameters,
-            expected_args=[(3, 'full', True)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_process', mock_managed_process, expected_args=[
-                (
-                    [common.NODE_BIN_PATH, '--inspect-brk',
-                     '--unhandled-rejections=strict',
-                     run_e2e_tests.PROTRACTOR_BIN_PATH, 'commands'],
-                ),
+            common, 'managed_protractor', self.mock_managed_process,
+            expected_kwargs=[
+                {
+                    'dev_mode': True,
+                    'suite_name': 'full',
+                    'sharding_instances': 3,
+                    'debug_mode': True,
+                },
             ]))
-        self.exit_stack.enter_context(
-            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
         self.exit_stack.enter_context(self.swap_with_checks(
             flake_checker, 'report_pass', mock_report_pass,
             expected_args=[('full',)]))
@@ -1052,25 +852,12 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 unused_arg, deparallelize_terser=False, source_maps=False): # pylint: disable=unused-argument
             return
 
-        def mock_get_e2e_test_parameters(
-                unused_sharding_instances, unused_suite, unused_dev_mode):
-            return ['commands']
-
-        def mock_popen(unused_commands, stdout=None, shell=False):  # pylint: disable=unused-argument
-            return MockProcessClass()
-
-        def mock_get_chrome_driver_version():
-            return CHROME_DRIVER_VERSION
-
         def mock_check_if_on_ci():
             return True
 
         def mock_report_pass(unused_suite_name):
             return
 
-        self.exit_stack.enter_context(self.swap(
-            run_e2e_tests, 'get_chrome_driver_version',
-            mock_get_chrome_driver_version))
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running',
             mock_is_oppia_server_already_running))
@@ -1087,30 +874,26 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             common, 'managed_firebase_auth_emulator',
             self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_dev_appserver',
-            self.mock_managed_process))
+            common, 'managed_dev_appserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_redis_server',
-            self.mock_managed_process))
+            common, 'managed_redis_server', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_portserver',
-            self.mock_managed_process))
+            common, 'managed_portserver', self.mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver',
-            self.mock_managed_process))
+            common, 'managed_webdriver', self.mock_managed_process,
+            expected_kwargs=[{'chrome_version': CHROME_DRIVER_VERSION}]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            run_e2e_tests, 'get_e2e_test_parameters',
-            mock_get_e2e_test_parameters,
-            expected_args=[(3, 'full', True)]))
-        self.exit_stack.enter_context(self.swap_with_checks(
-            psutil, 'Popen', mock_popen, expected_args=[
-                (
-                    [common.NODE_BIN_PATH, '--unhandled-rejections=strict',
-                     run_e2e_tests.PROTRACTOR_BIN_PATH, 'commands'],
-                ),
+            common, 'managed_protractor', self.mock_managed_process,
+            expected_kwargs=[
+                {
+                    'dev_mode': True,
+                    'suite_name': 'full',
+                    'sharding_instances': 3,
+                    'debug_mode': False,
+                },
             ]))
-        self.exit_stack.enter_context(
-            self.swap(flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
+        self.exit_stack.enter_context(self.swap(
+            flake_checker, 'check_if_on_ci', mock_check_if_on_ci))
         self.exit_stack.enter_context(self.swap_with_checks(
             flake_checker, 'report_pass', mock_report_pass,
             expected_args=[('full',)]))

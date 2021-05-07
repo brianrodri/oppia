@@ -207,16 +207,6 @@ DIRS_TO_ADD_TO_SYS_PATH = [
 ]
 
 
-def _popen(*args, **kwargs):
-    """Swapping hook to help unit tests mock out process creation."""
-    # TODO(#11549): Move this to top of the file.
-    if PSUTIL_DIR not in sys.path:
-        sys.path.insert(1, PSUTIL_DIR)
-    import psutil
-
-    return psutil.Popen(*args, **kwargs)
-
-
 def is_windows_os():
     """Check if the running system is Windows."""
     return OS_NAME == 'Windows'
@@ -595,33 +585,6 @@ def check_prs_for_current_release_are_released(repo):
                 'released before release summary generation.')
 
 
-def kill_processes_based_on_regex(pattern):
-    """Kill any processes whose command line matches the provided regex.
-
-    Args:
-        pattern: str. Pattern for searching processes.
-    """
-    # TODO(#11549): Move this to top of the file.
-    if PSUTIL_DIR not in sys.path:
-        sys.path.insert(1, PSUTIL_DIR)
-    import psutil
-
-    regex = re.compile(pattern)
-
-    for process in psutil.process_iter():
-        try:
-            cmdline = ' '.join(process.cmdline())
-            if regex.match(cmdline) and process.is_running():
-                python_utils.PRINT('Killing %s ...' % cmdline)
-                process.kill()
-        # Possible exception raised by psutil includes: AccessDenied,
-        # NoSuchProcess, ZombieProcess, TimeoutExpired. We can safely ignore
-        # those ones and continue.
-        # https://psutil.readthedocs.io/en/latest/#exceptions
-        except psutil.Error:
-            continue
-
-
 def convert_to_posixpath(file_path):
     """Converts a Windows style filepath to posixpath format. If the operating
     system is not Windows, this function does nothing.
@@ -698,21 +661,20 @@ def inplace_replace_file_context(filename, regex_pattern, replacement_string):
         None. Nothing.
     """
     backup_filename = '%s.bak' % filename
+    regex = re.compile(regex_pattern)
+
+    shutil.copyfile(filename, backup_filename)
 
     try:
-        shutil.copyfile(filename, backup_filename)
-        new_contents = []
-        regex = re.compile(regex_pattern)
         with python_utils.open_file(backup_filename, 'r') as f:
-            for line in f:
-                new_contents.append(regex.sub(replacement_string, line))
+            new_contents = [regex.sub(replacement_string, line) for line in f]
         with python_utils.open_file(filename, 'w') as f:
-            for line in new_contents:
-                f.write(line)
+            f.write(''.join(new_contents))
         yield
     finally:
         if os.path.isfile(filename) and os.path.isfile(backup_filename):
             os.remove(filename)
+        if os.path.isfile(backup_filename):
             shutil.move(backup_filename, filename)
 
 
@@ -865,25 +827,25 @@ def managed_process(
 
     command = ' '.join(non_empty_args) if shell else list(non_empty_args)
     python_utils.PRINT('Starting new %s: %s' % (title, command))
-    popen_proc = _popen(command, shell=shell, **kwargs)
+    popen_proc = psutil.Popen(command, shell=shell, **kwargs)
 
     try:
         yield popen_proc
     finally:
-        procs_to_kill = (
+        procs_to_terminate = (
             popen_proc.children(recursive=True) if popen_proc.is_running() else
             [])
 
         # Children must be terminated before the parent, otherwise they risk
         # becoming zombies.
-        procs_to_kill.append(popen_proc)
+        procs_to_terminate.append(popen_proc)
 
         get_debug_info = lambda proc: (
-            '%s(name=%r, pid=%d)' % (title, proc.name(), proc.pid)
+            '%s(name="%s", pid=%d)' % (title, proc.name(), proc.pid)
             if proc.is_running() else 'Process(pid=%d)' % (proc.pid,))
 
         procs_still_alive = []
-        for proc in procs_to_kill:
+        for proc in procs_to_terminate:
             if proc.is_running():
                 procs_still_alive.append(proc)
                 logging.info('Terminating %s...' % get_debug_info(proc))
@@ -1243,11 +1205,11 @@ def managed_webdriver(chrome_version=None):
     import contextlib2
 
     if chrome_version is None:
-        chrome_path = (
+        get_version_command = (
             '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             if is_mac_os() else 'google-chrome')
         try:
-            output = subprocess.check_output([chrome_path, '--version'])
+            output = subprocess.check_output([get_version_command, '--version'])
         except OSError:
             # For the error message for the mac command, we need to add the
             # backslashes in. This is because it is likely that a user will try
@@ -1262,7 +1224,7 @@ def managed_webdriver(chrome_version=None):
                 'please follow the instructions mentioned in the following '
                 'URL:\n'
                 'https://chromedriver.chromium.org/downloads/version-selection'
-                % chrome_path.replace(' ', r'\ '))
+                % get_version_command.replace(' ', r'\ '))
 
         installed_version_parts = ''.join(re.findall(r'[0-9\.]', output))
         installed_version = '.'.join(installed_version_parts.split('.')[:-1])
@@ -1311,7 +1273,7 @@ def managed_webdriver(chrome_version=None):
 @contextlib.contextmanager
 def managed_protractor(
         suite_name='full', dev_mode=True, debug_mode=False,
-        sharding_instances=0, **kwargs):
+        sharding_instances=1, **kwargs):
     """Returns context manager to start/stop the Protractor server gracefully.
 
     Args:
@@ -1333,21 +1295,19 @@ def managed_protractor(
 
     protractor_args = [
         NODE_BIN_PATH,
-        # This flag ensures tests fail if the `waitFor` calls time out.
+        # This flag ensures tests fail if the `waitFor()` calls time out.
         '--unhandled-rejections=strict',
         PROTRACTOR_BIN_PATH, PROTRACTOR_CONFIG_FILE_PATH,
         '--params.devMode=%s' % dev_mode,
-        '--suite', suite_name,
+        '--suite=%s' % suite_name,
+        '--capabilities.shardTestFiles=True',
+        '--capabilities.maxInstances=%d' % sharding_instances,
     ]
 
     if debug_mode:
         protractor_args.insert(1, '--inspect-brk')
 
-    if sharding_instances > 0:
-        protractor_args.extend([
-            '--capabilities.shardTestFiles=True',
-            '--capabilities.maxInstances=%d' % sharding_instances,
-        ])
-
-    with managed_process(protractor_args, **kwargs) as p:
-        yield p
+    managed_protractor_proc = (
+        managed_process(protractor_args, title='Protractor tests', **kwargs))
+    with managed_protractor_proc as proc:
+        yield proc

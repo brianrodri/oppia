@@ -19,14 +19,11 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import os
-import signal
 import subprocess
 import sys
 import time
 
 from core.tests import test_utils
-import python_utils
-
 from scripts import build
 from scripts import common
 from scripts import flake_checker
@@ -36,175 +33,6 @@ from scripts import run_e2e_tests
 import contextlib2
 
 CHROME_DRIVER_VERSION = '77.0.3865.40'
-
-
-class MockProcessClass(python_utils.OBJECT):
-    """Mocks a process to make unit testing less expensive.
-
-    Attributes:
-        pid: int. The ID of the process.
-        pname: str. The name of the process.
-        return_code: int. The return code of the process.
-        poll_count: int. The number of times poll() has been called.
-        signals_received: list(int). List of received signals (as ints) in order
-            of receipt.
-        kill_count: int. Number of times kill() has been called.
-        alive: bool. Whether the process should be considered to be alive.
-        clean_shutdown: bool. Whether to shut down when signal.SIGINT signal is
-            received.
-        stdout: str. The text written to standard output by the process.
-        stdout: str. The text written to standard error output by the process.
-        accept_signal: bool. Whether to raise OSError in send_signal().
-        accept_terminate: bool. Whether to raise OSError in terminate().
-        accept_kill: bool. Whether to raise OSError in kill().
-        child_procs: list(MockProcessClass). Child processes (processes spawned
-            by self).
-    """
-
-    def __init__(
-            self, pid=1, name='process', stdout='', stderr='', return_code=0,
-            accept_signal=True, accept_terminate=True, accept_kill=True,
-            clean_shutdown=True):
-        """Create a mock process object.
-
-        Args:
-            pid: int. The ID of the process.
-            name: str. The name of the process.
-            stdout: str. The text written to standard output by the process.
-            stderr: str. The text written to standard error output by the
-                process.
-            return_code: int. The return code of the process.
-            accept_signal: bool. Whether to raise OSError in send_signal().
-            accept_terminate: bool. Whether to raise OSError in terminate().
-            accept_kill: bool. Whether to raise OSError in kill().
-            clean_shutdown: bool. Whether to shut down when SIGINT received.
-        """
-        self.pid = pid
-        self.pname = name
-        self.return_code = return_code
-        self.poll_count = 0
-        self.signals_received = []
-        self.terminate_count = 0
-        self.kill_count = 0
-        self.alive = True
-        self.clean_shutdown = clean_shutdown
-        self.accept_signal = accept_signal
-        self.accept_terminate = accept_terminate
-        self.accept_kill = accept_kill
-        self.child_procs = []
-
-        self.stdout = python_utils.string_io(buffer_value=stdout)
-        self.stderr = python_utils.string_io(buffer_value=stderr)
-
-    @property
-    def returncode(self):
-        """Returns the return code of the process.
-
-        Returns:
-            int. The return code of the process.
-        """
-        return self.return_code
-
-    def name(self):
-        """Returns the name of the process.
-
-        Returns:
-            str. The name of the process.
-        """
-        return self.pname
-
-    def children(self, recursive=False):
-        """Returns the children spawned by this process.
-
-        Args:
-            recursive: bool. Whether to also return non-direct decendants from
-                self (i.e. children of children).
-
-        Returns:
-            list(MockProcessClass). A list of the child processes.
-        """
-        children = []
-        for child in self.child_procs:
-            children.append(child)
-            if recursive:
-                children.extend(child.children(recursive=True))
-        return children
-
-    def terminate(self):
-        """Increment terminate_count.
-
-        Mocks the process being terminated.
-        """
-        self.terminate_count += 1
-        if not self.accept_terminate:
-            raise OSError()
-
-    def kill(self):
-        """Increment kill_count.
-
-        Mocks the process being killed.
-        """
-        self.kill_count += 1
-        if not self.accept_kill:
-            raise OSError()
-
-    def is_running(self):
-        """Returns whether the process is running.
-
-        Returns:
-            bool. The value of self.alive, which mocks whether the process is
-            still alive.
-        """
-        return self.alive
-
-    def poll(self):
-        """Increment poll_count.
-
-        Mocks checking whether the process is still alive.
-
-        Returns:
-            int|None. The return code of the process if it has ended, otherwise
-            None.
-        """
-        self.poll_count += 1
-        return None if self.alive else self.return_code
-
-    def send_signal(self, signal_number):
-        """Append signal to self.signals_received.
-
-        Mocks receiving a process signal. If a SIGINT signal is received (e.g.
-        from ctrl-C) and self.clean_shutdown is True, then we set self.alive to
-        False to mimic the process shutting down.
-
-        Args:
-            signal_number: int. The number of the received signal.
-        """
-        self.signals_received.append(signal_number)
-        if not self.accept_signal:
-            raise OSError()
-        if signal_number == signal.SIGINT and self.clean_shutdown:
-            self.alive = False
-
-    def wait(self, timeout=0): # pylint: disable=unused-argument
-        """Wait for the process completion.
-
-        Mocks the process waiting for completion before it continues execution.
-
-        Args:
-            timeout: int. Unused because wait() returns immediately.
-        """
-        return
-
-    def communicate(self, input=None): # pylint: disable=unused-argument, redefined-builtin
-        """Mocks an interaction with the process.
-
-        Args:
-            input: str|None. Unused because the process isn't real.
-
-        Returns:
-            tuple(str, str). The stdout and stderr of the process, respectively.
-        """
-        return self.stdout.getvalue(), self.stderr.getvalue()
 
 
 class RunE2ETestsTests(test_utils.GenericTestBase):
@@ -236,11 +64,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
                 Context manager. A context manager that always yields a mock
                 process.
             """
-            return contextlib2.nullcontext(enter_result=self.mock_process)
+            return contextlib2.nullcontext(enter_result=self.mock_popen)
 
-        self.mock_process = MockProcessClass()
+        self.mock_popen = test_utils.PopenStub()
         self.mock_managed_process = mock_managed_process
-
 
     def tearDown(self):
         try:
@@ -521,7 +348,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
 
         def mock_managed_protractor(**unused_kwargs): # pylint: disable=unused-argument
             return contextlib2.nullcontext(
-                enter_result=MockProcessClass(stdout='sample\n✓\noutput\n'))
+                enter_result=test_utils.PopenStub(stdout='sample\n✓\noutput\n'))
 
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running',

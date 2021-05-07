@@ -74,7 +74,6 @@ def run_lighthouse_puppeteer_script():
         python_utils.PRINT('Puppeteer script completed successfully.')
 
 
-
 def run_webpack_compilation():
     """Runs webpack compilation."""
     max_tries = 5

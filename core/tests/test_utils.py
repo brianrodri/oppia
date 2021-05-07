@@ -209,7 +209,6 @@ class PopenStub(python_utils.OBJECT):
         pid: int. The ID of the process.
         stdout: str. The text written to standard output by the process.
         stderr: str. The text written to error output by the process.
-        returncode: int. The return code of the process.
         poll_count: int. The number of times poll() has been called.
         signals_received: list(int). List of received signals (as ints) in order
             of receipt.
@@ -220,12 +219,13 @@ class PopenStub(python_utils.OBJECT):
         accept_terminate: bool. Whether to raise OSError in terminate().
         accept_kill: bool. Whether to raise OSError in kill().
         clean_shutdown: bool. Whether the process will end normally.
+        returncode: int. The return code of the process.
     """
 
     def __init__(
-            self, pid=1, name='process', stdout='', stderr='', return_code=0,
+            self, pid=1, name='process', stdout='', stderr='',
             accept_signal=True, accept_terminate=True, accept_kill=True,
-            clean_shutdown=True, child_procs=None):
+            clean_shutdown=True, return_code=0, child_procs=None):
         """Initializes a new PopenStub instance.
 
         Args:
@@ -242,7 +242,6 @@ class PopenStub(python_utils.OBJECT):
                 None if there aren't any.
             """
         self.pid = pid
-        self._name = name
         self.stdout = python_utils.string_io(buffer_value=stdout)
         self.stderr = python_utils.string_io(buffer_value=stderr)
         self.poll_count = 0
@@ -255,19 +254,9 @@ class PopenStub(python_utils.OBJECT):
         self.accept_kill = accept_kill
         self.clean_shutdown = clean_shutdown
 
+        self._name = name
         self._child_procs = tuple(child_procs) if child_procs else ()
         self._return_code = return_code
-
-    def _exit(self, return_code=None):
-        """Simulates the end of the process.
-
-        Args:
-            return_code: int|None. The return code of the program. If None, the
-                return code assigned at initialization is used instead.
-        """
-        self.alive = False
-        if return_code is not None:
-            self._return_code = return_code
 
     @property
     def returncode(self):
@@ -410,6 +399,17 @@ class PopenStub(python_utils.OBJECT):
             return self.stdout.getvalue(), self.stderr.getvalue()
         else:
             raise Exception('PopenStub has entered an infinite loop')
+
+    def _exit(self, return_code=None):
+        """Simulates the end of the process.
+
+        Args:
+            return_code: int|None. The return code of the program. If None, the
+                return code assigned at initialization is used instead.
+        """
+        self.alive = False
+        if return_code is not None:
+            self._return_code = return_code
 
 
 class ElasticSearchStub(python_utils.OBJECT):
@@ -1290,7 +1290,7 @@ class TestBase(unittest.TestCase):
 
     @contextlib.contextmanager
     def swap_conditionally(
-            self, obj, attr, returns=None, condition=None,
+            self, obj, attr, new_function=lambda *_, **__: None, condition=None,
             use_call_counter=False):
         """Swap the obj.attr function to return a value when a condition is met.
 
@@ -1299,35 +1299,36 @@ class TestBase(unittest.TestCase):
 
         This function can be used when the target being swapped is used by
         unrelated code. For example, os.path.exists() is used extensively by
-        psutil to manage processes. If we swap it to always return True or
+        psutil to manage processes. If we swap it to _always_ return True or
         False, then the process management will result in errors.
 
         Args:
             obj: *. The object whose attribute will be swapped.
             attr: str. The attribute of the object to swap.
-            returns: *. The value returned by the swapped-in function when the
-                condition is met.
+            new_function: callable. The function called when the condition
+                returns True. By default, the replacement function accepts any
+                arguments and returns None.
             condition: callable|None. A predicate function which returns True or
                 False depending on the arguments passed to the original
-                function. When None, the original function is never swapped.
+                function. When None, the original function is always called.
             use_call_counter: bool. Whether the swapped-in function should be
                 wrapped by a CallCounter.
 
         Yields:
             callable. The function object which has been swapped in.
         """
-        original = getattr(obj, attr)
-        def function_that_conditionally_returns(*args, **kwargs):
+        original_function = getattr(obj, attr)
+        def function_that_conditionally_uses_swap(*args, **kwargs):
             """Returns a constant value only when the condition is met."""
             if condition is not None and condition(*args, **kwargs):
-                return returns
+                return new_function(*args, **kwargs)
             else:
-                return original(*args, **kwargs)
+                return original_function(*args, **kwargs)
         if use_call_counter:
-            function_that_conditionally_returns = CallCounter(
-                function_that_conditionally_returns)
-        with self.swap(obj, attr, function_that_conditionally_returns):
-            yield function_that_conditionally_returns
+            function_that_conditionally_uses_swap = CallCounter(
+                function_that_conditionally_uses_swap)
+        with self.swap(obj, attr, function_that_conditionally_uses_swap):
+            yield function_that_conditionally_uses_swap
 
     @contextlib.contextmanager
     def swap_to_always_return(self, obj, attr, value=None):

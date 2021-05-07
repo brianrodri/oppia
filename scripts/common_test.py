@@ -1209,10 +1209,10 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.enter_context(self.swap_to_always_return(
             common, 'wait_for_port_to_be_in_use'))
         self.exit_stack.enter_context(self.swap_conditionally(
-            os.path, 'exists', returns=True, condition=is_redis_dump_path))
+            os.path, 'exists', new_function=lambda _: True,
+            condition=is_redis_dump_path))
         os_remove_mock = self.exit_stack.enter_context(self.swap_conditionally(
-            os, 'remove',
-            condition=is_redis_dump_path, use_call_counter=True))
+            os, 'remove', condition=is_redis_dump_path, use_call_counter=True))
 
         self.exit_stack.enter_context(common.managed_redis_server())
         self.exit_stack.close()

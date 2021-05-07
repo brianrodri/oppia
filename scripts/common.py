@@ -860,6 +860,8 @@ def managed_process(
                 logging.warn('Forced to kill %s!' % get_debug_info(proc))
                 proc.kill()
         except Exception:
+            # NOTE: Raising an exception while exiting a context manager leads
+            # to undefined behavior, so we log and suppress them instead.
             logging.exception('Failed to gracefully shut down %s' % title)
 
 

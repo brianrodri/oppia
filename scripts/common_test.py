@@ -53,6 +53,22 @@ import github # isort:skip  pylint: disable=wrong-import-position
 class CommonTests(test_utils.GenericTestBase):
     """Test the methods which handle common functionalities."""
 
+    @contextlib.contextmanager
+    def open_tcp_server_port(self):
+        """Context manager for starting and stoping an HTTP TCP server.
+
+        Yields:
+            int. The port number of the server.
+        """
+        handler = http.server.SimpleHTTPRequestHandler
+        # NOTE: Binding to port 0 causes the OS to select a random free port
+        # between 1024 to 65535.
+        server = socketserver.TCPServer(('localhost', 0), handler)
+        try:
+            yield server.server_address[1]
+        finally:
+            server.server_close()
+
     def test_is_x64_architecture_in_x86(self):
         maxsize_swap = self.swap(sys, 'maxsize', 1)
         with maxsize_swap:
@@ -339,26 +355,8 @@ class CommonTests(test_utils.GenericTestBase):
             common.verify_current_branch_name('test')
 
     def test_is_port_in_use(self):
-
-        @contextlib.contextmanager
-        def open_tcp_server_port():
-            """Context manager for starting and stoping an HTTP TCP server.
-
-            Yields:
-                int. The port number of the server.
-            """
-            handler = http.server.SimpleHTTPRequestHandler
-            # NOTE: Binding to port 0 causes the OS to select a random free port
-            # between 1024 to 65535.
-            server = socketserver.TCPServer(('localhost', 0), handler)
-            try:
-                yield server.server_address[1]
-            finally:
-                server.server_close()
-
-        with open_tcp_server_port() as port:
+        with self.open_tcp_server_port() as port:
             self.assertTrue(common.is_port_in_use(port))
-
         self.assertFalse(common.is_port_in_use(port))
 
     def test_wait_for_port_to_not_be_in_use_port_never_closes(self):
@@ -827,7 +825,7 @@ class ManagedProcessTests(test_utils.TestBase):
             outputs: list(str). The outputs of the mock process.
 
         Returns:
-            Context manager. A context manager in which calls to psutil.Popen
+            Context manager. A context manager in which calls to psutil.Popen()
             create a simple program that waits and then exits.
 
         Yields:
@@ -847,7 +845,7 @@ class ManagedProcessTests(test_utils.TestBase):
                 **kwargs: dict(str: *). Keyword arguments passed to Popen.
 
             Returns:
-                psutil.Process. The return value of psutil.Popen.
+                PopenStub. The return value of psutil.Popen.
             """
             popen_calls.append(self.POPEN_CALL(program_args, kwargs.copy()))
 
@@ -897,16 +895,16 @@ class ManagedProcessTests(test_utils.TestBase):
             yield new_rmtree, new_makedirs
 
     def test_does_not_raise_when_psutil_not_in_path(self):
-        self.exit_stack.enter_context(self.swap(sys, 'path', []))
         self.exit_stack.enter_context(self._swap_popen())
+        self.exit_stack.enter_context(self.swap(sys, 'path', []))
 
         # Entering the context should not raise.
         self.exit_stack.enter_context(common.managed_process(
             ['a'], timeout_secs=10))
 
     def test_concats_command_args_when_shell_is_true(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         popen_calls = self.exit_stack.enter_context(self._swap_popen())
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['a', 1], shell=True, timeout_secs=10))
@@ -916,8 +914,8 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertEqual(popen_calls, [self.POPEN_CALL('a 1', {'shell': True})])
 
     def test_passes_command_args_as_list_of_strings_when_shell_is_false(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         popen_calls = self.exit_stack.enter_context(self._swap_popen())
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['a', 1], shell=False, timeout_secs=10))
@@ -928,8 +926,8 @@ class ManagedProcessTests(test_utils.TestBase):
             popen_calls, [self.POPEN_CALL(['a', '1'], {'shell': False})])
 
     def test_filters_empty_strings_from_command_args_when_shell_is_true(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         popen_calls = self.exit_stack.enter_context(self._swap_popen())
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['', 'a', '', 1], shell=True, timeout_secs=10))
@@ -939,8 +937,8 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertEqual(popen_calls, [self.POPEN_CALL('a 1', {'shell': True})])
 
     def test_filters_empty_strings_from_command_args_when_shell_is_false(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         popen_calls = self.exit_stack.enter_context(self._swap_popen())
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['', 'a', '', 1], shell=False, timeout_secs=10))
@@ -951,9 +949,9 @@ class ManagedProcessTests(test_utils.TestBase):
             popen_calls, [self.POPEN_CALL(['a', '1'], {'shell': False})])
 
     def test_reports_killed_processes_as_warnings(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         self.exit_stack.enter_context(self._swap_popen(
             clean_shutdown=False))
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['a'], timeout_secs=10))
@@ -965,8 +963,8 @@ class ManagedProcessTests(test_utils.TestBase):
             manager_should_have_sent_kill_signal=True)
 
     def test_terminates_child_processes(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         self.exit_stack.enter_context(self._swap_popen(num_children=3))
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['a'], timeout_secs=10))
@@ -978,9 +976,9 @@ class ManagedProcessTests(test_utils.TestBase):
             self.assert_proc_was_managed_as_expected(logs, pid)
 
     def test_kills_child_processes(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         self.exit_stack.enter_context(self._swap_popen(
             num_children=3, clean_shutdown=False))
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['a'], timeout_secs=10))
@@ -995,8 +993,8 @@ class ManagedProcessTests(test_utils.TestBase):
                 manager_should_have_sent_kill_signal=True)
 
     def test_respects_processes_that_are_killed_early(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         self.exit_stack.enter_context(self._swap_popen())
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['a'], timeout_secs=10))
@@ -1010,9 +1008,9 @@ class ManagedProcessTests(test_utils.TestBase):
             manager_should_have_sent_terminate_signal=False)
 
     def test_respects_processes_that_are_killed_after_delay(self):
-        logs = self.exit_stack.enter_context(self.capture_logging())
         self.exit_stack.enter_context(self._swap_popen(
             clean_shutdown=False))
+        logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_process(
             ['a'], timeout_secs=10))
@@ -1150,19 +1148,9 @@ class ManagedProcessTests(test_utils.TestBase):
                 return True
             return old_os_path_exists(file_path)
 
-        def mock_call(unused_cmd_tokens, *args, **kwargs):  # pylint: disable=unused-argument
-            class Ret(python_utils.OBJECT):
-                """Return object with required attributes."""
-
-                def __init__(self):
-                    self.returncode = 0
-                def communicate(self):
-                    """Return required method."""
-                    return '', ''
-            return Ret()
-
         self.exit_stack.enter_context(self._swap_popen())
-        self.exit_stack.enter_context(self.swap(subprocess, 'call', mock_call))
+        self.exit_stack.enter_context(self.swap_to_always_return(
+            subprocess, 'call', value=test_utils.PopenStub()))
         self.exit_stack.enter_context(self.swap(
             shutil, 'rmtree', mock_os_remove_files))
         self.exit_stack.enter_context(self.swap(
@@ -1300,10 +1288,10 @@ class ManagedProcessTests(test_utils.TestBase):
              common.PORTSERVER_SOCKET_FILEPATH])
 
     def test_managed_webpack_compiler_in_watch_mode_when_build_succeeds(self):
-        str_io = python_utils.string_io()
-        self.exit_stack.enter_context(contextlib2.redirect_stdout(str_io))
         popen_calls = self.exit_stack.enter_context(self._swap_popen(
             outputs=['abc', 'Built at: 123', 'def']))
+        str_io = python_utils.string_io()
+        self.exit_stack.enter_context(contextlib2.redirect_stdout(str_io))
         logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(common.managed_webpack_compiler(
@@ -1317,24 +1305,24 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertIn('--watch', popen_calls[0].program_args)
         self.assertIn('--progress', popen_calls[0].program_args)
         self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
-            'Starting new Webpack compiler',
+            'Starting new Webpack Compiler',
             'abc',
             'Built at: 123',
             'def',
         ])
 
     def test_managed_webpack_compiler_in_watch_mode_raises_when_not_built(self):
-        str_io = python_utils.string_io()
-        self.exit_stack.enter_context(contextlib2.redirect_stdout(str_io))
         # NOTE: The 'Built at: ' message is never printed.
         self.exit_stack.enter_context(self._swap_popen(outputs=['abc', 'def']))
+        str_io = python_utils.string_io()
+        self.exit_stack.enter_context(contextlib2.redirect_stdout(str_io))
 
         self.assertRaisesRegexp(
             IOError, 'First build never completed',
             lambda: self.exit_stack.enter_context(
                 common.managed_webpack_compiler(watch_mode=True)))
         self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
-            'Starting new Webpack compiler',
+            'Starting new Webpack Compiler',
             'abc',
             'def',
         ])

@@ -231,7 +231,8 @@ def run_tests(args):
             suite_name=args.suite,
             dev_mode=dev_mode,
             debug_mode=args.debug_mode,
-            sharding_instances=args.sharding_instances))
+            sharding_instances=args.sharding_instances,
+            stdout=subprocess.PIPE))
 
         # Wait for the servers to come up.
         python_utils.PRINT(

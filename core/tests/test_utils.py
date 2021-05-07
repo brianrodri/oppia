@@ -203,66 +203,63 @@ def get_storage_model_classes():
 
 
 class PopenStub(python_utils.OBJECT):
-    """Mocks a process to make unit testing less expensive.
+    """Stubs the API of psutil.Popen() to make unit tests less expensive.
 
     Attributes:
         pid: int. The ID of the process.
-        pname: str. The name of the process.
-        return_code: int. The return code of the process.
+        stdout: str. The text written to standard output by the process.
+        stderr: str. The text written to error output by the process.
+        returncode: int. The return code of the process.
         poll_count: int. The number of times poll() has been called.
         signals_received: list(int). List of received signals (as ints) in order
             of receipt.
+        terminate_count: int. Number of times terminate() has been called.
         kill_count: int. Number of times kill() has been called.
         alive: bool. Whether the process should be considered to be alive.
-        clean_shutdown: bool. Whether to shut down when signal.SIGINT signal is
-            received.
-        stdout: str. The text written to standard output by the process.
-        stdout: str. The text written to standard error output by the process.
         accept_signal: bool. Whether to raise OSError in send_signal().
         accept_terminate: bool. Whether to raise OSError in terminate().
         accept_kill: bool. Whether to raise OSError in kill().
-        child_procs: list(PopenStub). The processes spawned by the new process.
+        clean_shutdown: bool. Whether the process will end normally.
     """
 
     def __init__(
             self, pid=1, name='process', stdout='', stderr='', return_code=0,
             accept_signal=True, accept_terminate=True, accept_kill=True,
             clean_shutdown=True, child_procs=None):
-        """Create a mock process object.
+        """Initializes a new PopenStub instance.
 
         Args:
             pid: int. The ID of the process.
             name: str. The name of the process.
             stdout: str. The text written to standard output by the process.
-            stderr: str. The text written to standard error output by the
-                process.
+            stderr: str. The text written to error output by the process.
             return_code: int. The return code of the process.
             accept_signal: bool. Whether to raise OSError in send_signal().
             accept_terminate: bool. Whether to raise OSError in terminate().
             accept_kill: bool. Whether to raise OSError in kill().
-            clean_shutdown: bool. Whether to shut down when SIGINT received.
-            child_procs: list(PopenStub)|None. The children of the process, or
+            clean_shutdown: bool. Whether the process will end normally.
+            child_procs: list(PopenStub)|None. Processes "owned" by the stub, or
                 None if there aren't any.
-        """
+            """
         self.pid = pid
-        self.pname = name
-        self.return_code = return_code
+        self._name = name
+        self.stdout = python_utils.string_io(buffer_value=stdout)
+        self.stderr = python_utils.string_io(buffer_value=stderr)
         self.poll_count = 0
         self.signals_received = []
         self.terminate_count = 0
         self.kill_count = 0
         self.alive = True
-        self.clean_shutdown = clean_shutdown
         self.accept_signal = accept_signal
         self.accept_terminate = accept_terminate
         self.accept_kill = accept_kill
-        self.child_procs = tuple(child_procs) if child_procs else ()
+        self.clean_shutdown = clean_shutdown
 
-        self.stdout = python_utils.string_io(buffer_value=stdout)
-        self.stderr = python_utils.string_io(buffer_value=stderr)
+        self._child_procs = tuple(child_procs) if child_procs else ()
+        self._return_code = return_code
 
     def _exit(self, return_code=None):
-        """Simulates the end of the process using the given return code.
+        """Simulates the end of the process.
 
         Args:
             return_code: int|None. The return code of the program. If None, the
@@ -270,7 +267,7 @@ class PopenStub(python_utils.OBJECT):
         """
         self.alive = False
         if return_code is not None:
-            self.return_code = return_code
+            self._return_code = return_code
 
     @property
     def returncode(self):
@@ -279,16 +276,16 @@ class PopenStub(python_utils.OBJECT):
         Returns:
             int. The return code of the process.
         """
-        return self.return_code
+        return self._return_code
 
     @returncode.setter
     def returncode(self, return_code):
-        """Assigns a return code ot the process.
+        """Assigns a return code to the process.
 
         Args:
             return_code: int. The return code to assign to the process.
         """
-        self.return_code = return_code
+        self._return_code = return_code
 
     def name(self):
         """Returns the name of the process.
@@ -296,7 +293,7 @@ class PopenStub(python_utils.OBJECT):
         Returns:
             str. The name of the process.
         """
-        return self.pname
+        return self._name
 
     def children(self, recursive=False):
         """Returns the children spawned by this process.
@@ -309,7 +306,7 @@ class PopenStub(python_utils.OBJECT):
             list(PopenStub). A list of the child processes.
         """
         children = []
-        for child in self.child_procs:
+        for child in self._child_procs:
             children.append(child)
             if recursive:
                 children.extend(child.children(recursive=True))
@@ -358,7 +355,7 @@ class PopenStub(python_utils.OBJECT):
             None.
         """
         self.poll_count += 1
-        return None if self.alive else self.return_code
+        return None if self.alive else self._return_code
 
     def send_signal(self, signal_number):
         """Append signal to self.signals_received.
@@ -1322,7 +1319,7 @@ class TestBase(unittest.TestCase):
         original = getattr(obj, attr)
         def function_that_conditionally_returns(*args, **kwargs):
             """Returns a constant value only when the condition is met."""
-            if condition and condition(*args, **kwargs):
+            if condition is not None and condition(*args, **kwargs):
                 return returns
             else:
                 return original(*args, **kwargs)

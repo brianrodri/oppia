@@ -98,8 +98,8 @@ GOOGLE_CLOUD_SDK_HOME = os.path.join(
 GOOGLE_APP_ENGINE_SDK_HOME = os.path.join(
     GOOGLE_CLOUD_SDK_HOME, 'platform', 'google_appengine')
 GOOGLE_CLOUD_SDK_BIN = os.path.join(GOOGLE_CLOUD_SDK_HOME, 'bin')
-WEBPACK_BIN_PATH = os.path.join(
-    CURR_DIR, 'node_modules', 'webpack', 'bin', 'webpack.js')
+WEBPACK_BIN_PATH = (
+    os.path.join(CURR_DIR, 'node_modules', 'webpack', 'bin', 'webpack.js'))
 DEV_APPSERVER_PATH = (
     os.path.join(GOOGLE_APP_ENGINE_SDK_HOME, 'dev_appserver.py'))
 GCLOUD_PATH = os.path.join(GOOGLE_CLOUD_SDK_BIN, 'gcloud')
@@ -114,8 +114,7 @@ FRONTEND_DIR = os.path.join(CURR_DIR, 'core', 'templates')
 YARN_PATH = os.path.join(OPPIA_TOOLS_DIR, 'yarn-%s' % YARN_VERSION)
 FIREBASE_PATH = os.path.join(
     NODE_MODULES_PATH, 'firebase-tools', 'lib', 'bin', 'firebase.js')
-WEBPACK_PATH = os.path.join(
-    NODE_MODULES_PATH, 'webpack', 'bin', 'webpack.js')
+WEBPACK_PATH = os.path.join(NODE_MODULES_PATH, 'webpack', 'bin', 'webpack.js')
 OS_NAME = platform.system()
 ARCHITECTURE = platform.machine()
 PSUTIL_DIR = os.path.join(OPPIA_TOOLS_DIR, 'psutil-%s' % PSUTIL_VERSION)
@@ -171,10 +170,9 @@ WEBPACK_PROD_SOURCE_MAPS_CONFIG = 'webpack.prod.sourcemap.config.ts'
 
 PORTSERVER_SOCKET_FILEPATH = os.path.join(os.getcwd(), 'portserver.socket')
 
-WEBDRIVER_HOME_PATH = os.path.join(
-    NODE_MODULES_PATH, 'webdriver-manager')
-WEBDRIVER_MANAGER_BIN_PATH = os.path.join(
-    WEBDRIVER_HOME_PATH, 'bin', 'webdriver-manager')
+WEBDRIVER_HOME_PATH = os.path.join(NODE_MODULES_PATH, 'webdriver-manager')
+WEBDRIVER_MANAGER_BIN_PATH = (
+    os.path.join(WEBDRIVER_HOME_PATH, 'bin', 'webdriver-manager'))
 WEBDRIVER_PROVIDER_PATH = (
     os.path.join(WEBDRIVER_HOME_PATH, 'dist', 'lib', 'provider'))
 GECKO_PROVIDER_FILE_PATH = (
@@ -182,10 +180,10 @@ GECKO_PROVIDER_FILE_PATH = (
 CHROME_PROVIDER_FILE_PATH = (
     os.path.join(WEBDRIVER_PROVIDER_PATH, 'chromedriver.js'))
 
-PROTRACTOR_BIN_PATH = os.path.join(
-    NODE_MODULES_PATH, 'protractor', 'bin', 'protractor')
-PROTRACTOR_CONFIG_FILE_PATH = os.path.join(
-    'core', 'tests', 'protractor.conf.js')
+PROTRACTOR_BIN_PATH = (
+    os.path.join(NODE_MODULES_PATH, 'protractor', 'bin', 'protractor'))
+PROTRACTOR_CONFIG_FILE_PATH = (
+    os.path.join('core', 'tests', 'protractor.conf.js'))
 
 DIRS_TO_ADD_TO_SYS_PATH = [
     GOOGLE_APP_ENGINE_SDK_HOME,
@@ -801,7 +799,7 @@ def managed_process(
         command_args: list(int|str). A sequence of program arguments, where the
             program to execute is the first item. Ints are allowed in order to
             accomodate e.g. port numbers.
-        title: str. The title of the process. Used to improve debug messages.
+        title: str. The title of the process. Used by logging logic.
         shell: bool. Whether the command should be run inside of its own shell.
             WARNING: Executing shell commands that incorporate unsanitized input
             from an untrusted source makes a program vulnerable to
@@ -832,34 +830,37 @@ def managed_process(
     try:
         yield popen_proc
     finally:
-        procs_to_terminate = (
-            popen_proc.children(recursive=True) if popen_proc.is_running() else
-            [])
+        try:
+            procs_to_terminate = (
+                popen_proc.children(recursive=True)
+                if popen_proc.is_running() else [])
 
-        # Children must be terminated before the parent, otherwise they risk
-        # becoming zombies.
-        procs_to_terminate.append(popen_proc)
+            # Children must be terminated before the parent, otherwise they risk
+            # becoming zombies.
+            procs_to_terminate.append(popen_proc)
 
-        get_debug_info = lambda proc: (
-            '%s(name="%s", pid=%d)' % (title, proc.name(), proc.pid)
-            if proc.is_running() else 'Process(pid=%d)' % (proc.pid,))
+            get_debug_info = lambda proc: (
+                '%s(name="%s", pid=%d)' % (title, proc.name(), proc.pid)
+                if proc.is_running() else 'Process(pid=%d)' % (proc.pid,))
 
-        procs_still_alive = []
-        for proc in procs_to_terminate:
-            if proc.is_running():
-                procs_still_alive.append(proc)
-                logging.info('Terminating %s...' % get_debug_info(proc))
-                proc.terminate()
-            else:
+            procs_still_alive = []
+            for proc in procs_to_terminate:
+                if proc.is_running():
+                    procs_still_alive.append(proc)
+                    logging.info('Terminating %s...' % get_debug_info(proc))
+                    proc.terminate()
+                else:
+                    logging.info('%s has ended.' % get_debug_info(proc))
+
+            procs_gone, procs_still_alive = (
+                psutil.wait_procs(procs_still_alive, timeout=timeout_secs))
+            for proc in procs_gone:
                 logging.info('%s has ended.' % get_debug_info(proc))
-
-        procs_gone, procs_still_alive = (
-            psutil.wait_procs(procs_still_alive, timeout=timeout_secs))
-        for proc in procs_gone:
-            logging.info('%s has ended.' % get_debug_info(proc))
-        for proc in procs_still_alive:
-            logging.warn('Forced to kill %s!' % get_debug_info(proc))
-            proc.kill()
+            for proc in procs_still_alive:
+                logging.warn('Forced to kill %s!' % get_debug_info(proc))
+                proc.kill()
+        except Exception:
+            logging.exception('Failed to gracefully shut down %s' % title)
 
 
 @contextlib.contextmanager
@@ -917,7 +918,7 @@ def managed_dev_appserver(
     # from an untrusted user, only other callers of the script, so there's no
     # risk of shell-injection attacks.
     proc_context = managed_process(
-        dev_appserver_args, title='GAE development server', shell=True, env=env)
+        dev_appserver_args, title='GAE Development Server', shell=True, env=env)
     with proc_context as proc:
         wait_for_port_to_be_in_use(port)
         yield proc
@@ -947,7 +948,7 @@ def managed_firebase_auth_emulator(recover_users=False):
     # OK to use shell=True here because we are passing string literals and
     # constants, so there is no risk of a shell-injection attack.
     proc_context = (
-        managed_process(emulator_args, title='Firebase emulator', shell=True))
+        managed_process(emulator_args, title='Firebase Emulator', shell=True))
     with proc_context as proc:
         wait_for_port_to_be_in_use(feconf.FIREBASE_EMULATOR_PORT)
         yield proc
@@ -970,7 +971,7 @@ def managed_elasticsearch_dev_server():
     # Override the default path to ElasticSearch config files.
     es_env = {'ES_PATH_CONF': ES_PATH_CONFIG_DIR}
     proc_context = managed_process(
-        es_args, title='ElasticSearch server', env=es_env, shell=True)
+        es_args, title='ElasticSearch Server', env=es_env, shell=True)
     with proc_context as proc:
         wait_for_port_to_be_in_use(feconf.ES_LOCALHOST_PORT)
         yield proc
@@ -1011,7 +1012,7 @@ def managed_cloud_datastore_emulator(clear_datastore=False):
             os.makedirs(CLOUD_DATASTORE_EMULATOR_DATA_DIR)
 
         proc = stack.enter_context(managed_process(
-            emulator_args, title='Cloud datastore emulator', shell=True))
+            emulator_args, title='Cloud Datastore Emulator', shell=True))
 
         wait_for_port_to_be_in_use(feconf.CLOUD_DATASTORE_EMULATOR_PORT)
 
@@ -1050,7 +1051,7 @@ def managed_redis_server():
     # Start the redis local development server. Redis doesn't run on
     # Windows machines.
     proc_context = managed_process(
-        [REDIS_SERVER_PATH, REDIS_CONF_PATH], title='Redis server', shell=True)
+        [REDIS_SERVER_PATH, REDIS_CONF_PATH], title='Redis Server', shell=True)
     with proc_context as proc:
         wait_for_port_to_be_in_use(feconf.REDISPORT)
         yield proc
@@ -1069,7 +1070,7 @@ def create_managed_web_browser(port):
         None if the current operating system does not support web browsers.
     """
     url = 'http://localhost:%s/' % port
-    title = 'Web browser'
+    title = 'Web Browser'
     if is_linux_os():
         if any(re.match('.*VBOX.*', d) for d in os.listdir('/dev/disk/by-id/')):
             return None
@@ -1128,13 +1129,13 @@ def managed_webpack_compiler(
 
     with contextlib2.ExitStack() as exit_stack:
         proc = exit_stack.enter_context(managed_process(
-            compiler_args, title='Webpack compiler', shell=True,
+            compiler_args, title='Webpack Compiler', shell=True,
             # Capture compiler's output to detect when builds have completed.
             stdout=subprocess.PIPE))
 
         if watch_mode:
             # Iterate until an empty string is printed, which signals the end of
-            # the output.
+            # the process.
             for line in iter(proc.stdout.readline, ''):
                 sys.stdout.write(line)
                 # Message printed when a compilation has succeeded. We break
@@ -1142,8 +1143,8 @@ def managed_webpack_compiler(
                 if 'Built at: ' in line:
                     break
             else:
-                # If the code never ran `break`, raise an error because the code
-                # hasn't been compiled.
+                # If the code never ran `break`, raise an error because a build
+                # hasn't finished successfully.
                 raise IOError('First build never completed')
 
         def print_proc_output():
@@ -1183,8 +1184,8 @@ def managed_portserver():
         'python', '-m', 'scripts.run_portserver',
         '--portserver_unix_socket_address', PORTSERVER_SOCKET_FILEPATH,
     ]
-    with managed_process(portserver_args, title='Portserver') as p:
-        yield p
+    with managed_process(portserver_args, title='PortServer') as proc:
+        yield proc
 
 
 @contextlib.contextmanager
@@ -1205,11 +1206,11 @@ def managed_webdriver(chrome_version=None):
     import contextlib2
 
     if chrome_version is None:
-        get_version_command = (
+        chrome_command = (
             '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
             if is_mac_os() else 'google-chrome')
         try:
-            output = subprocess.check_output([get_version_command, '--version'])
+            output = subprocess.check_output([chrome_command, '--version'])
         except OSError:
             # For the error message for the mac command, we need to add the
             # backslashes in. This is because it is likely that a user will try
@@ -1224,7 +1225,7 @@ def managed_webdriver(chrome_version=None):
                 'please follow the instructions mentioned in the following '
                 'URL:\n'
                 'https://chromedriver.chromium.org/downloads/version-selection'
-                % get_version_command.replace(' ', r'\ '))
+                % chrome_command.replace(' ', r'\ '))
 
         installed_version_parts = ''.join(re.findall(r'[0-9\.]', output))
         installed_version = '.'.join(installed_version_parts.split('.')[:-1])
@@ -1258,11 +1259,11 @@ def managed_webdriver(chrome_version=None):
             # https://github.com/nodejs/node/issues/17036
             regex_pattern = re.escape('this.osArch = os.arch();')
             arch = 'x64' if is_x64_architecture() else 'x86'
-            replace = 'this.osArch = "%s";' % arch
+            replacement_string = 'this.osArch = "%s";' % arch
             exit_stack.enter_context(inplace_replace_file_context(
-                CHROME_PROVIDER_FILE_PATH, regex_pattern, replace))
+                CHROME_PROVIDER_FILE_PATH, regex_pattern, replacement_string))
             exit_stack.enter_context(inplace_replace_file_context(
-                GECKO_PROVIDER_FILE_PATH, regex_pattern, replace))
+                GECKO_PROVIDER_FILE_PATH, regex_pattern, replacement_string))
 
         yield exit_stack.enter_context(managed_process([
             NODE_BIN_PATH, WEBDRIVER_MANAGER_BIN_PATH, 'start',
@@ -1305,9 +1306,11 @@ def managed_protractor(
     ]
 
     if debug_mode:
+        # NOTE: This is a flag for Node.js, not Protractor, so we insert it
+        # immediately after NODE_BIN_PATH.
         protractor_args.insert(1, '--inspect-brk')
 
     managed_protractor_proc = (
-        managed_process(protractor_args, title='Protractor tests', **kwargs))
+        managed_process(protractor_args, title='Protractor Server', **kwargs))
     with managed_protractor_proc as proc:
         yield proc

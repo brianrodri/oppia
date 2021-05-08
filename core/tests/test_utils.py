@@ -1319,7 +1319,9 @@ class TestBase(unittest.TestCase):
         """
         original_function = getattr(obj, attr)
         def function_that_conditionally_uses_swap(*args, **kwargs):
-            """Returns a constant value only when the condition is met."""
+            """Calls the input function if the condition is True, otherwise it
+            calls the original function.
+            """
             if condition is not None and condition(*args, **kwargs):
                 return new_function(*args, **kwargs)
             else:

@@ -1290,8 +1290,8 @@ class TestBase(unittest.TestCase):
 
     @contextlib.contextmanager
     def swap_conditionally(
-            self, obj, attr, new_function=lambda *_, **__: None, condition=None,
-            use_call_counter=False):
+            self, obj, attr, new_function=lambda *_, **__: None,
+            condition=None):
         """Swap the obj.attr function to return a value when a condition is met.
 
         When the condition is not met, then the original function will be called
@@ -1311,8 +1311,6 @@ class TestBase(unittest.TestCase):
             condition: callable|None. A predicate function which returns True or
                 False depending on the arguments passed to the original
                 function. When None, the original function is always called.
-            use_call_counter: bool. Whether the swapped-in function should be
-                wrapped by a CallCounter.
 
         Yields:
             callable. The function object which has been swapped in.
@@ -1322,13 +1320,10 @@ class TestBase(unittest.TestCase):
             """Calls the input function if the condition is True, otherwise it
             calls the original function.
             """
-            if condition is not None and condition(*args, **kwargs):
-                return new_function(*args, **kwargs)
-            else:
-                return original_function(*args, **kwargs)
-        if use_call_counter:
-            function_that_conditionally_uses_swap = CallCounter(
-                function_that_conditionally_uses_swap)
+            chosen_function = (
+                new_function if condition and condition(*args, **kwargs) else
+                original_function)
+            return chosen_function(*args, **kwargs)
         with self.swap(obj, attr, function_that_conditionally_uses_swap):
             yield function_that_conditionally_uses_swap
 

@@ -146,7 +146,7 @@ def run_webpack_compilation(source_maps=False):
         if os.path.isdir(webpack_bundles_dir_name):
             break
     else:
-        # We didn't break out of the loop (all attempts have failed).
+        # We didn't break out of the loop, meaning all attempts have failed.
         python_utils.PRINT('Failed to complete webpack compilation, exiting...')
         sys.exit(1)
 

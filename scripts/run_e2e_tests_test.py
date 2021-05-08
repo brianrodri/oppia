@@ -107,6 +107,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             common, 'managed_webpack_compiler', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
             sys, 'exit', lambda _: None, called=False))
+        self.exit_stack.enter_context(self.swap_conditionally(
+            os.path, 'isdir', new_function=lambda _: True,
+            condition=lambda p: p == 'webpack_bundles'))
 
         run_e2e_tests.run_webpack_compilation()
 
@@ -114,8 +117,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         # The webpack compilation processes will be called five times.
         self.exit_stack.enter_context(self.swap_with_checks(
             common, 'managed_webpack_compiler', mock_managed_process))
-        self.exit_stack.enter_context(self.swap(
-            os.path, 'isdir', lambda _: False))
+        self.exit_stack.enter_context(self.swap_conditionally(
+            os.path, 'isdir', new_function=lambda _: False,
+            condition=lambda p: p == 'webpack_bundles'))
         self.exit_stack.enter_context(self.swap_with_checks(
             sys, 'exit', lambda _: None, expected_args=[(1,)]))
 
@@ -140,23 +144,24 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             build, 'main', lambda *_, **__: None,
             expected_kwargs=[{'args': []}]))
+        self.exit_stack.enter_context(self.swap_conditionally(
+            os.path, 'isdir', new_function=lambda _: True,
+            condition=lambda p: p == 'webpack_bundles'))
         self.exit_stack.enter_context(self.swap_with_checks(
             sys, 'exit', lambda _: None, called=False))
 
         run_e2e_tests.build_js_files(True)
 
     def test_build_js_files_in_dev_mode_with_exception_raised(self):
-        def mock_error(**_):
-            raise subprocess.CalledProcessError(
-                returncode=2, cmd=[], output='ERROR')
-
-        self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webpack_compiler', mock_error))
+        return_code = 2
+        self.exit_stack.enter_context(self.swap_to_always_raise(
+            common, 'managed_webpack_compiler',
+            error=subprocess.CalledProcessError(return_code, [])))
         self.exit_stack.enter_context(self.swap_with_checks(
             build, 'main', lambda *_, **__: None,
             expected_kwargs=[{'args': []}]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            sys, 'exit', lambda _: None, expected_args=[(2,)]))
+            sys, 'exit', lambda _: None, expected_args=[(return_code,)]))
 
         run_e2e_tests.build_js_files(True)
 

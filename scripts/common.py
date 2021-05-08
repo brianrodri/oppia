@@ -820,50 +820,49 @@ def managed_process(
         sys.path.insert(1, PSUTIL_DIR)
     import psutil
 
+    get_debug_info = lambda p: (
+        '%s(name="%s", pid=%d)' % (title, p.name(), p.pid)
+        if p.is_running() else '%s(pid=%d)' % (title, p.pid,))
+
     stripped_args = (('%s' % arg).strip() for arg in command_args)
     non_empty_args = (s for s in stripped_args if s)
 
     command = ' '.join(non_empty_args) if shell else list(non_empty_args)
     python_utils.PRINT('Starting new %s: %s' % (title, command))
-    popen_proc = psutil.Popen(command, shell=shell, **kwargs)
+    proc = psutil.Popen(command, shell=shell, **kwargs)
 
     try:
-        yield popen_proc
+        yield proc
     finally:
+        python_utils.PRINT('Ending %s' % get_debug_info(proc))
+        procs_still_alive = [proc]
         try:
-            procs_to_terminate = (
-                popen_proc.children(recursive=True)
-                if popen_proc.is_running() else [])
+            if proc.is_running():
+                # Children must be terminated before the parent, otherwise they
+                # may become zombie processes.
+                procs_still_alive = proc.children(recursive=True) + [proc]
 
-            # Children must be terminated before the parent, otherwise they risk
-            # becoming zombies.
-            procs_to_terminate.append(popen_proc)
-
-            get_debug_info = lambda proc: (
-                '%s(name="%s", pid=%d)' % (title, proc.name(), proc.pid)
-                if proc.is_running() else '%s(pid=%d)' % (title, proc.pid,))
-
-            procs_still_alive = []
-            for proc in procs_to_terminate:
+            procs_to_kill = []
+            for proc in procs_still_alive:
                 if proc.is_running():
-                    procs_still_alive.append(proc)
+                    procs_to_kill.append(proc)
                     logging.info('Terminating %s...' % get_debug_info(proc))
                     proc.terminate()
                 else:
                     logging.info('%s has ended.' % get_debug_info(proc))
 
             procs_gone, procs_still_alive = (
-                psutil.wait_procs(procs_still_alive, timeout=timeout_secs))
-            for proc in procs_gone:
-                logging.info('%s has ended.' % get_debug_info(proc))
+                psutil.wait_procs(procs_to_kill, timeout=timeout_secs))
             for proc in procs_still_alive:
                 logging.warn('Forced to kill %s!' % get_debug_info(proc))
                 proc.kill()
+            for proc in procs_gone:
+                logging.info('%s has ended.' % get_debug_info(proc))
         except Exception:
-            # NOTE: Raising an exception while exiting a context manager leads
-            # to undefined behavior, so we log and suppress them instead.
-            logging.exception('Failed to gracefully shut down %s(pid=%d)' % (
-                title, proc.pid))
+            # NOTE: Raising an exception while exiting a context manager is bad
+            # practice, so we log and suppress exceptions instead.
+            logging.exception('Failed to gracefully shut down %s' % (
+                ', '.join(get_debug_info(p) for p in procs_still_alive)))
 
 
 @contextlib.contextmanager

@@ -841,7 +841,7 @@ def managed_process(
 
             get_debug_info = lambda proc: (
                 '%s(name="%s", pid=%d)' % (title, proc.name(), proc.pid)
-                if proc.is_running() else 'Process(pid=%d)' % (proc.pid,))
+                if proc.is_running() else '%s(pid=%d)' % (title, proc.pid,))
 
             procs_still_alive = []
             for proc in procs_to_terminate:
@@ -862,7 +862,8 @@ def managed_process(
         except Exception:
             # NOTE: Raising an exception while exiting a context manager leads
             # to undefined behavior, so we log and suppress them instead.
-            logging.exception('Failed to gracefully shut down %s' % title)
+            logging.exception('Failed to gracefully shut down %s(pid=%d)' % (
+                title, proc.pid))
 
 
 @contextlib.contextmanager

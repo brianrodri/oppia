@@ -21,6 +21,7 @@ import collections
 import contextlib
 import getpass
 import http.server
+import logging
 import os
 import re
 import shutil
@@ -782,36 +783,6 @@ class ManagedProcessTests(test_utils.TestBase):
         finally:
             super(ManagedProcessTests, self).tearDown()
 
-    def assert_proc_was_managed_as_expected(
-            self, logs, pid,
-            manager_should_have_sent_terminate_signal=True,
-            manager_should_have_sent_kill_signal=False):
-        """Asserts that the process ended as expected.
-
-        Args:
-            logs: list(str). The logs emitted during the process's lifetime.
-            pid: int. The process ID to inspect.
-            manager_should_have_sent_terminate_signal: bool. Whether the manager
-                should have sent a terminate signal to the process.
-            manager_should_have_sent_kill_signal: bool. Whether the manager
-                should have sent a kill signal to the process.
-        """
-        proc_pattern = r'Process\((name="[A-Za-z]+", )?pid=%d\)' % (pid,)
-
-        expected_patterns = []
-        if manager_should_have_sent_terminate_signal:
-            expected_patterns.append(r'Terminating %s\.\.\.' % proc_pattern)
-        if manager_should_have_sent_kill_signal:
-            expected_patterns.append(r'Forced to kill %s!' % proc_pattern)
-        else:
-            expected_patterns.append(r'%s has ended\.' % proc_pattern)
-
-        logs_with_pid = [msg for msg in logs if re.search(proc_pattern, msg)]
-        if expected_patterns and not logs_with_pid:
-            self.fail(msg='%r has no match in logs=%r' % (proc_pattern, logs))
-
-        self.assert_matches_regexps(logs_with_pid, expected_patterns)
-
     @contextlib.contextmanager
     def _swap_popen(self, clean_shutdown=True, num_children=0, outputs=()):
         """Returns values for inspecting and mocking calls to psutil.Popen.
@@ -855,7 +826,9 @@ class ManagedProcessTests(test_utils.TestBase):
                 for pid in python_utils.RANGE(
                     parent_pid + 1, parent_pid + 1 + num_children)
             ]
+
             stdout = ''.join('%s\n' % o for o in outputs)
+
             return test_utils.PopenStub(
                 pid=parent_pid, stdout=stdout, clean_shutdown=clean_shutdown,
                 child_procs=child_procs)
@@ -893,6 +866,36 @@ class ManagedProcessTests(test_utils.TestBase):
             exit_stack.enter_context(self.swap(shutil, 'rmtree', new_rmtree))
             exit_stack.enter_context(self.swap(os, 'makedirs', new_makedirs))
             yield new_rmtree, new_makedirs
+
+    def assert_proc_was_managed_as_expected(
+            self, logs, pid,
+            manager_should_have_sent_terminate_signal=True,
+            manager_should_have_sent_kill_signal=False):
+        """Asserts that the process ended as expected.
+
+        Args:
+            logs: list(str). The logs emitted during the process's lifetime.
+            pid: int. The process ID to inspect.
+            manager_should_have_sent_terminate_signal: bool. Whether the manager
+                should have sent a terminate signal to the process.
+            manager_should_have_sent_kill_signal: bool. Whether the manager
+                should have sent a kill signal to the process.
+        """
+        proc_pattern = r'Process\((name="[A-Za-z]+", )?pid=%d\)' % (pid,)
+
+        expected_patterns = []
+        if manager_should_have_sent_terminate_signal:
+            expected_patterns.append(r'Terminating %s\.\.\.' % proc_pattern)
+        if manager_should_have_sent_kill_signal:
+            expected_patterns.append(r'Forced to kill %s!' % proc_pattern)
+        else:
+            expected_patterns.append(r'%s has ended\.' % proc_pattern)
+
+        logs_with_pid = [msg for msg in logs if re.search(proc_pattern, msg)]
+        if expected_patterns and not logs_with_pid:
+            self.fail(msg='%r has no match in logs=%r' % (proc_pattern, logs))
+
+        self.assert_matches_regexps(logs_with_pid, expected_patterns)
 
     def test_does_not_raise_when_psutil_not_in_path(self):
         self.exit_stack.enter_context(self._swap_popen())
@@ -1031,6 +1034,24 @@ class ManagedProcessTests(test_utils.TestBase):
             logs, proc.pid,
             manager_should_have_sent_terminate_signal=True,
             manager_should_have_sent_kill_signal=False)
+
+    def test_does_not_raise_when_exit_fails(self):
+        self.exit_stack.enter_context(self._swap_popen())
+        self.exit_stack.enter_context(self.swap_to_always_raise(
+            psutil, 'wait_procs', error=Exception('uh-oh')))
+        logs = self.exit_stack.enter_context(self.capture_logging(
+            min_level=logging.ERROR))
+
+        self.exit_stack.enter_context(common.managed_process(['a', 'bc']))
+        # Should not raise.
+        self.exit_stack.close()
+
+        self.assert_matches_regexps(logs, [
+            r'Failed to gracefully shut down Process\(pid=1\)\n'
+            r'Traceback \(most recent call last\):\n'
+            r'.*'
+            r'Exception: uh-oh',
+        ])
 
     def test_managed_firebase_emulator(self):
         popen_calls = self.exit_stack.enter_context(self._swap_popen())

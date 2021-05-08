@@ -1425,7 +1425,7 @@ class ManagedProcessTests(test_utils.TestBase):
             ]))
 
         self.exit_stack.enter_context(
-            common.managed_webdriver(chrome_version='123'))
+            common.managed_webdriver_server(chrome_version='123'))
         self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
@@ -1456,7 +1456,7 @@ class ManagedProcessTests(test_utils.TestBase):
                 ),
             ]))
 
-        self.exit_stack.enter_context(common.managed_webdriver())
+        self.exit_stack.enter_context(common.managed_webdriver_server())
         self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
@@ -1483,7 +1483,7 @@ class ManagedProcessTests(test_utils.TestBase):
                 ),
             ]))
 
-        self.exit_stack.enter_context(common.managed_webdriver())
+        self.exit_stack.enter_context(common.managed_webdriver_server())
         self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
@@ -1500,7 +1500,7 @@ class ManagedProcessTests(test_utils.TestBase):
 
         expected_regexp = 'Failed to execute "google-chrome --version" command'
         with self.assertRaisesRegexp(Exception, expected_regexp):
-            self.exit_stack.enter_context(common.managed_webdriver())
+            self.exit_stack.enter_context(common.managed_webdriver_server())
 
         self.assertEqual(len(popen_calls), 0)
 
@@ -1530,7 +1530,7 @@ class ManagedProcessTests(test_utils.TestBase):
                 ),
             ]))
 
-        self.exit_stack.enter_context(common.managed_webdriver())
+        self.exit_stack.enter_context(common.managed_webdriver_server())
         self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
@@ -1544,11 +1544,11 @@ class ManagedProcessTests(test_utils.TestBase):
 
         with self.assertRaisesRegexp(ValueError, 'should be larger than 0'):
             self.exit_stack.enter_context(
-                common.managed_protractor(sharding_instances=0))
+                common.managed_protractor_server(sharding_instances=0))
 
         with self.assertRaisesRegexp(ValueError, 'should be larger than 0'):
             self.exit_stack.enter_context(
-                common.managed_protractor(sharding_instances=-1))
+                common.managed_protractor_server(sharding_instances=-1))
 
         self.exit_stack.close()
 
@@ -1557,7 +1557,7 @@ class ManagedProcessTests(test_utils.TestBase):
     def test_managed_protractor(self):
         popen_calls = self.exit_stack.enter_context(self._swap_popen())
 
-        self.exit_stack.enter_context(common.managed_protractor())
+        self.exit_stack.enter_context(common.managed_protractor_server())
         self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
@@ -1576,7 +1576,7 @@ class ManagedProcessTests(test_utils.TestBase):
     def test_managed_protractor_with_explicit_args(self):
         popen_calls = self.exit_stack.enter_context(self._swap_popen())
 
-        self.exit_stack.enter_context(common.managed_protractor(
+        self.exit_stack.enter_context(common.managed_protractor_server(
             suite_name='abc', sharding_instances=3, debug_mode=True,
             dev_mode=False, stdout=subprocess.PIPE))
         self.exit_stack.close()

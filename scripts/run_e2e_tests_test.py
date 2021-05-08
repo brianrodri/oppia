@@ -226,7 +226,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             common, 'managed_webdriver', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_protractor', mock_managed_process,
+            common, 'managed_protractor_server', self.mock_managed_process,
             expected_kwargs=[
                 {
                     'dev_mode': True,
@@ -247,7 +247,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         run_e2e_tests.main(args=[])
 
     def test_work_with_non_ascii_chars(self):
-        def mock_managed_protractor(**unused_kwargs): # pylint: disable=unused-argument
+        def mock_managed_protractor_server(**unused_kwargs): # pylint: disable=unused-argument
             return contextlib2.nullcontext(
                 enter_result=test_utils.PopenStub(stdout='sample\n✓\noutput\n'))
 
@@ -268,9 +268,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             common, 'managed_redis_server', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver', mock_managed_process))
+            common, 'managed_webdriver_server', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_protractor', mock_managed_protractor,
+            common, 'managed_protractor_server', mock_managed_protractor_server,
             expected_kwargs=[
                 {
                     'dev_mode': True,
@@ -407,9 +407,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             common, 'managed_portserver', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver', mock_managed_process))
+            common, 'managed_webdriver_server', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_protractor', mock_managed_process,
+            common, 'managed_protractor_server', mock_managed_process,
             expected_kwargs=[
                 {
                     'dev_mode': True,
@@ -449,9 +449,9 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             common, 'managed_portserver', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver', mock_managed_process))
+            common, 'managed_webdriver_server', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_protractor', mock_managed_process,
+            common, 'managed_protractor_server', mock_managed_process,
             expected_kwargs=[
                 {
                     'dev_mode': True,
@@ -491,10 +491,10 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             common, 'managed_portserver', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_webdriver', mock_managed_process,
+            common, 'managed_webdriver_server', mock_managed_process,
             expected_kwargs=[{'chrome_version': CHROME_DRIVER_VERSION}]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            common, 'managed_protractor', mock_managed_process,
+            common, 'managed_protractor_server', mock_managed_process,
             expected_kwargs=[
                 {
                     'dev_mode': True,

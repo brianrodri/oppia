@@ -1191,7 +1191,7 @@ def managed_portserver():
 
 
 @contextlib.contextmanager
-def managed_webdriver(chrome_version=None):
+def managed_webdriver_server(chrome_version=None):
     """Returns context manager to start/stop the Webdriver server gracefully.
 
     This context manager updates Google Chrome before starting the server.
@@ -1274,7 +1274,7 @@ def managed_webdriver(chrome_version=None):
 
 
 @contextlib.contextmanager
-def managed_protractor(
+def managed_protractor_server(
         suite_name='full', dev_mode=True, debug_mode=False,
         sharding_instances=1, **kwargs):
     """Returns context manager to start/stop the Protractor server gracefully.

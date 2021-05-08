@@ -224,10 +224,10 @@ def run_tests(args):
             skip_sdk_update_check=True,
             env={'PORTSERVER_ADDRESS': common.PORTSERVER_SOCKET_FILEPATH}))
 
-        stack.enter_context(
-            common.managed_webdriver(chrome_version=args.chrome_driver_version))
+        stack.enter_context(common.managed_webdriver_server(
+            chrome_version=args.chrome_driver_version))
 
-        managed_protractor = stack.enter_context(common.managed_protractor(
+        proc = stack.enter_context(common.managed_protractor_server(
             suite_name=args.suite,
             dev_mode=dev_mode,
             debug_mode=args.debug_mode,
@@ -244,7 +244,7 @@ def run_tests(args):
         output_lines = []
         # Keep reading lines until an empty string is returned. Empty strings
         # signal that the process has ended.
-        for line in iter(managed_protractor.stdout.readline, b''):
+        for line in iter(proc.stdout.readline, b''):
             if isinstance(line, str):
                 # Although our unit tests always provide unicode strings, the
                 # actual server needs this failsafe since it can output
@@ -254,7 +254,7 @@ def run_tests(args):
             # Replaces non-ASCII characters with '?'.
             sys.stdout.write(line.encode('ascii', errors='replace'))
 
-        return output_lines, managed_protractor.returncode
+        return output_lines, proc.returncode
 
 
 def main(args=None):

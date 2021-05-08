@@ -1496,7 +1496,7 @@ class ManagedProcessTests(test_utils.TestBase):
         popen_calls = self.exit_stack.enter_context(self._swap_popen())
         self.exit_stack.enter_context(self.swap(common, 'OS_NAME', 'Linux'))
         self.exit_stack.enter_context(self.swap_to_always_raise(
-            subprocess, 'check_call', error=OSError))
+            subprocess, 'check_output', error=OSError))
 
         expected_regexp = 'Failed to execute "google-chrome --version" command'
         with self.assertRaisesRegexp(Exception, expected_regexp):

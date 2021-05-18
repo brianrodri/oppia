@@ -2137,7 +2137,7 @@ class RestrictedImportCheckerTests(unittest.TestCase):
     def test_forbid_storage_from_import_in_controllers_module(self):
         node_no_err_importfrom = astroid.extract_node(
             """
-            from core.storage.user import gae_models as user_models #@
+            from core.storage.user import ndb_models as user_models #@
         """)
         node_no_err_importfrom.root().name = 'oppia.core.controllers.controller'
         with self.checker_test_object.assertAddsMessages(

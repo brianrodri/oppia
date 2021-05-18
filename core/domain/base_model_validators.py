@@ -180,7 +180,7 @@ class ExternalModelReference(python_utils.OBJECT):
         Args:
             model_class: ClassObject. The model class.
             model_id: str. The id of the model.
-            model_instance: datastore_services.Model. The gae model object.
+            model_instance: datastore_services.Model. The ndb model object.
         """
         self.model_class = model_class
         self.model_id = model_id

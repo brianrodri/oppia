@@ -20,7 +20,7 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 from core.platform import models
-import core.storage.base_model.gae_models as base_models
+import core.storage.base_model.ndb_models as base_models
 
 datastore_services = models.Registry.import_datastore_services()
 

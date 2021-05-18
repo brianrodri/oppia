@@ -30,7 +30,7 @@ from core.domain import stats_jobs_one_off
 from core.domain import stats_services
 from core.domain import taskqueue_services
 from core.platform import models
-import core.storage.base_model.gae_models as base_models
+import core.storage.base_model.ndb_models as base_models
 from core.tests import test_utils
 import feconf
 import python_utils

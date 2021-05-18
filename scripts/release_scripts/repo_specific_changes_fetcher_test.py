@@ -83,16 +83,16 @@ class GetRepoSpecificChangesTest(test_utils.GenericTestBase):
         def mock_run_cmd(unused_cmd):
             return (
                 'scripts/setup.py\nextensions/test.ts\n'
-                'core/storage/activity/gae_models.py\n'
-                'core/storage/user/gae_models.py')
+                'core/storage/activity/ndb_models.py\n'
+                'core/storage/user/ndb_models.py')
         with self.swap(common, 'run_cmd', mock_run_cmd):
-            actual_storgae_models = (
+            actual_storndb_models = (
                 repo_specific_changes_fetcher
                 .get_changed_storage_models_filenames('release_tag'))
         expected_storage_models = [
-            'core/storage/activity/gae_models.py',
-            'core/storage/user/gae_models.py']
-        self.assertEqual(actual_storgae_models, expected_storage_models)
+            'core/storage/activity/ndb_models.py',
+            'core/storage/user/ndb_models.py']
+        self.assertEqual(actual_storndb_models, expected_storage_models)
 
     def test_get_changes(self):
         def mock_get_changed_schema_version_constant_names(

@@ -36,7 +36,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_activity(self):
         """Tests import_models function with activity option."""
-        from core.storage.activity import gae_models as activity_models
+        from core.storage.activity import ndb_models as activity_models
         expected_activity_models = (activity_models,)
         self.assertEqual(
             expected_activity_models,
@@ -44,7 +44,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_audit(self):
         """Tests import_models function with audit option."""
-        from core.storage.audit import gae_models as audit_models
+        from core.storage.audit import ndb_models as audit_models
         expected_audit_models = (audit_models,)
         self.assertEqual(
             expected_audit_models,
@@ -52,7 +52,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_auth_model(self):
         """Tests import_models function with auth option."""
-        from core.storage.auth import gae_models as auth_models
+        from core.storage.auth import ndb_models as auth_models
         expected_auth_models = (auth_models,)
         self.assertEqual(
             expected_auth_models,
@@ -60,7 +60,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_base_model(self):
         """Tests import_models function with base model option."""
-        from core.storage.base_model import gae_models as base_models
+        from core.storage.base_model import ndb_models as base_models
         expected_base_models = (base_models,)
         self.assertEqual(
             expected_base_models,
@@ -68,7 +68,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_classifier(self):
         """Tests import_models function with classifier option."""
-        from core.storage.classifier import gae_models as classifier_data_models
+        from core.storage.classifier import ndb_models as classifier_data_models
         expected_classifier_models = (classifier_data_models,)
         self.assertEqual(
             expected_classifier_models,
@@ -76,7 +76,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_collection(self):
         """Tests import_models function with collection option."""
-        from core.storage.collection import gae_models as collection_models
+        from core.storage.collection import ndb_models as collection_models
         expected_collection_models = (collection_models,)
         self.assertEqual(
             expected_collection_models,
@@ -84,7 +84,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_config(self):
         """Tests import_models function with config option."""
-        from core.storage.config import gae_models as config_models
+        from core.storage.config import ndb_models as config_models
         expected_config_models = (config_models,)
         self.assertEqual(
             expected_config_models,
@@ -92,7 +92,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_email(self):
         """Tests import_models function with email option."""
-        from core.storage.email import gae_models as email_models
+        from core.storage.email import ndb_models as email_models
         expected_email_models = (email_models,)
         self.assertEqual(
             expected_email_models,
@@ -100,7 +100,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_exploration(self):
         """Tests import_models function with exploration option."""
-        from core.storage.exploration import gae_models as exp_models
+        from core.storage.exploration import ndb_models as exp_models
         expected_exploration_models = (exp_models,)
         self.assertEqual(
             expected_exploration_models,
@@ -108,7 +108,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_feedback(self):
         """Tests import_models function with feedback option."""
-        from core.storage.feedback import gae_models as feedback_models
+        from core.storage.feedback import ndb_models as feedback_models
         expected_feedback_models = (feedback_models,)
         self.assertEqual(
             expected_feedback_models,
@@ -116,7 +116,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_job(self):
         """Tests import_models function with job option."""
-        from core.storage.job import gae_models as job_models
+        from core.storage.job import ndb_models as job_models
         expected_job_models = (job_models,)
         self.assertEqual(
             expected_job_models,
@@ -124,7 +124,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_question(self):
         """Tests import_models function with question option."""
-        from core.storage.question import gae_models as question_models
+        from core.storage.question import ndb_models as question_models
         expected_question_models = (question_models,)
         self.assertEqual(
             expected_question_models,
@@ -132,7 +132,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_recommendations(self):
         """Tests import_models function with recommendations option."""
-        from core.storage.recommendations import gae_models as recommendations_models # pylint: disable=line-too-long
+        from core.storage.recommendations import ndb_models as recommendations_models # pylint: disable=line-too-long
         expected_recommendations_models = (recommendations_models,)
         self.assertEqual(
             expected_recommendations_models,
@@ -141,7 +141,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_skill(self):
         """Tests import_models function with skill option."""
-        from core.storage.skill import gae_models as skill_models
+        from core.storage.skill import ndb_models as skill_models
         expected_skills_models = (skill_models,)
         self.assertEqual(
             expected_skills_models,
@@ -149,7 +149,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_statistics(self):
         """Tests import_models function with statistics option."""
-        from core.storage.statistics import gae_models as statistics_models
+        from core.storage.statistics import ndb_models as statistics_models
         expected_statistics_models = (statistics_models,)
         self.assertEqual(
             expected_statistics_models,
@@ -157,7 +157,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_story(self):
         """Tests import_models function with story option."""
-        from core.storage.story import gae_models as story_models
+        from core.storage.story import ndb_models as story_models
         expected_story_models = (story_models,)
         self.assertEqual(
             expected_story_models,
@@ -165,7 +165,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_suggestion(self):
         """Tests import_models function with suggestion option."""
-        from core.storage.suggestion import gae_models as suggestion_models
+        from core.storage.suggestion import ndb_models as suggestion_models
         expected_suggestion_models = (suggestion_models,)
         self.assertEqual(
             expected_suggestion_models,
@@ -173,7 +173,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_topic(self):
         """Tests import_models function with topic option."""
-        from core.storage.topic import gae_models as topic_models
+        from core.storage.topic import ndb_models as topic_models
         expected_topic_models = (topic_models,)
         self.assertEqual(
             expected_topic_models,
@@ -181,7 +181,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_user(self):
         """Tests import_models function with user option."""
-        from core.storage.user import gae_models as user_models
+        from core.storage.user import ndb_models as user_models
         expected_user_models = (user_models,)
         self.assertEqual(
             expected_user_models,
@@ -194,7 +194,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_get_storage_model_classes(self):
         """Tests get_all_storage_model_classes."""
-        from core.storage.user import gae_models as user_models
+        from core.storage.user import ndb_models as user_models
         classes = self.registry_instance.get_storage_model_classes(
             [models.NAMES.user])
         self.assertIn(user_models.UserSettingsModel, classes)
@@ -208,9 +208,9 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_get_all_storage_model_classes(self):
         """Tests get_all_storage_model_classes."""
-        from core.storage.base_model import gae_models as base_models
-        from core.storage.exploration import gae_models as exp_models
-        from core.storage.user import gae_models as user_models
+        from core.storage.base_model import ndb_models as base_models
+        from core.storage.exploration import ndb_models as exp_models
+        from core.storage.user import ndb_models as user_models
         classes = self.registry_instance.get_all_storage_model_classes()
         self.assertIn(exp_models.ExplorationModel, classes)
         self.assertIn(exp_models.ExplorationSnapshotContentModel, classes)

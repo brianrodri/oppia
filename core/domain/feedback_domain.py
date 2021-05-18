@@ -33,7 +33,7 @@ class FeedbackThread(python_utils.OBJECT):
             the feedback thread.
         original_author_id: str. The ID of the original author.
         status: str. The current status of the thread. Status should
-            be one of core.storage.feedback.gae_models.STATUS_CHOICES.
+            be one of core.storage.feedback.ndb_models.STATUS_CHOICES.
         subject: str. The subject of the feedback thread.
         summary: str. A summary of the feedback thread.
         has_suggestion: bool. Whether the feedback thread includes a

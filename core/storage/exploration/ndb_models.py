@@ -23,7 +23,7 @@ import datetime
 
 from constants import constants
 from core.platform import models
-import core.storage.base_model.gae_models as base_models
+import core.storage.base_model.ndb_models as base_models
 import feconf
 import python_utils
 import utils

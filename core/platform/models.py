@@ -83,76 +83,76 @@ class _Gae(Platform):
         returned_models = []
         for name in model_names:
             if name == NAMES.activity:
-                from core.storage.activity import gae_models as activity_models
+                from core.storage.activity import ndb_models as activity_models
                 returned_models.append(activity_models)
             elif name == NAMES.app_feedback_report:
-                from core.storage.app_feedback_report import gae_models as app_feedback_report_models # pylint: disable=line-too-long
+                from core.storage.app_feedback_report import ndb_models as app_feedback_report_models # pylint: disable=line-too-long
                 returned_models.append(app_feedback_report_models)
             elif name == NAMES.audit:
-                from core.storage.audit import gae_models as audit_models
+                from core.storage.audit import ndb_models as audit_models
                 returned_models.append(audit_models)
             elif name == NAMES.auth:
-                from core.storage.auth import gae_models as auth_models
+                from core.storage.auth import ndb_models as auth_models
                 returned_models.append(auth_models)
             elif name == NAMES.base_model:
-                from core.storage.base_model import gae_models as base_models
+                from core.storage.base_model import ndb_models as base_models
                 returned_models.append(base_models)
             elif name == NAMES.classifier:
-                from core.storage.classifier import gae_models as classifier_data_models # pylint: disable=line-too-long
+                from core.storage.classifier import ndb_models as classifier_data_models # pylint: disable=line-too-long
                 returned_models.append(classifier_data_models)
             elif name == NAMES.collection:
-                from core.storage.collection import gae_models as collection_models # pylint: disable=line-too-long
+                from core.storage.collection import ndb_models as collection_models # pylint: disable=line-too-long
                 returned_models.append(collection_models)
             elif name == NAMES.config:
-                from core.storage.config import gae_models as config_models
+                from core.storage.config import ndb_models as config_models
                 returned_models.append(config_models)
             elif name == NAMES.email:
-                from core.storage.email import gae_models as email_models
+                from core.storage.email import ndb_models as email_models
                 returned_models.append(email_models)
             elif name == NAMES.exploration:
-                from core.storage.exploration import gae_models as exp_models
+                from core.storage.exploration import ndb_models as exp_models
                 returned_models.append(exp_models)
             elif name == NAMES.feedback:
-                from core.storage.feedback import gae_models as feedback_models
+                from core.storage.feedback import ndb_models as feedback_models
                 returned_models.append(feedback_models)
             elif name == NAMES.improvements:
-                from core.storage.improvements import gae_models as improvements_models # pylint: disable=line-too-long
+                from core.storage.improvements import ndb_models as improvements_models # pylint: disable=line-too-long
                 returned_models.append(improvements_models)
             elif name == NAMES.job:
-                from core.storage.job import gae_models as job_models
+                from core.storage.job import ndb_models as job_models
                 returned_models.append(job_models)
             elif name == NAMES.opportunity:
-                from core.storage.opportunity import gae_models as opportunity_models # pylint: disable=line-too-long
+                from core.storage.opportunity import ndb_models as opportunity_models # pylint: disable=line-too-long
                 returned_models.append(opportunity_models)
             elif name == NAMES.question:
-                from core.storage.question import gae_models as question_models
+                from core.storage.question import ndb_models as question_models
                 returned_models.append(question_models)
             elif name == NAMES.recommendations:
-                from core.storage.recommendations import gae_models as recommendations_models # pylint: disable=line-too-long
+                from core.storage.recommendations import ndb_models as recommendations_models # pylint: disable=line-too-long
                 returned_models.append(recommendations_models)
             elif name == NAMES.skill:
-                from core.storage.skill import gae_models as skill_models
+                from core.storage.skill import ndb_models as skill_models
                 returned_models.append(skill_models)
             elif name == NAMES.statistics:
-                from core.storage.statistics import gae_models as statistics_models # pylint: disable=line-too-long
+                from core.storage.statistics import ndb_models as statistics_models # pylint: disable=line-too-long
                 returned_models.append(statistics_models)
             elif name == NAMES.story:
-                from core.storage.story import gae_models as story_models
+                from core.storage.story import ndb_models as story_models
                 returned_models.append(story_models)
             elif name == NAMES.subtopic:
-                from core.storage.subtopic import gae_models as subtopic_models # pylint: disable=line-too-long
+                from core.storage.subtopic import ndb_models as subtopic_models # pylint: disable=line-too-long
                 returned_models.append(subtopic_models)
             elif name == NAMES.suggestion:
-                from core.storage.suggestion import gae_models as suggestion_models # pylint: disable=line-too-long
+                from core.storage.suggestion import ndb_models as suggestion_models # pylint: disable=line-too-long
                 returned_models.append(suggestion_models)
             elif name == NAMES.topic:
-                from core.storage.topic import gae_models as topic_models
+                from core.storage.topic import ndb_models as topic_models
                 returned_models.append(topic_models)
             elif name == NAMES.translation:
-                from core.storage.translation import gae_models as translation_models # pylint: disable=line-too-long
+                from core.storage.translation import ndb_models as translation_models # pylint: disable=line-too-long
                 returned_models.append(translation_models)
             elif name == NAMES.user:
-                from core.storage.user import gae_models as user_models
+                from core.storage.user import ndb_models as user_models
                 returned_models.append(user_models)
             else:
                 raise Exception('Invalid model name: %s' % name)

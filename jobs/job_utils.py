@@ -19,6 +19,8 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
+import operator
+
 from core.platform import models
 import feconf
 
@@ -51,8 +53,8 @@ def clone_model(model, **new_values):
         Subclasses of BaseModel will return a clone with the same type.
     """
     # Reference implementation: https://stackoverflow.com/a/2712401/4859885.
+    model_id = new_values.pop('id', None) or get_model_id(model)
     cls = model.__class__
-    model_id = new_values.pop('id', model.id)
     props = {k: v.__get__(model, cls) for k, v in cls._properties.items()} # pylint: disable=protected-access
     props.update(new_values)
     return cls(id=model_id, **props)
@@ -68,8 +70,7 @@ def get_model_kind(model):
     convention and take special care to always return the correct value.
 
     Args:
-        model: base_models.Model|beam_datastore_types.Entity. The model to
-            inspect.
+        model: datastore_services.Model. The model to inspect.
 
     Returns:
         bytes. The model's kind.
@@ -77,12 +78,10 @@ def get_model_kind(model):
     Raises:
         TypeError. When the argument is not a model.
     """
-    if isinstance(model, base_models.BaseModel) or (
+    if isinstance(model, datastore_services.Model) or (
             isinstance(model, type) and
-            issubclass(model, base_models.BaseModel)):
+            issubclass(model, datastore_services.Model)):
         return model._get_kind() # pylint: disable=protected-access
-    elif isinstance(model, beam_datastore_types.Entity):
-        return model.key.to_client_key().kind
     else:
         raise TypeError('%r is not a model type or instance' % model)
 
@@ -91,8 +90,7 @@ def get_model_property(model, property_name):
     """Returns the given property from a model.
 
     Args:
-        model: base_models.Model|beam_datastore_types.Entity. The model to
-            inspect.
+        model: datastore_services.Model. The model to inspect.
         property_name: str. The name of the property to extract.
 
     Returns:
@@ -103,10 +101,28 @@ def get_model_property(model, property_name):
     """
     if property_name == 'id':
         return get_model_id(model)
-    elif isinstance(model, base_models.BaseModel):
+    elif property_name == '__key__':
+        return get_model_key(model)
+    elif isinstance(model, datastore_services.Model):
         return getattr(model, property_name)
-    elif isinstance(model, beam_datastore_types.Entity):
-        return model.properties.get(property_name)
+    else:
+        raise TypeError('%r is not a model instance' % model)
+
+
+def get_model_key(model):
+    """Returns the given model's key.
+
+    Args:
+        model: datastore_services.Model. The model to inspect.
+
+    Returns:
+        datastore_services.Key. The model's key.
+
+    Raises:
+        TypeError. When the argument is not a model.
+    """
+    if isinstance(model, datastore_services.Model):
+        return model.key
     else:
         raise TypeError('%r is not a model instance' % model)
 
@@ -115,8 +131,7 @@ def get_model_id(model):
     """Returns the given model's ID.
 
     Args:
-        model: base_models.Model|beam_datastore_types.Entity. The model to
-            inspect.
+        model: datastore_services.Model. The model to inspect.
 
     Returns:
         bytes. The model's ID.
@@ -124,10 +139,8 @@ def get_model_id(model):
     Raises:
         TypeError. When the argument is not a model.
     """
-    if isinstance(model, base_models.BaseModel):
-        return model.id
-    elif isinstance(model, beam_datastore_types.Entity):
-        return model.key.to_client_key().id_or_name
+    if isinstance(model, datastore_services.Model):
+        return None if model.key is None else model.key.id()
     else:
         raise TypeError('%r is not a model instance' % model)
 
@@ -158,7 +171,92 @@ def get_model_from_beam_entity(beam_entity):
     Returns:
         datastore_services.Model. The NDB model representation of the entity.
     """
-    model_id = get_model_id(beam_entity)
-    model_class = (
-        datastore_services.Model._lookup_model(get_model_kind(beam_entity))) # pylint: disable=protected-access
+    beam_key = beam_entity.key.to_client_key()
+    model_id = beam_key.id_or_name
+    model_class = datastore_services.Model._lookup_model(beam_key.kind) # pylint: disable=protected-access
     return model_class(id=model_id, **beam_entity.properties)
+
+
+def apply_query_to_models(query, model_list):
+    """Applies the query to the list of models by removing elements in-place.
+
+    Args:
+        query: beam_datastore_types.Query. The query object representing the
+            constraints placed on the models.
+        model_list: list(Model). The models to filter.
+
+    Raises:
+        ValueError. The kind of model is specified by the Query, but the order
+            does not specifiy a sort-by key.
+    """
+    if query.kind is None and query.order != ('__key__',):
+        raise ValueError('Query(kind=None) must also have order=(\'__key__\',)')
+
+    if query.kind:
+        model_list[:] = [
+            m for m in model_list if get_model_kind(m) == query.kind
+        ]
+
+    if query.namespace:
+        model_list[:] = [
+            m for m in model_list if m.key.namespace() == query.namespace
+        ]
+
+    if query.filters:
+        model_list[:] = [
+            m for m in model_list
+            if all(get_operator(comp)(get_model_property(m, name), value)
+                   for name, comp, value in query.filters)
+        ]
+
+    if query.order:
+        for order in reversed(query.order):
+            sort_by_property_name(model_list, order)
+
+    if query.limit:
+        del model_list[query.limit:]
+
+
+def sort_by_property_name(model_list, property_name):
+    """Sorts the list of models by the given property.
+
+    Args:
+        model_list: list(Model). The models to sort.
+        property_name: str. The name of the property to sort by. If the name is
+            prefixed by '-', then the models are sorted in reverse order.
+    """
+    if property_name.startswith('-'):
+        reverse = True
+        property_name = property_name[1:]
+    else:
+        reverse = False
+
+    model_list.sort(
+        key=lambda model: get_model_property(model, property_name),
+        reverse=reverse)
+
+
+def get_operator(comp_str):
+    """Returns the operator function corresponding to the given comparison.
+
+    Args:
+        comp_str: str. One of: '<', '<=', '=', '>=', '>'.
+
+    Returns:
+        callable. The binary operator corresponding to the comparison.
+
+    Raises:
+        ValueError. The comparison is not supported.
+    """
+    if comp_str == '<':
+        return operator.lt
+    elif comp_str == '<=':
+        return operator.le
+    elif comp_str == '=':
+        return operator.eq
+    elif comp_str == '>=':
+        return operator.ge
+    elif comp_str == '>':
+        return operator.gt
+    else:
+        raise ValueError('Unsupported comparison operator: %s' % comp_str)

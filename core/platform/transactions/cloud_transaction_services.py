@@ -21,12 +21,17 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import functools
 
+import backports.functools_lru_cache
 from google.cloud import datastore
 
 
+@backports.functools_lru_cache.lru_cache()
+def get_client():
+    return datastore.Client()
+
+
 def get_transaction():
-    client = datastore.Client()
-    return client.transaction()
+    return get_client().transaction()
 
 
 def run_in_transaction_wrapper(fn):

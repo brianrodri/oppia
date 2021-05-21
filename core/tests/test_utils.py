@@ -62,6 +62,7 @@ from core.platform import models
 from core.platform.datastore import cloud_datastore_stub
 from core.platform.search import elastic_search_services
 from core.platform.taskqueue import cloud_tasks_emulator
+from core.platform.transactions import cloud_transaction_services
 import feconf
 import main
 import main_taskqueue
@@ -966,9 +967,21 @@ class TestBase(unittest.TestCase):
             else:
                 stack.enter_context(
                     self.swap(
+                        datastore_services, 'get_client', lambda: None
+                    )
+                )
+                stack.enter_context(
+                    self.swap(
                         datastore_services,
                         'get_ndb_context',
                         contextlib.nullcontext
+                    )
+                )
+                stack.enter_context(
+                    self.swap(
+                        transaction_services,
+                        'get_client',
+                        lambda: None
                     )
                 )
                 stack.enter_context(

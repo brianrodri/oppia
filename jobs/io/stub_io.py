@@ -80,14 +80,19 @@ class DatastoreioStub(python_utils.OBJECT):
             thread.join()
             self._server_context_is_acquired = False
 
-    def get_everything(self):
-        """Returns all models currently stored in the stub.
+    def get(self, query):
+        """Returns models in the stub that match the given query.
+
+        Args:
+            query: beam_datastore_types.Query. The model query to respect.
 
         Returns:
             list(Model). All of the models in the stub.
         """
         with self._models_lock:
-            return list(self._models.values())
+            models = list(self._models.values())
+        job_utils.apply_query_to_models(query, models)
+        return models
 
     def put_multi(self, models):
         """Puts the input models into the stub.
@@ -108,8 +113,11 @@ class DatastoreioStub(python_utils.OBJECT):
             for model in models:
                 self._models.pop(model.key, None)
 
-    def ReadFromDatastore(self): # pylint: disable=invalid-name
+    def ReadFromDatastore(self, query): # pylint: disable=invalid-name
         """Returns a PTransform which returns all models from the stub.
+
+        Args:
+            query: beam_datastore_types.Query. The model query to respect.
 
         Returns:
             PTransform. A PTransform which returns all models in the stub.
@@ -119,7 +127,7 @@ class DatastoreioStub(python_utils.OBJECT):
             raise RuntimeError(
                 'Cannot read from datastore after a mutation has occurred')
 
-        return _ReadFromDatastore(self._server_port)
+        return _ReadFromDatastore(query, self._server_port)
 
     def WriteToDatastore(self): # pylint: disable=invalid-name
         """Returns a PTransform which writes models to the stub.
@@ -161,8 +169,11 @@ class DatastoreioStub(python_utils.OBJECT):
             raise RuntimeError(
                 'Must acquire context() before using datastore operations')
 
-    def _read_from_datastore_handler(self):
+    def _read_from_datastore_handler(self, pickled_query):
         """XML-RPC handler for a ReadFromDatastore request.
+
+        Args:
+            pickled_query: str. The encoded Apache Beam query to respect.
 
         Returns:
             str. The list of all models encoded as a pickled list of Apache Beam
@@ -170,7 +181,7 @@ class DatastoreioStub(python_utils.OBJECT):
         """
         return pickle.dumps([
             job_utils.get_beam_entity_from_model(m)
-            for m in self.get_everything()
+            for m in self.get(pickle.loads(pickled_query))
         ])
 
     def _write_to_datastore_handler(self, pickled_models):
@@ -226,6 +237,17 @@ class _DatastoreioTransform(beam.PTransform):
 class _ReadFromDatastore(_DatastoreioTransform):
     """Stub implementation of Apache Beam's ReadFromDatastore PTransform."""
 
+    def __init__(self, query, port):
+        """Initializes a new ReadFromDatastore operation.
+
+        Args:
+            query: beam_datastore_types.Query. The model query to respect.
+            port: int. The port number of the XML-RPC server to which datastore
+                operation requests are sent to.
+        """
+        super(_ReadFromDatastore, self).__init__(port)
+        self._pickled_query = pickle.dumps(query)
+
     def expand(self, pcoll):
         """Returns models from storage using the ReadFromDatastore endpoint.
 
@@ -239,7 +261,8 @@ class _ReadFromDatastore(_DatastoreioTransform):
         return (
             pcoll
             | 'Get models from the ReadFromDatastore endpoint' >> beam.Create(
-                pickle.loads(self.server_proxy.ReadFromDatastore()))
+                pickle.loads(
+                    self.server_proxy.ReadFromDatastore(self._pickled_query)))
             | 'Convert the Apache Beam entities into NDB models' >> beam.Map(
                 job_utils.get_model_from_beam_entity)
         )

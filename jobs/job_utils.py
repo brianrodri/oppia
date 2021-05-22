@@ -185,7 +185,7 @@ def get_beam_query_from_ndb_query(query):
     """Returns an equivalent Apache Beam query from the given NDB query.
 
     Args:
-        query: ndb.Query. The NDB query to convert.
+        query: datastore_services.Query. The NDB query to convert.
 
     Returns:
         beam_datastore_types.Query. The equivalent Apache Beam query.
@@ -194,7 +194,7 @@ def get_beam_query_from_ndb_query(query):
     namespace = query.namespace
 
     if query.filters:
-        filters = _get_beam_filters_from_ndb_filter_node_fragile(query.filters)
+        filters = _get_beam_filters_from_ndb_filter_node(query.filters)
     else:
         filters = None
 
@@ -229,14 +229,8 @@ def _get_beam_order_from_ndb_order(order):
         for o in orders)
 
 
-def _get_beam_filters_from_ndb_filter_node_fragile(filter_node):
+def _get_beam_filters_from_ndb_filter_node(filter_node):
     """Returns an equivalent Apache Beam filter from the given NDB filter node.
-
-    TODO(#11475): Delete this fragile function; it depends on internal APIs.
-    This is fine for now, since we are only depending on them until after we've
-    finished the migration to Python 3. Furthermore, since this is the final
-    version of Python 2 and Python 2 API updates, it's unlikely this API will be
-    changed anyway.
 
     Args:
         filter_node: ndb_query.FilterNode. The filter node to convert.
@@ -250,7 +244,10 @@ def _get_beam_filters_from_ndb_filter_node_fragile(filter_node):
     elif isinstance(filter_node, ndb_query.FilterNode):
         nodes = [filter_node._to_filter()] # pylint: disable=protected-access
     else:
-        raise TypeError('`!=`, `IN`, and `OR` are forbidden filters')
+        raise TypeError(
+            '`!=`, `IN`, and `OR` are forbidden filters. To emulate their '
+            'behavior, use multiple AND queries and flatten them into a single '
+            'PCollection.')
 
     return [
         (

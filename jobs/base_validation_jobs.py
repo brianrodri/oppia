@@ -21,6 +21,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import collections
 
+from core.platform import models
 from jobs import base_jobs
 from jobs import job_utils
 from jobs.transforms import base_validation
@@ -29,6 +30,8 @@ from jobs.types import base_validation_errors
 import python_utils
 
 import apache_beam as beam
+
+datastore_services = models.Registry.import_datastore_services()
 
 AUDIT_DO_FN_TYPES_BY_KIND = (
     base_validation_registry.
@@ -82,10 +85,12 @@ class AuditAllStorageModelsJob(base_jobs.JobBase):
         if self.job_options.datastoreio is None:
             raise ValueError('JobOptions.datastoreio must not be None')
 
+        model_query = job_utils.get_beam_query_from_ndb_query(
+            datastore_services.query_everything())
         existing_models, deleted_models = (
             self.pipeline
             | 'Get all models' >> (
-                self.job_options.datastoreio.ReadFromDatastore())
+                self.job_options.datastoreio.ReadFromDatastore(model_query))
             | 'Partition by model.deleted' >> (
                 beam.Partition(lambda model, _: int(model.deleted), 2))
         )

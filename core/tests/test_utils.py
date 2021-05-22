@@ -60,9 +60,9 @@ from core.domain import topic_services
 from core.domain import user_services
 from core.platform import models
 from core.platform.datastore import cloud_datastore_stub
+from core.platform.datastore import cloud_datastore_stub_installer
 from core.platform.search import elastic_search_services
 from core.platform.taskqueue import cloud_tasks_emulator
-from core.platform.transactions import cloud_transaction_services
 import feconf
 import main
 import main_taskqueue
@@ -77,12 +77,14 @@ import requests_mock
 import webtest
 
 (
-    auth_models, exp_models, feedback_models, question_models, skill_models,
-    story_models, suggestion_models, topic_models,) = (
-        models.Registry.import_models([
-            models.NAMES.auth, models.NAMES.exploration, models.NAMES.feedback,
-            models.NAMES.question, models.NAMES.skill, models.NAMES.story,
-            models.NAMES.suggestion, models.NAMES.topic]))
+    auth_models, base_models, exp_models,
+    feedback_models, question_models, skill_models,
+    story_models, suggestion_models, topic_models
+) = models.Registry.import_models([
+    models.NAMES.auth, models.NAMES.base_model, models.NAMES.exploration,
+    models.NAMES.feedback, models.NAMES.question, models.NAMES.skill,
+    models.NAMES.story, models.NAMES.suggestion, models.NAMES.topic
+])
 
 app_identity_services = models.Registry.import_app_identity_services()
 datastore_services = models.Registry.import_datastore_services()
@@ -992,7 +994,14 @@ class TestBase(unittest.TestCase):
                     )
                 )
                 stack.enter_context(
-                    cloud_datastore_stub.CloudDatastoreStub().install(self))
+                    self.swap(
+                        base_models.BaseModel,
+                        '__bases__',
+                        (cloud_datastore_stub.Model,)
+                    )
+                )
+                stack.enter_context(
+                    cloud_datastore_stub_installer.CloudDatastoreStub().install(self))
 
             super(TestBase, self).run(result=result)
 

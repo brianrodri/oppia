@@ -37,12 +37,10 @@ Property = ndb.Property
 
 BooleanProperty = ndb.BooleanProperty
 DateProperty = ndb.DateProperty
-ComputedProperty = ndb.ComputedProperty
 DateTimeProperty = ndb.DateTimeProperty
 FloatProperty = ndb.FloatProperty
 IntegerProperty = ndb.IntegerProperty
 JsonProperty = ndb.JsonProperty
-UserProperty = ndb.UserProperty
 
 
 @backports.functools_lru_cache.lru_cache()

@@ -344,6 +344,8 @@ def associate_auth_id_with_user_id(auth_id_user_id_pair):
     """
     auth_id, user_id = auth_id_user_id_pair
 
+    print('TEEEEEEST222')
+
     user_id_collision = get_user_id_from_auth_id(auth_id, include_deleted=True)
     if user_id_collision is not None:
         raise Exception('auth_id=%r is already associated with user_id=%r' % (

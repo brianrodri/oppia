@@ -106,6 +106,7 @@ class GetModelKindTests(test_utils.TestBase):
 
     def test_get_from_datastore_model(self):
         model = base_models.BaseModel()
+
         self.assertEqual(job_utils.get_model_kind(model), 'BaseModel')
 
     def test_get_from_datastore_model_class(self):
@@ -122,19 +123,23 @@ class GetModelPropertyTests(test_utils.TestBase):
 
     def test_get_id_from_datastore_model(self):
         model = FooModel(id='123')
+
         self.assertEqual(job_utils.get_model_property(model, 'id'), '123')
 
     def test_get_key_from_datastore_model(self):
         model = FooModel(id='123')
+
         self.assertEqual(
             job_utils.get_model_property(model, '__key__'), model.key)
 
     def test_get_property_from_datastore_model(self):
         model = FooModel(prop='abc')
+
         self.assertEqual(job_utils.get_model_property(model, 'prop'), 'abc')
 
     def test_get_missing_property_from_datastore_model(self):
         model = FooModel()
+
         self.assertEqual(job_utils.get_model_property(model, 'prop'), None)
 
     def test_get_property_from_bad_value(self):
@@ -146,6 +151,7 @@ class GetModelIdTests(test_utils.TestBase):
 
     def test_get_id_from_datastore_model(self):
         model = FooModel(id='123')
+
         self.assertEqual(job_utils.get_model_id(model), '123')
 
     def test_get_id_from_bad_value(self):
@@ -157,6 +163,7 @@ class GetModelKeyTests(test_utils.TestBase):
 
     def test_get_key_from_datastore_model(self):
         model = FooModel(id='123')
+
         self.assertEqual(job_utils.get_model_key(model), model.key)
 
     def test_get_key_from_bad_value(self):
@@ -205,37 +212,123 @@ class BeamEntityToAndFromModelTests(test_utils.TestBase):
                 job_utils.get_model_from_beam_entity(beam_entity)))
 
 
+class GetBeamQueryFromNdbQueryTests(test_utils.TestBase):
+
+    def test_query_everything(self):
+        query = datastore_services.query_everything()
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertIsNone(beam_query.kind)
+        self.assertEqual(beam_query.order, ('__key__',))
+
+    def test_query_with_kind(self):
+        query = base_models.BaseModel.query()
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertEqual(beam_query.kind, 'BaseModel')
+
+    def test_query_with_namespace(self):
+        query = datastore_services.Query(namespace='abc')
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertEqual(beam_query.namespace, 'abc')
+
+    def test_query_with_filter(self):
+        query = datastore_services.Query(filters=BarModel.prop >= 3)
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertEqual(beam_query.filters, [('prop', '>=', 3)])
+
+    def test_query_with_range_like_filter(self):
+        query = datastore_services.Query(filters=datastore_services.all_of(
+            BarModel.prop >= 3, BarModel.prop < 6))
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertEqual(
+            beam_query.filters, [('prop', '>=', 3), ('prop', '<', 6)])
+
+    def test_query_with_or_filter_raises_type_error(self):
+        query = datastore_services.Query(filters=datastore_services.any_of(
+            BarModel.prop == 1, BarModel.prop == 2))
+
+        with self.assertRaisesRegexp(TypeError, 'forbidden filter'):
+            job_utils.get_beam_query_from_ndb_query(query)
+
+    def test_query_with_in_filter_raises_type_error(self):
+        query = datastore_services.Query(filters=BarModel.prop.IN([1, 2, 3]))
+
+        with self.assertRaisesRegexp(TypeError, 'forbidden filter'):
+            job_utils.get_beam_query_from_ndb_query(query)
+
+    def test_query_with_not_equal_filter_raises_type_error(self):
+        query = datastore_services.Query(filters=BarModel.prop != 1)
+
+        with self.assertRaisesRegexp(TypeError, 'forbidden filter'):
+            job_utils.get_beam_query_from_ndb_query(query)
+
+    def test_query_with_order(self):
+        query = BarModel.query().order(BarModel.prop)
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertEqual(beam_query.order, ('prop',))
+
+    def test_query_with_multiple_orders(self):
+        query = BarModel.query().order(BarModel.prop, BarModel.prop)
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertEqual(beam_query.order, ('prop', 'prop'))
+
+    def test_query_with_descending_order(self):
+        query = BarModel.query().order(-BarModel.prop)
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertEqual(beam_query.order, ('-prop',))
+
+
 class GetOperatorTests(test_utils.TestBase):
 
     def test_less_than_operator(self):
         op = job_utils.get_operator('<')
-        self.assertTrue(op(1, 3))
-        self.assertFalse(op(3, 3))
-        self.assertFalse(op(5, 3))
+
+        self.assertTrue(op(1, 2))
+        self.assertFalse(op(2, 2))
+        self.assertFalse(op(3, 2))
 
     def test_less_than_or_equal_operator(self):
         op = job_utils.get_operator('<=')
-        self.assertTrue(op(1, 3))
-        self.assertTrue(op(3, 3))
-        self.assertFalse(op(5, 3))
+
+        self.assertTrue(op(1, 2))
+        self.assertTrue(op(2, 2))
+        self.assertFalse(op(3, 2))
 
     def test_equal_operator(self):
         op = job_utils.get_operator('=')
-        self.assertFalse(op(1, 3))
-        self.assertTrue(op(3, 3))
-        self.assertFalse(op(5, 3))
+
+        self.assertFalse(op(1, 2))
+        self.assertTrue(op(2, 2))
+        self.assertFalse(op(3, 2))
 
     def test_greater_than_or_equal_operator(self):
         op = job_utils.get_operator('>=')
-        self.assertFalse(op(1, 3))
-        self.assertTrue(op(3, 3))
-        self.assertTrue(op(5, 3))
+
+        self.assertFalse(op(1, 2))
+        self.assertTrue(op(2, 2))
+        self.assertTrue(op(3, 2))
 
     def test_greater_than_operator(self):
         op = job_utils.get_operator('>')
-        self.assertFalse(op(1, 3))
-        self.assertFalse(op(3, 3))
-        self.assertTrue(op(5, 3))
+
+        self.assertFalse(op(1, 2))
+        self.assertFalse(op(2, 2))
+        self.assertTrue(op(3, 2))
 
     def test_unsupported_operator_raises_value_error(self):
         with self.assertRaisesRegexp(ValueError, 'Unsupported comparison'):
@@ -248,7 +341,6 @@ class SortByPropertyNameTests(test_utils.TestBase):
         model_a = FooModel(prop='a')
         model_b = FooModel(prop='b')
         model_c = FooModel(prop='c')
-
         model_list = [model_c, model_a, model_b]
 
         job_utils.sort_by_property_name(model_list, 'prop')
@@ -259,7 +351,6 @@ class SortByPropertyNameTests(test_utils.TestBase):
         model_a = FooModel(prop='a')
         model_b = FooModel(prop='b')
         model_c = FooModel(prop='c')
-
         model_list = [model_c, model_a, model_b]
 
         job_utils.sort_by_property_name(model_list, '-prop')
@@ -296,7 +387,6 @@ class ApplyQueryToModelsTests(test_utils.TestBase):
     def test_query_by_kind(self):
         foo_model = FooModel()
         bar_model = BarModel()
-
         model_list = [foo_model, bar_model]
 
         job_utils.apply_query_to_models(
@@ -307,7 +397,6 @@ class ApplyQueryToModelsTests(test_utils.TestBase):
     def test_query_by_namespace(self):
         namespace_a_model = FooModel(namespace='a')
         namespace_b_model = FooModel(namespace='b')
-
         model_list = [namespace_a_model, namespace_b_model]
 
         job_utils.apply_query_to_models(
@@ -329,7 +418,6 @@ class ApplyQueryToModelsTests(test_utils.TestBase):
         model_a = FooModel(prop='a')
         model_b = FooModel(prop='b')
         model_c = FooModel(prop='c')
-
         model_list = [model_c, model_a, model_b]
 
         job_utils.apply_query_to_models(

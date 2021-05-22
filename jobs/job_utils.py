@@ -19,12 +19,16 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
+import itertools
 import operator
 
 from core.platform import models
 import feconf
 
 from apache_beam.io.gcp.datastore.v1new import types as beam_datastore_types
+from google.appengine.api import datastore_types
+from google.appengine.datastore import datastore_query
+from google.appengine.ext.ndb import query as ndb_query
 
 datastore_services = models.Registry.import_datastore_services()
 
@@ -175,6 +179,87 @@ def get_model_from_beam_entity(beam_entity):
     model_id = beam_key.id_or_name
     model_class = datastore_services.Model._lookup_model(beam_key.kind) # pylint: disable=protected-access
     return model_class(id=model_id, **beam_entity.properties)
+
+
+def get_beam_query_from_ndb_query(query):
+    """Returns an equivalent Apache Beam query from the given NDB query.
+
+    Args:
+        query: ndb.Query. The NDB query to convert.
+
+    Returns:
+        beam_datastore_types.Query. The equivalent Apache Beam query.
+    """
+    kind = query.kind
+    namespace = query.namespace
+
+    if query.filters:
+        filters = _get_beam_filters_from_ndb_filter_node_fragile(query.filters)
+    else:
+        filters = None
+
+    if query.orders:
+        order = _get_beam_order_from_ndb_order(query.orders)
+    else:
+        order = None
+
+    if kind is None and order is None:
+        order = ('__key__',)
+
+    return beam_datastore_types.Query(
+        kind=kind, namespace=namespace, filters=filters, order=order)
+
+
+def _get_beam_order_from_ndb_order(order):
+    """Returns an equivalent Apache Beam order from the given datastore Order.
+
+    Args:
+        order: datastore_query.Order. The datastore order to convert.
+
+    Returns:
+        tuple(str). The equivalent Apache Beam order.
+    """
+    if isinstance(order, datastore_query.CompositeOrder):
+        orders = order.orders
+    else:
+        orders = [order]
+
+    return tuple(
+        '%s%s' % ('-' if o.direction == o.DESCENDING else '', o.prop)
+        for o in orders)
+
+
+def _get_beam_filters_from_ndb_filter_node_fragile(filter_node):
+    """Returns an equivalent Apache Beam filter from the given NDB filter node.
+
+    TODO(#11475): Delete this fragile function; it depends on internal APIs.
+    This is fine for now, since we are only depending on them until after we've
+    finished the migration to Python 3. Furthermore, since this is the final
+    version of Python 2 and Python 2 API updates, it's unlikely this API will be
+    changed anyway.
+
+    Args:
+        filter_node: ndb_query.FilterNode. The filter node to convert.
+
+    Returns:
+        tuple(tuple(str, str, str)). The equivalent Apache Beam filters. Items
+        are: (property name, comparison operator, property value).
+    """
+    if isinstance(filter_node, ndb_query.ConjunctionNode):
+        nodes = list(filter_node._to_filter().filters) # pylint: disable=protected-access
+    elif isinstance(filter_node, ndb_query.FilterNode):
+        nodes = [filter_node._to_filter()] # pylint: disable=protected-access
+    else:
+        raise TypeError('`!=`, `IN`, and `OR` are forbidden filters')
+
+    return [
+        (
+            pb.property(0).name(),
+            datastore_query.PropertyFilter._OPERATORS_INVERSE[pb.op()], # pylint: disable=protected-access
+            datastore_types.FromPropertyPb(pb.property(0)),
+        )
+        for pb in itertools.chain.from_iterable(n._to_pbs() for n in nodes) # pylint: disable=protected-access
+    ]
 
 
 def apply_query_to_models(query, model_list):

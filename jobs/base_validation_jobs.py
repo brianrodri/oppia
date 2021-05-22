@@ -34,8 +34,7 @@ import apache_beam as beam
 datastore_services = models.Registry.import_datastore_services()
 
 AUDIT_DO_FN_TYPES_BY_KIND = (
-    base_validation_registry.
-    get_audit_do_fn_types_by_kind())
+    base_validation_registry.get_audit_do_fn_types_by_kind())
 KIND_BY_INDEX = tuple(AUDIT_DO_FN_TYPES_BY_KIND.keys())
 
 # Type is: dict(str, tuple(tuple(ModelProperty, tuple(str)))). Tuples of type
@@ -82,15 +81,15 @@ class AuditAllStorageModelsJob(base_jobs.JobBase):
             ValueError. When the `datastoreio` option, which provides the
                 PTransforms for performing datastore IO operations, is None.
         """
-        if self.job_options.datastoreio is None:
+        datastoreio = self.job_options.datastoreio
+        if datastoreio is None:
             raise ValueError('JobOptions.datastoreio must not be None')
 
         model_query = job_utils.get_beam_query_from_ndb_query(
             datastore_services.query_everything())
         existing_models, deleted_models = (
             self.pipeline
-            | 'Get all models' >> (
-                self.job_options.datastoreio.ReadFromDatastore(model_query))
+            | 'Get all models' >> datastoreio.ReadFromDatastore(model_query)
             | 'Partition by model.deleted' >> (
                 beam.Partition(lambda model, _: int(model.deleted), 2))
         )

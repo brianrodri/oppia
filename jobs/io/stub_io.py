@@ -34,7 +34,11 @@ class DatastoreioStub(python_utils.OBJECT):
     """Stubs the apache_beam.io.gcp.datastore.v1new.datastoreio module.
 
     The PTransforms returned by this stub use an XML-RPC server to operate on
-    models. The server is necessary because Apache Beam pipelines may be run
+    models. It listens for read, write, and delete requests to be performed on
+    the datastore; then applies them to a local stub (implemented with a simple
+    dict object).
+
+    The server is necessary because Apache Beam pipelines may be run
     across many different processes, threads, and even machines. Therefore,
     there isn't any state that can be shared between them.
 
@@ -116,6 +120,11 @@ class DatastoreioStub(python_utils.OBJECT):
     def ReadFromDatastore(self, query): # pylint: disable=invalid-name
         """Returns a PTransform which returns all models from the stub.
 
+        NOTE: The name is in UpperCamelCase because that's the same name used by
+        the real datastoreio module. Keeping the same name allows us to reduce
+        the diffs we'll need to implement when we're ready to use the real
+        module in Python 3.
+
         Args:
             query: beam_datastore_types.Query. The model query to respect.
 
@@ -132,6 +141,11 @@ class DatastoreioStub(python_utils.OBJECT):
     def WriteToDatastore(self): # pylint: disable=invalid-name
         """Returns a PTransform which writes models to the stub.
 
+        NOTE: The name is in UpperCamelCase because that's the same name used by
+        the real datastoreio module. Keeping the same name allows us to reduce
+        the diffs we'll need to implement when we're ready to use the real
+        module in Python 3.
+
         Returns:
             PTransform. A PTransform which stores all models in the PCollection
             it receives as input into the datastore.
@@ -146,6 +160,11 @@ class DatastoreioStub(python_utils.OBJECT):
 
     def DeleteFromDatastore(self): # pylint: disable=invalid-name
         """Returns a PTransform which deletes models from the stub.
+
+        NOTE: The name is in UpperCamelCase because that's the same name used by
+        the real datastoreio module. Keeping the same name allows us to reduce
+        the diffs we'll need to implement when we're ready to use the real
+        module in Python 3.
 
         Returns:
             PTransform. A PTransform which deletes all models in the PCollection

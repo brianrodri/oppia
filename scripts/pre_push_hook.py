@@ -191,7 +191,7 @@ def git_diff_name_status(left, right, diff_filter=''):
             #
             # We extract the first char (indicating the status), and the string
             # after the last tab character.
-            file_list.append(FileDiff(line[0], line[line.rfind('\t') + 1:]))
+            file_list.append(FileDiff(line[0], line[line.rfind(b'\t') + 1:]))
         return file_list
     else:
         raise ValueError(err)
@@ -252,7 +252,7 @@ def extract_files_to_lint(file_diffs):
     """Grab only files out of a list of FileDiffs that have a ACMRT status."""
     if not file_diffs:
         return []
-    lint_files = [f.name for f in file_diffs if f.status in 'ACMRT']
+    lint_files = [f.name for f in file_diffs if f.status in b'ACMRT']
     return lint_files
 
 

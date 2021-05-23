@@ -63,6 +63,11 @@ import time
 import unittest
 
 
+from . import install_third_party_libs
+# This installs third party libraries before importing other files or importing
+# libraries that use the builtins python module (e.g. build, python_utils).
+install_third_party_libs.main()
+
 import python_utils # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 from . import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 from . import concurrent_task_utils # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
@@ -124,10 +129,6 @@ _PARSER.add_argument(
     '--verbose',
     help='optional; if specified, display the output of the tests being run',
     action='store_true')
-_PARSER.add_argument(
-    '--run_with_emulator',
-    help='whether to run the tests with the Cloud Datastore emulator',
-    action='store_true')
 
 
 def run_shell_cmd(exe, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
@@ -163,9 +164,8 @@ class TestingTaskSpec(python_utils.OBJECT):
     """Executes a set of tests given a test class name."""
 
     def __init__(
-            self, test_target, run_with_emulator, generate_coverage_report):
+            self, test_target, generate_coverage_report):
         self.test_target = test_target
-        self.run_with_emulator = run_with_emulator
         self.generate_coverage_report = generate_coverage_report
 
     def run(self):
@@ -180,9 +180,6 @@ class TestingTaskSpec(python_utils.OBJECT):
             exc_list = [
                 sys.executable, TEST_RUNNER_PATH, test_target_flag
             ]
-
-        if self.run_with_emulator:
-            exc_list.append('--run_with_emulator')
 
         result = run_shell_cmd(exc_list)
 
@@ -343,8 +340,7 @@ def main(args=None):
     import contextlib2
 
     with contextlib2.ExitStack() as stack:
-        if parsed_args.run_with_emulator:
-            stack.enter_context(servers.managed_cloud_datastore_emulator())
+        stack.enter_context(servers.managed_cloud_datastore_emulator())
         if parsed_args.test_target:
             if '_test' in parsed_args.test_target:
                 all_test_targets = [parsed_args.test_target]
@@ -383,7 +379,6 @@ def main(args=None):
         for test_target in all_test_targets:
             test = TestingTaskSpec(
                 test_target,
-                parsed_args.run_with_emulator,
                 parsed_args.generate_coverage_report)
             task = concurrent_task_utils.create_task(
                 test.run, parsed_args.verbose, semaphore, name=test_target,

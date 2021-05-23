@@ -59,8 +59,6 @@ from core.domain import topic_domain
 from core.domain import topic_services
 from core.domain import user_services
 from core.platform import models
-from core.platform.datastore import cloud_datastore_stub
-from core.platform.datastore import cloud_datastore_stub_installer
 from core.platform.search import elastic_search_services
 from core.platform.taskqueue import cloud_tasks_emulator
 import feconf
@@ -959,48 +957,7 @@ class TestBase(unittest.TestCase):
                 defaultTestResult() method) and used instead.
         """
 
-        with contextlib2.ExitStack() as stack:
-            if self.run_with_emulator:
-                stack.enter_context(
-                    datastore_services.get_ndb_context(
-                        namespace=self.id()[-100:]))
-            else:
-                stack.enter_context(
-                    self.swap(
-                        datastore_services, 'get_client', lambda: None
-                    )
-                )
-                stack.enter_context(
-                    self.swap(
-                        datastore_services,
-                        'get_ndb_context',
-                        contextlib.nullcontext
-                    )
-                )
-                stack.enter_context(
-                    self.swap(
-                        transaction_services,
-                        'get_client',
-                        lambda: None
-                    )
-                )
-                stack.enter_context(
-                    self.swap(
-                        transaction_services,
-                        'get_transaction',
-                        contextlib.nullcontext
-                    )
-                )
-                stack.enter_context(
-                    self.swap(
-                        base_models.BaseModel,
-                        '__bases__',
-                        (cloud_datastore_stub.Model,)
-                    )
-                )
-                stack.enter_context(
-                    cloud_datastore_stub_installer.CloudDatastoreStub().install(self))
-
+        with datastore_services.get_ndb_context(namespace=self.id()[-100:]):
             super(TestBase, self).run(result=result)
 
     def _get_unicode_test_string(self, suffix):

@@ -574,7 +574,7 @@ class CsrfTokenManager(python_utils.OBJECT):
             user_id = cls._USER_ID_DEFAULT
 
         # Round time to seconds.
-        issued_on = int(issued_on)
+        issued_on = str(int(issued_on))
 
         digester = hmac.new(python_utils.convert_to_bytes(CSRF_SECRET.value))
         digester.update(python_utils.convert_to_bytes(user_id))

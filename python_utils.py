@@ -461,6 +461,9 @@ def convert_to_bytes(string_to_convert):
     """
     if isinstance(string_to_convert, UNICODE):
         return string_to_convert.encode('utf-8')
+    elif isinstance(string_to_convert, int):
+        raise Exception(
+            'Passing int is not allowed, since it leads to dangerous issues.')
     return bytes(string_to_convert)
 
 

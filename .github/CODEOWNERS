@@ -239,8 +239,6 @@
 
 # Google-app-engine configurations
 # TODO(#12694): Replace @nithusha21 as owner after 2021-05-08
-/appengine_config*.py @vojtechjelinek
-# TODO(#12694): Replace @nithusha21 as owner after 2021-05-08
 /cron.yaml @vojtechjelinek
 /index.yaml @vojtechjelinek
 /queue.yaml @vojtechjelinek
@@ -308,7 +306,6 @@
 # Interaction project.
 /core/domain/customization_args_util*.py @brianrodri
 /core/domain/expression_parser*.py @iamprayush
-/core/domain/interaction_jobs_one_off*.py @aks681
 /core/domain/interaction_registry*.py @iamprayush
 /core/domain/object_registry*.py @iamprayush
 /core/domain/rules_registry*.py @aks681
@@ -395,7 +392,6 @@
 /core/domain/classroom_services*.py @aks681
 /core/domain/question*.py @aks681
 /core/domain/rights_domain*.py @aks681
-/core/domain/subtopic_validators*.py @vojtechjelinek
 /core/templates/components/concept-card/ @kevintab95
 /core/templates/components/score-ring/ @kevintab95
 /core/templates/components/skill-mastery/ @kevintab95
@@ -480,9 +476,6 @@
 /core/domain/base_model_validators*.py @vojtechjelinek
 /core/domain/email*.py @aks681
 /core/domain/image_service*.py @DubeySandeep
-/core/domain/job_validators*.py @vojtechjelinek
-/core/domain/prod_validation_jobs_one_off*.py @vojtechjelinek
-/core/domain/storage_model_audit_jobs_test.py @vojtechjelinek
 /core/jobs*.py @brianrodri
 /core/platform/ @brianrodri
 /core/templates/App*.ts @srijanreddy98

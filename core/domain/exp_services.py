@@ -300,7 +300,6 @@ def export_to_zip_file(exploration_id, version=None):
             fs_domain.GcsFileSystem(
                 feconf.ENTITY_TYPE_EXPLORATION, exploration_id))
         dir_list = fs.listdir('')
-        print(dir_list)
         for filepath in dir_list:
             if not filepath.startswith(asset_dirs_to_include_in_downloads):
                 continue

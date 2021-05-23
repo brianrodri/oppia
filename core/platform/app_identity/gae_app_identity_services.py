@@ -52,4 +52,3 @@ def get_gcs_resource_bucket_name():
         str. The bucket name for the application's GCS resources.
     """
     return get_application_id() + _GCS_RESOURCE_BUCKET_NAME_SUFFIX
-

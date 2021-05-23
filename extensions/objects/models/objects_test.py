@@ -53,7 +53,6 @@ class ObjectNormalizationUnitTests(test_utils.GenericTestBase):
             )
 
         for item, error_msg in invalid_items_with_error_messages:
-            print(item)
             with self.assertRaisesRegexp(Exception, error_msg):
                 object_class.normalize(item)
 

@@ -19,8 +19,7 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import importlib
-import inspect
+import io
 import os
 import re
 import sys
@@ -105,7 +104,7 @@ class ThirdPartyPythonLintChecksManager(python_utils.OBJECT):
 
         _batch_size = 50
         current_batch_start_index = 0
-        stdout = python_utils.string_io()
+        stdout = io.BytesIO()
 
         while current_batch_start_index < len(files_to_lint):
             # Note that this index is an exclusive upper bound -- i.e.,

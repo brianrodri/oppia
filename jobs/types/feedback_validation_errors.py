@@ -14,35 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for base model validator errors."""
+"""Error classes for feedback model audits."""
 
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-from core.platform import models
-from jobs.types import base_validation_errors_test
-from jobs.types import feedback_validation_errors
-
-(feedback_models,) = models.Registry.import_models([models.NAMES.feedback])
-
-datastore_services = models.Registry.import_datastore_services()
+from jobs.types import base_validation_errors
 
 
-class InvalidEntityTypeErrorTests(
-        base_validation_errors_test.AuditErrorsTestBase):
+class InvalidEntityTypeError(base_validation_errors.BaseAuditError):
+    """Error class for models that have invalid entity type."""
 
-    def test_message(self):
-        model = feedback_models.GeneralFeedbackThreadModel(
-            id='123',
-            entity_id='123',
-            subject='test_subject',
-            entity_type='invalid',
-            created_on=self.NOW,
-            last_updated=self.NOW,
-        )
-        error = feedback_validation_errors.InvalidEntityTypeError(model)
-
-        self.assertEqual(
-            error.message,
-            'InvalidEntityTypeError in GeneralFeedbackThreadModel(id=\'123\'):'
-            ' entity type %s is invalid.' % model.entity_type)
+    def __init__(self, model):
+        super(InvalidEntityTypeError, self).__init__(model)
+        self.message = (
+            'entity type %s is invalid.' % model.entity_type)

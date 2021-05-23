@@ -38,7 +38,6 @@ from core import platform_feature_list
 from core.domain import platform_parameter_domain
 from core.domain import platform_parameter_registry as registry
 
-
 ALL_FEATURES_LIST = (
     platform_feature_list.DEV_FEATURES_LIST +
     platform_feature_list.TEST_FEATURES_LIST +

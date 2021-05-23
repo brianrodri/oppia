@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-18.04]
-        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +32,7 @@ jobs:
         run: pip install coverage configparser
       - name: Run backend test shard
         if: startsWith(github.head_ref, 'update-changelog-for-release') == false
-        run: PYTHONIOENCODING=utf-8 python -m scripts.run_backend_tests --generate_coverage_report --ignore_coverage --exclude_load_tests --test_shard ${{ matrix.shard }}
+        run: PYTHONIOENCODING=utf-8 python -m scripts.run_backend_tests --generate_coverage_report --ignore_coverage --run_with_emulator --exclude_load_tests --test_shard ${{ matrix.shard }}
       - name: Upload coverage report
         if: startsWith(github.head_ref, 'update-changelog-for-release') == false
         uses: actions/upload-artifact@v2
@@ -125,11 +125,59 @@ jobs:
         with:
           name: backend_test_coverage_shard_11
           path: coverage/coverage_11
+      - name: Download coverage report for shard 12
+        if: startsWith(github.head_ref, 'update-changelog-for-release') == false
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_test_coverage_shard_12
+          path: coverage/coverage_12
+      - name: Download coverage report for shard 13
+        if: startsWith(github.head_ref, 'update-changelog-for-release') == false
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_test_coverage_shard_13
+          path: coverage/coverage_13
+      - name: Download coverage report for shard 14
+        if: startsWith(github.head_ref, 'update-changelog-for-release') == false
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_test_coverage_shard_14
+          path: coverage/coverage_14
+      - name: Download coverage report for shard 15
+        if: startsWith(github.head_ref, 'update-changelog-for-release') == false
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_test_coverage_shard_15
+          path: coverage/coverage_15
+      - name: Download coverage report for shard 16
+        if: startsWith(github.head_ref, 'update-changelog-for-release') == false
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_test_coverage_shard_16
+          path: coverage/coverage_16
+      - name: Download coverage report for shard 17
+        if: startsWith(github.head_ref, 'update-changelog-for-release') == false
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_test_coverage_shard_17
+          path: coverage/coverage_17
+      - name: Download coverage report for shard 18
+        if: startsWith(github.head_ref, 'update-changelog-for-release') == false
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_test_coverage_shard_18
+          path: coverage/coverage_18
+      - name: Download coverage report for shard 19
+        if: startsWith(github.head_ref, 'update-changelog-for-release') == false
+        uses: actions/download-artifact@v2
+        with:
+          name: backend_test_coverage_shard_19
+          path: coverage/coverage_19
       - name: Move coverage reports from artifact folders to coverage folder
         if: startsWith(github.head_ref, 'update-changelog-for-release') == false
         shell: bash
         run: |
-          for i in {1..11}; do cp coverage/coverage_$i/.coverage coverage/.coverage.$i; done
+          for i in {1..19}; do cp coverage/coverage_$i/.coverage coverage/.coverage.$i; done
       - name: Combine coverage reports
         if: startsWith(github.head_ref, 'update-changelog-for-release') == false
         shell: bash

@@ -69,7 +69,7 @@ import feconf
 import webapp2
 from webapp2_extras import routes
 
-transaction_services = models.Registry.import_transaction_services()
+datastore_services = models.Registry.import_datastore_services()
 
 # Suppress debug logging for chardet. See https://stackoverflow.com/a/48581323.
 # Without this, a lot of unnecessary debug logs are printed in error logs,
@@ -623,6 +623,12 @@ URLS = [
         r'%s/' % feconf.SUGGESTION_URL_PREFIX,
         suggestion.SuggestionHandler),
     get_redirect_route(
+        r'%s/<suggestion_id>' % feconf.UPDATE_TRANSLATION_SUGGESTION_URL_PREFIX,
+        suggestion.UpdateTranslationSuggestionHandler),
+    get_redirect_route(
+        r'%s/<suggestion_id>' % feconf.UPDATE_QUESTION_SUGGESTION_URL_PREFIX,
+        suggestion.UpdateQuestionSuggestionHandler),
+    get_redirect_route(
         r'%s' % feconf.QUESTIONS_URL_PREFIX,
         reader.QuestionPlayerHandler),
     get_redirect_route(
@@ -774,7 +780,6 @@ URLS = [
 
     get_redirect_route(r'/session_begin', base.SessionBeginHandler),
     get_redirect_route(r'/session_end', base.SessionEndHandler),
-    get_redirect_route(r'/seed_firebase', base.SeedFirebaseHandler),
 
     get_redirect_route(
         r'%s/%s/<exploration_id>' % (
@@ -832,18 +837,13 @@ for subject in feconf.AVAILABLE_LANDING_PAGES:
 # 404 error handler (Needs to be at the end of the URLS list).
 URLS.append(get_redirect_route(r'/<:.*>', base.Error404Handler))
 
-from google.cloud import ndb
-
-
-client = ndb.Client()
-
 class NdbWsgiMiddleware:
     """Wraps the WSGI application into the NDB client context."""
     def __init__(self, wsgi_app):
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-      with client.context():
+      with datastore_services.get_ndb_context():
           return self.wsgi_app(environ, start_response)
 
 app_without_context = webapp2.WSGIApplication(URLS, debug=feconf.DEBUG)

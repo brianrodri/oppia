@@ -59,6 +59,8 @@ from core.domain import topic_domain
 from core.domain import topic_services
 from core.domain import user_services
 from core.platform import models
+from core.platform.datastore import cloud_datastore_stub
+from core.platform.datastore import cloud_datastore_stub_installer
 from core.platform.search import elastic_search_services
 from core.platform.taskqueue import cloud_tasks_emulator
 import feconf
@@ -69,22 +71,23 @@ import python_utils
 import schema_utils
 import utils
 
-import contextlib2
 import elasticsearch
 import requests_mock
 import webtest
 
 (
-    auth_models, exp_models, feedback_models, question_models, skill_models,
-    story_models, suggestion_models, topic_models,) = (
-        models.Registry.import_models([
-            models.NAMES.auth, models.NAMES.exploration, models.NAMES.feedback,
-            models.NAMES.question, models.NAMES.skill, models.NAMES.story,
-            models.NAMES.suggestion, models.NAMES.topic]))
+    auth_models, base_models, exp_models,
+    feedback_models, question_models, skill_models,
+    story_models, suggestion_models, topic_models
+) = models.Registry.import_models([
+    models.NAMES.auth, models.NAMES.base_model, models.NAMES.exploration,
+    models.NAMES.feedback, models.NAMES.question, models.NAMES.skill,
+    models.NAMES.story, models.NAMES.suggestion, models.NAMES.topic
+])
 
-app_identity_services = models.Registry.import_app_identity_services()
 datastore_services = models.Registry.import_datastore_services()
 storage_services = models.Registry.import_storage_services()
+transaction_services = models.Registry.import_transaction_services()
 email_services = models.Registry.import_email_services()
 memory_cache_services = models.Registry.import_cache_services()
 platform_auth_services = models.Registry.import_auth_services()
@@ -532,7 +535,7 @@ class AuthServicesStub(python_utils.OBJECT):
         Returns:
             callable. A function that will uninstall the stub when called.
         """
-        with contextlib2.ExitStack() as stack:
+        with python_utils.ExitStack() as stack:
             stub = cls()
 
             stack.enter_context(test.swap(
@@ -955,7 +958,49 @@ class TestBase(unittest.TestCase):
                 None, a temporary result object is created (by calling the
                 defaultTestResult() method) and used instead.
         """
-        with main.client.context(namespace=self.id()[-100:]):
+
+        with contextlib2.ExitStack() as stack:
+            if self.run_with_emulator:
+                stack.enter_context(
+                    datastore_services.get_ndb_context(
+                        namespace=self.id()[-100:]))
+            else:
+                stack.enter_context(
+                    self.swap(
+                        datastore_services, 'get_client', lambda: None
+                    )
+                )
+                stack.enter_context(
+                    self.swap(
+                        datastore_services,
+                        'get_ndb_context',
+                        contextlib.nullcontext
+                    )
+                )
+                stack.enter_context(
+                    self.swap(
+                        transaction_services,
+                        'get_client',
+                        lambda: None
+                    )
+                )
+                stack.enter_context(
+                    self.swap(
+                        transaction_services,
+                        'get_transaction',
+                        contextlib.nullcontext
+                    )
+                )
+                stack.enter_context(
+                    self.swap(
+                        base_models.BaseModel,
+                        '__bases__',
+                        (cloud_datastore_stub.Model,)
+                    )
+                )
+                stack.enter_context(
+                    cloud_datastore_stub_installer.CloudDatastoreStub().install(self))
+
             super(TestBase, self).run(result=result)
 
     def _get_unicode_test_string(self, suffix):
@@ -1243,7 +1288,7 @@ class TestBase(unittest.TestCase):
                 ', '.join(itertools.chain(
                     (repr(a) for a in args),
                     ('%s=%r' % kwarg for kwarg in kwargs.items())))
-                for args, kwargs in itertools.zip_longest( # pylint: disable=deprecated-itertools-function
+                for args, kwargs in python_utils.zip_longest(
                     expected_args_iter, expected_kwargs_iter, fillvalue={})
             ]
             if pretty_unused_args:
@@ -1753,6 +1798,7 @@ states:
       hints: []
       id: null
       solution: null
+    linked_skill_id: null
     next_content_id_index: 0
     param_changes: []
     recorded_voiceovers:
@@ -1786,6 +1832,7 @@ states:
       hints: []
       id: null
       solution: null
+    linked_skill_id: null
     next_content_id_index: 0
     param_changes: []
     recorded_voiceovers:
@@ -1825,7 +1872,7 @@ title: Title
         es_stub = ElasticSearchStub()
         es_stub.reset()
 
-        with contextlib2.ExitStack() as stack:
+        with python_utils.ExitStack() as stack:
             stack.callback(AuthServicesStub.install_stub(self))
             stack.enter_context(self.swap(
                 elastic_search_services.ES.indices, 'create',

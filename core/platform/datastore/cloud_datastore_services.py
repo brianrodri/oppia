@@ -26,21 +26,30 @@ import functools
 from core.platform import models
 import python_utils
 
+import backports.functools_lru_cache
 from google.cloud import ndb
 
 transaction_services = models.Registry.import_transaction_services()
+
 Model = ndb.Model
 Key = ndb.Key
 Property = ndb.Property
 
 BooleanProperty = ndb.BooleanProperty
 DateProperty = ndb.DateProperty
-ComputedProperty = ndb.ComputedProperty
 DateTimeProperty = ndb.DateTimeProperty
 FloatProperty = ndb.FloatProperty
 IntegerProperty = ndb.IntegerProperty
 JsonProperty = ndb.JsonProperty
-UserProperty = ndb.UserProperty
+
+
+@backports.functools_lru_cache.lru_cache()
+def get_client():
+    return ndb.Client()
+
+
+def get_ndb_context(**kwargs):
+    return get_client().context(**kwargs)
 
 
 @functools.wraps(ndb.StringProperty)

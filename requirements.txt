@@ -50,7 +50,7 @@ fastavro==0.23.6
     # via apache-beam
 fasteners==0.16
     # via google-apitools
-git+git://github.com/oppia/firebase-admin-python@8d6deee889733d09ef5327d78c09e4d7b17785ac#egg=firebase-admin
+firebase-admin==5.0.0
     # via -r requirements.in
 future==0.18.2
     # via
@@ -289,7 +289,6 @@ six==1.15.0
     #   -r requirements.in
     #   bleach
     #   fasteners
-    #   firebase-admin
     #   google-api-core
     #   google-api-python-client
     #   google-apitools

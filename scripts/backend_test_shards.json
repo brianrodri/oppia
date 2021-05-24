@@ -165,7 +165,6 @@
         "jobs.base_validation_jobs_test",
         "jobs.base_jobs_test",
         "jobs.decorators.validation_decorators_test",
-        "jobs.io.stub_io_test",
         "jobs.job_options_test",
         "jobs.job_test_utils_test",
         "jobs.job_utils_test",

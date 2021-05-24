@@ -942,6 +942,15 @@ class TestBase(unittest.TestCase):
     # A test unicode string.
     UNICODE_TEST_STRING = 'unicode ¡马!'
 
+    @property
+    def namespace(self):
+        """Returns a namespace for isolating the NDB operations of each test.
+
+        Returns:
+            str. The namespace.
+        """
+        return self.id()[-100:]
+
     def run(self, result=None):
         """Run the test, collecting the result into the specified TestResult.
 
@@ -957,7 +966,7 @@ class TestBase(unittest.TestCase):
                 defaultTestResult() method) and used instead.
         """
 
-        with datastore_services.get_ndb_context(namespace=self.id()[-100:]):
+        with datastore_services.get_ndb_context(namespace=self.namespace):
             super(TestBase, self).run(result=result)
 
     def _get_unicode_test_string(self, suffix):

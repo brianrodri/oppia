@@ -24,15 +24,17 @@ import contextlib
 import datetime
 import re
 
+from core.platform import models
 from core.tests import test_utils
 from jobs import base_jobs
 from jobs import job_options
-from jobs.io import stub_io
 import python_utils
 
 from apache_beam import runners
 from apache_beam.testing import test_pipeline
 from apache_beam.testing import util as beam_testing_util
+
+datastore_services = models.Registry.import_datastore_services()
 
 
 class PipelinedTestBase(test_utils.TestBase):
@@ -46,8 +48,7 @@ class PipelinedTestBase(test_utils.TestBase):
     def __init__(self, *args, **kwargs):
         super(PipelinedTestBase, self).__init__(*args, **kwargs)
         self.pipeline = test_pipeline.TestPipeline(
-            runner=runners.DirectRunner(),
-            options=test_pipeline.PipelineOptions(runtime_type_check=True))
+            options=job_options.JobOptions(namespace=self.namespace))
         self._pipeline_context_stack = None
 
     def setUp(self):
@@ -151,18 +152,6 @@ class JobTestBase(PipelinedTestBase):
 
     JOB_CLASS = base_jobs.JobBase # NOTE: run() raises a NotImplementedError.
 
-    def __init__(self, *args, **kwargs):
-        super(JobTestBase, self).__init__(*args, **kwargs)
-        self.datastoreio_stub = stub_io.DatastoreioStub()
-        self.pipeline.options.view_as(job_options.JobOptions).datastoreio = (
-            self.datastoreio_stub)
-
-    def setUp(self):
-        super(JobTestBase, self).setUp()
-        with self._pipeline_context_stack as stack:
-            stack.enter_context(self.datastoreio_stub.context())
-            self._pipeline_context_stack = stack.pop_all()
-
     def run_job(self):
         """Runs a new instance of self.JOB_CLASS and returns its output.
 
@@ -189,7 +178,9 @@ class JobTestBase(PipelinedTestBase):
         Args:
             models: list(Model). The NDB models to put into the stub.
         """
-        self.datastoreio_stub.put_multi(models)
+        datastore_services.update_timestamps_multi(
+            models, update_last_updated_time=False)
+        datastore_services.put_multi(models)
 
     def assert_job_output_is(self, expected):
         """Asserts the output of self.JOB_CLASS matches the given PCollection.

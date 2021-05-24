@@ -44,15 +44,6 @@ class AuditAllStorageModelsJobTests(job_test_utils.JobTestBase):
     def test_empty_storage(self):
         self.assert_job_output_is_empty()
 
-    def test_run_with_empty_model_getter(self):
-        pipeline = test_pipeline.TestPipeline(
-            runner=runners.DirectRunner(),
-            options=job_options.JobOptions(datastoreio=None))
-
-        self.assertRaisesRegexp(
-            ValueError, 'JobOptions.datastoreio must not be None',
-            base_validation_jobs.AuditAllStorageModelsJob(pipeline).run)
-
     def test_base_validation(self):
         base_model_with_invalid_id = self.create_model(
             base_models.BaseModel, id='123@?!*', deleted=False)

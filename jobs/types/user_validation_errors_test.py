@@ -81,7 +81,7 @@ class ModelIdRegexErrorTests(base_validation_errors_test.AuditErrorsTestBase):
         self.assertEqual(
             error.message,
             'ModelIdRegexError in BaseModel(id=\'?!"\'): id does not '
-            'match the expected regex=u\'[abc]{3}\'')
+            'match the expected regex=\'[abc]{3}\'')
 
 
 class DraftChangeListLastUpdatedNoneErrorTests(

@@ -793,13 +793,10 @@ class TaskqueueServicesStub(python_utils.OBJECT):
             task_name: str|None. Optional. The name of the task.
         """
         headers = {
-            'X-Appengine-QueueName': python_utils.convert_to_bytes(queue_name),
-            'X-Appengine-TaskName': (
-                # Maps empty strings to None so the output can become 'None'.
-                python_utils.convert_to_bytes(task_name)
-                if task_name else b'None'
-            ),
-            'X-AppEngine-Fake-Is-Admin': python_utils.convert_to_bytes(1),
+            'X-AppEngine-Fake-Is-Admin': b'1',
+            'X-Appengine-QueueName': queue_name.encode(),
+            # Maps empty strings to None so the output can become 'None'.
+            'X-Appengine-TaskName': task_name.encode() or b'None'
         }
         csrf_token = self._test_base.get_new_csrf_token()
         self._test_base.post_task(url, payload, headers, csrf_token=csrf_token)
@@ -985,7 +982,7 @@ class TestBase(unittest.TestCase):
         """
         # We are using the b' prefix as all the stdouts are in bytes.
         python_utils.PRINT(
-            b'%s%s' % (LOG_LINE_PREFIX, python_utils.convert_to_bytes(line)))
+            b'%s%s' % (LOG_LINE_PREFIX, line.encode()))
 
     def shortDescription(self):
         """Additional information logged during unit test invocation."""
@@ -1463,10 +1460,10 @@ class AppEngineTestBase(TestBase):
                 # All other tasks will be for MapReduce or taskqueue.
                 params = task.payload or ''
                 headers = {
-                    'Content-Length': python_utils.convert_to_bytes(len(params))
+                    'Content-Length': f'{len(params)}'.encode()
                 }
                 headers.update(
-                    (key, python_utils.convert_to_bytes(val))
+                    (key, f'{val}'.encode())
                     for key, val in task.headers.items())
 
                 app = (
@@ -2331,7 +2328,7 @@ title: Title
         # Convert the files to bytes.
         if upload_files is not None:
             upload_files = tuple(
-                tuple(python_utils.convert_to_bytes(f) for f in upload_file)
+                tuple(f.encode() for f in upload_file)
                 for upload_file in upload_files)
 
         return app.post(
@@ -3639,7 +3636,7 @@ class FailingFunction(FunctionWrapper):
             self._num_tries_before_success == FailingFunction.INFINITY)
         self._times_called = 0
 
-        if not (self._num_tries_before_success >= 0 or self._always_fail):
+        if not self._always_fail and self._num_tries_before_success < 0:
             raise ValueError(
                 'num_tries_before_success should either be an '
                 'integer greater than or equal to 0, '
@@ -3655,6 +3652,7 @@ class FailingFunction(FunctionWrapper):
         """
         self._times_called += 1
         call_should_fail = (
+            self._always_fail or
             self._num_tries_before_success >= self._times_called)
-        if call_should_fail or self._always_fail:
+        if call_should_fail:
             raise self._exception

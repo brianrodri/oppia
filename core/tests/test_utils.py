@@ -796,7 +796,7 @@ class TaskqueueServicesStub(python_utils.OBJECT):
             'X-AppEngine-Fake-Is-Admin': b'1',
             'X-Appengine-QueueName': queue_name.encode(),
             # Maps empty strings to None so the output can become 'None'.
-            'X-Appengine-TaskName': task_name.encode() or b'None'
+            'X-Appengine-TaskName': task_name.encode() if task_name else b'None'
         }
         csrf_token = self._test_base.get_new_csrf_token()
         self._test_base.post_task(url, payload, headers, csrf_token=csrf_token)

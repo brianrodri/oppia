@@ -1469,10 +1469,10 @@ class AppEngineTestBase(TestBase):
                 # All other tasks will be for MapReduce or taskqueue.
                 params = task.payload or ''
                 headers = {
-                    'Content-Length': f'{len(params)}'.encode()
+                    'Content-Length': python_utils.UNICODE(len(params)).encode()
                 }
                 headers.update(
-                    (key, f'{val}'.encode())
+                    (key, python_utils.UNICODE(val).encode())
                     for key, val in task.headers.items())
 
                 app = (
@@ -2081,7 +2081,7 @@ title: Title
         # Although the hash function doesn't guarantee a one-to-one mapping, in
         # practice it is sufficient for our tests. We make it a positive integer
         # because those are always valid auth IDs.
-        return str(abs(hash(email)))
+        return python_utils.UNICODE(abs(hash(email)))
 
     def get_all_python_files(self, skip_prefix=None):
         """Recursively collects all Python files in the core/ and extensions/

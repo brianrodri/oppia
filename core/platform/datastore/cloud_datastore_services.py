@@ -33,6 +33,7 @@ transaction_services = models.Registry.import_transaction_services()
 Model = ndb.Model
 Key = ndb.Key
 Property = ndb.Property
+Query = ndb.Query
 
 BooleanProperty = ndb.BooleanProperty
 DateProperty = ndb.DateProperty
@@ -45,7 +46,10 @@ CLIENT = ndb.Client()
 
 
 def get_ndb_context(**kwargs):
-    return CLIENT.context(**kwargs)
+    context = ndb.get_context(raise_context_error=False)
+    return (
+        CLIENT.context(**kwargs) if context is None else
+        contextlib.nullcontext(enter_result=context))
 
 
 @functools.wraps(ndb.StringProperty)

@@ -793,13 +793,10 @@ class TaskqueueServicesStub(python_utils.OBJECT):
             task_name: str|None. Optional. The name of the task.
         """
         headers = {
-            'X-Appengine-QueueName': python_utils.convert_to_bytes(queue_name),
-            'X-Appengine-TaskName': (
-                # Maps empty strings to None so the output can become 'None'.
-                python_utils.convert_to_bytes(task_name)
-                if task_name else b'None'
-            ),
-            'X-AppEngine-Fake-Is-Admin': python_utils.convert_to_bytes(1),
+            'X-AppEngine-Fake-Is-Admin': b'1',
+            'X-Appengine-QueueName': queue_name.encode(),
+            # Maps empty strings to None so the output can become 'None'.
+            'X-Appengine-TaskName': task_name.encode() if task_name else b'None'
         }
         csrf_token = self._test_base.get_new_csrf_token()
         self._test_base.post_task(url, payload, headers, csrf_token=csrf_token)
@@ -942,6 +939,15 @@ class TestBase(unittest.TestCase):
     # A test unicode string.
     UNICODE_TEST_STRING = 'unicode ¡马!'
 
+    @property
+    def namespace(self):
+        """Returns a namespace for isolating the NDB operations of each test.
+
+        Returns:
+            str. The namespace.
+        """
+        return self.id()[-100:]
+
     def run(self, result=None):
         """Run the test, collecting the result into the specified TestResult.
 
@@ -957,7 +963,7 @@ class TestBase(unittest.TestCase):
                 defaultTestResult() method) and used instead.
         """
 
-        with datastore_services.get_ndb_context(namespace=self.id()[-100:]):
+        with datastore_services.get_ndb_context(namespace=self.namespace):
             super(TestBase, self).run(result=result)
 
     def _get_unicode_test_string(self, suffix):
@@ -985,7 +991,7 @@ class TestBase(unittest.TestCase):
         """
         # We are using the b' prefix as all the stdouts are in bytes.
         python_utils.PRINT(
-            b'%s%s' % (LOG_LINE_PREFIX, python_utils.convert_to_bytes(line)))
+            b'%s%s' % (LOG_LINE_PREFIX, line.encode()))
 
     def shortDescription(self):
         """Additional information logged during unit test invocation."""
@@ -1463,10 +1469,10 @@ class AppEngineTestBase(TestBase):
                 # All other tasks will be for MapReduce or taskqueue.
                 params = task.payload or ''
                 headers = {
-                    'Content-Length': python_utils.convert_to_bytes(len(params))
+                    'Content-Length': python_utils.UNICODE(len(params)).encode()
                 }
                 headers.update(
-                    (key, python_utils.convert_to_bytes(val))
+                    (key, python_utils.UNICODE(val).encode())
                     for key, val in task.headers.items())
 
                 app = (
@@ -2075,7 +2081,7 @@ title: Title
         # Although the hash function doesn't guarantee a one-to-one mapping, in
         # practice it is sufficient for our tests. We make it a positive integer
         # because those are always valid auth IDs.
-        return str(abs(hash(email)))
+        return python_utils.UNICODE(abs(hash(email)))
 
     def get_all_python_files(self, skip_prefix=None):
         """Recursively collects all Python files in the core/ and extensions/
@@ -2331,7 +2337,7 @@ title: Title
         # Convert the files to bytes.
         if upload_files is not None:
             upload_files = tuple(
-                tuple(python_utils.convert_to_bytes(f) for f in upload_file)
+                tuple(f.encode() for f in upload_file)
                 for upload_file in upload_files)
 
         return app.post(
@@ -3639,7 +3645,7 @@ class FailingFunction(FunctionWrapper):
             self._num_tries_before_success == FailingFunction.INFINITY)
         self._times_called = 0
 
-        if not (self._num_tries_before_success >= 0 or self._always_fail):
+        if not self._always_fail and self._num_tries_before_success < 0:
             raise ValueError(
                 'num_tries_before_success should either be an '
                 'integer greater than or equal to 0, '
@@ -3655,6 +3661,7 @@ class FailingFunction(FunctionWrapper):
         """
         self._times_called += 1
         call_should_fail = (
+            self._always_fail or
             self._num_tries_before_success >= self._times_called)
-        if call_should_fail or self._always_fail:
+        if call_should_fail:
             raise self._exception

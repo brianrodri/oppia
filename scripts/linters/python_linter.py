@@ -104,7 +104,7 @@ class ThirdPartyPythonLintChecksManager(python_utils.OBJECT):
 
         _batch_size = 50
         current_batch_start_index = 0
-        stdout = io.BytesIO()
+        stdout = io.StringIO()
 
         while current_batch_start_index < len(files_to_lint):
             # Note that this index is an exclusive upper bound -- i.e.,

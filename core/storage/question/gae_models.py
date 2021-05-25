@@ -344,7 +344,7 @@ class QuestionSkillLinkModel(base_models.BaseModel):
 
     @classmethod
     def get_question_skill_links_by_skill_ids(
-            cls, question_count, skill_ids, start_cursor):
+            cls, question_count, skill_ids, offset=0):
         """Fetches the list of QuestionSkillLinkModels linked to the skill in
         batches.
 
@@ -352,40 +352,29 @@ class QuestionSkillLinkModel(base_models.BaseModel):
             question_count: int. The number of questions to be returned.
             skill_ids: list(str). The ids of skills for which the linked
                 question ids are to be retrieved.
-            start_cursor: str. The starting point from which the batch of
-                questions are to be returned. This value should be urlsafe.
+            offset: int. Number of query results to skip.
 
         Returns:
-            list(QuestionSkillLinkModel), str|None. The QuestionSkillLinkModels
-            corresponding to given skill_ids, the next cursor value to be
-            used for the next page (or None if no more pages are left). The
-            returned next cursor value is urlsafe.
+            list(QuestionSkillLinkModel), int. The QuestionSkillLinkModels
+            corresponding to given skill_ids, the next offset value for
+            next batch of questions.
         """
         question_skill_count = min(
             len(skill_ids), constants.MAX_SKILLS_PER_QUESTION
         ) * question_count
 
-        if not start_cursor == '':
-            cursor = datastore_services.make_cursor(urlsafe_cursor=start_cursor)
-            question_skill_link_models, next_cursor, more = cls.query(
-                cls.skill_id.IN(skill_ids)
-                # Order by cls.key is needed alongside cls.last_updated so as to
-                # resolve conflicts, if any.
-                # Reference SO link: https://stackoverflow.com/q/12449197
-            ).order(-cls.last_updated, cls.key).fetch_page(
-                question_skill_count,
-                start_cursor=cursor
-            )
-        else:
-            question_skill_link_models, next_cursor, more = cls.query(
-                cls.skill_id.IN(skill_ids)
-            ).order(-cls.last_updated, cls.key).fetch_page(
-                question_skill_count
-            )
-        next_cursor_str = (
-            next_cursor.urlsafe() if (next_cursor and more) else None
+        question_skill_link_models = cls.query(
+            cls.skill_id.IN(skill_ids)
+            # Order by cls.key is needed alongside cls.last_updated so as to
+            # resolve conflicts, if any.
+            # Reference SO link: https://stackoverflow.com/q/12449197
+        ).order(-cls.last_updated).fetch(
+            question_skill_count, offset=offset)
+
+        return (
+            question_skill_link_models,
+            offset + len(question_skill_link_models)
         )
-        return question_skill_link_models, next_cursor_str
 
     @classmethod
     def get_question_skill_links_based_on_difficulty_equidistributed_by_skill(

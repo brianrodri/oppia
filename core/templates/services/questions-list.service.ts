@@ -34,7 +34,9 @@ import { TruncatePipe } from 'filters/string-utility-filters/truncate.pipe';
 })
 export class QuestionsListService {
   private _questionSummariesForOneSkill: QuestionSummaryForOneSkill[] = [];
-  private _nextCursorForQuestions: string = '';
+  // Here, _nextOffsetForQuestions is null when there are no more
+  // questions to be fetched.
+  private _nextOffsetForQuestions: number | null = 0;
   private _currentPage: number = 0;
   private _questionSummartiesInitializedEventEmitter: EventEmitter<void> = (
     new EventEmitter<void>());
@@ -57,13 +59,13 @@ export class QuestionsListService {
     this._questionSummartiesInitializedEventEmitter.emit();
   }
 
-  private _setNextQuestionsCursor(nextCursor: string): void {
-    this._nextCursorForQuestions = nextCursor;
+  private _setNextQuestionsOffset(nextOffset: number): void {
+    this._nextOffsetForQuestions = nextOffset;
   }
 
   isLastQuestionBatch(): boolean {
     return (
-      this._nextCursorForQuestions === null &&
+      this._nextOffsetForQuestions === null &&
       (this._currentPage + 1) * AppConstants.NUM_QUESTIONS_PER_PAGE >=
         this._questionSummariesForOneSkill.length);
   }
@@ -72,7 +74,7 @@ export class QuestionsListService {
       skillId: string, fetchMore: boolean, resetHistory: boolean): void {
     if (resetHistory) {
       this._questionSummariesForOneSkill = [];
-      this._nextCursorForQuestions = '';
+      this._nextOffsetForQuestions = 0;
     }
 
     const num = AppConstants.NUM_QUESTIONS_PER_PAGE;
@@ -84,16 +86,16 @@ export class QuestionsListService {
     if (
       (this._currentPage + 1) * num >
        this._questionSummariesForOneSkill.length &&
-       this._nextCursorForQuestions !== null && fetchMore) {
+       this._nextOffsetForQuestions !== null && fetchMore) {
       this.questionBackendApiService.fetchQuestionSummariesAsync(
-        skillId, this._nextCursorForQuestions).then(response => {
+        skillId, this._nextOffsetForQuestions).then(response => {
         let questionSummaries = response.questionSummaries.map(summary => {
           return (
             QuestionSummaryForOneSkill.
               createFromBackendDict(summary));
         });
 
-        this._setNextQuestionsCursor(response.nextCursor);
+        this._setNextQuestionsOffset(response.nextOffset);
         this._setQuestionSummariesForOneSkill(
           questionSummaries, resetHistory);
       });

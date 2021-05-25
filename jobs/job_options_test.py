@@ -23,7 +23,7 @@ import re
 
 from core.tests import test_utils
 from jobs import job_options
-from jobs.io import stub_io
+import python_utils
 
 
 class JobOptionsTests(test_utils.TestBase):
@@ -31,15 +31,12 @@ class JobOptionsTests(test_utils.TestBase):
     def test_default_values(self):
         options = job_options.JobOptions()
 
-        self.assertIsNone(options.model_getter)
+        self.assertIsNone(options.namespace)
 
     def test_overwritten_values(self):
-        model_io_stub = stub_io.ModelIoStub()
-        get_models = model_io_stub.get_models_ptransform
+        options = job_options.JobOptions(namespace='abc')
 
-        options = job_options.JobOptions(model_getter=get_models)
-
-        self.assertIs(options.model_getter, get_models)
+        self.assertIs(options.namespace, 'abc')
 
     def test_unsupported_values(self):
         self.assertRaisesRegexp(

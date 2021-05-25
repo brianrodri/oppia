@@ -188,7 +188,7 @@ class ClassifierTrainingJobModel(base_models.BaseModel):
         query = (
             cls.get_all()
             .filter(
-                datastore_services.AND(
+                datastore_services.all_of(
                     cls.status.IN([
                         feconf.TRAINING_JOB_STATUS_NEW,
                         feconf.TRAINING_JOB_STATUS_PENDING

@@ -1363,7 +1363,7 @@ class QuestionSuggestionTests(test_utils.GenericTestBase):
         self.assertEqual(
             response['error'],
             'Expected target_version_at_submission to be an int, '
-            'received <type \'str\'>'
+            'received <class \'str\'>'
         )
         self.assertEqual(len(suggestions), 1)
         self.logout()

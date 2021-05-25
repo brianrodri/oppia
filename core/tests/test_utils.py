@@ -2337,8 +2337,11 @@ title: Title
         # Convert the files to bytes.
         if upload_files is not None:
             upload_files = tuple(
-                tuple(f.encode() for f in upload_file)
-                for upload_file in upload_files)
+                tuple(
+                    f.encode() if isinstance(f, str) else f
+                    for f in upload_file
+                ) for upload_file in upload_files
+            )
 
         return app.post(
             url, params=data, headers=headers, status=expected_status_int,
@@ -3488,7 +3491,7 @@ class ClassifierTestBase(GenericEmailTestBase):
         response = self._send_post_request(
             self.testapp, url, data,
             expect_errors, expected_status_int=expected_status_int,
-            headers={b'content-type': b'application/octet-stream'})
+            headers={'content-type': 'application/octet-stream'})
         # Testapp takes in a status parameter which is the expected status of
         # the response. However this expected status is verified only when
         # expect_errors=False. For other situations we need to explicitly check

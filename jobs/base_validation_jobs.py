@@ -30,6 +30,7 @@ from jobs.types import base_validation_errors
 import python_utils
 
 import apache_beam as beam
+from apache_beam.io.gcp.datastore.v1new import datastoreio
 
 datastore_services = models.Registry.import_datastore_services()
 
@@ -76,22 +77,17 @@ class AuditAllStorageModelsJob(base_jobs.JobBase):
         Returns:
             PCollection. A PCollection of audit errors discovered during the
             audit.
-
-        Raises:
-            ValueError. When the `datastoreio` option, which provides the
-                PTransforms for performing datastore IO operations, is None.
         """
-        datastoreio = self.job_options.datastoreio
-        if datastoreio is None:
-            raise ValueError('JobOptions.datastoreio must not be None')
-
         query_everything = job_utils.get_beam_query_from_ndb_query(
-            datastore_services.query_everything())
+            datastore_services.query_everything(),
+            namespace=self.job_options.namespace)
 
         existing_models, deleted_models = (
             self.pipeline
-            | 'Get all models' >> (
+            | 'Get all beam entities' >> (
                 datastoreio.ReadFromDatastore(query_everything))
+            | 'Convert to NDB models' >> (
+                beam.Map(job_utils.get_model_from_beam_entity))
             | 'Partition by model.deleted' >> (
                 beam.Partition(lambda model, _: int(model.deleted), 2))
         )
@@ -300,7 +296,7 @@ class GetMissingModelKeyErrors(beam.PTransform):
             if property_value is None:
                 continue
             model_id = job_utils.get_model_id(model)
-            referenced_id = python_utils.convert_to_bytes(property_value)
+            referenced_id = property_value
             for referenced_kind in referenced_kinds:
                 error = base_validation_errors.ModelRelationshipError(
                     property_of_model, model_id, referenced_kind, referenced_id)

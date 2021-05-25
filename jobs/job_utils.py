@@ -19,6 +19,7 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
+import datetime
 import itertools
 import operator
 
@@ -26,9 +27,8 @@ from core.platform import models
 import feconf
 
 from apache_beam.io.gcp.datastore.v1new import types as beam_datastore_types
-from google.appengine.api import datastore_types
-from google.appengine.datastore import datastore_query
-from google.appengine.ext.ndb import query as ndb_query
+from google.cloud.ndb import query as ndb_query
+from google.cloud.datastore import query as datastore_query
 
 datastore_services = models.Registry.import_datastore_services()
 
@@ -61,25 +61,29 @@ def clone_model(model, **new_values):
     cls = model.__class__
     props = {k: v.__get__(model, cls) for k, v in cls._properties.items()} # pylint: disable=protected-access
     props.update(new_values)
-    return cls(id=model_id, **props)
+    with datastore_services.get_ndb_context():
+        return cls(id=model_id, **props)
 
 
-def get_model_key(model):
-    """Returns the given model's key.
+def get_model_class(kind):
+    """Returns the model class corresponding to the given kind.
+
+    NOTE: A model's kind is usually, but not always, the same as a model's class
+    name. Specifically, the kind is different when a model overwrites the
+    _get_kind() class method. Although Oppia never does this, the Apache Beam
+    framework uses "kind" to refer to models extensively, so we follow the same
+    convention and take special care to always return the correct value.
 
     Args:
-        model: datastore_services.Model. The model to inspect.
+        kind: str. The model's kind.
 
     Returns:
-        datastore_services.Key. The model's key.
+        type(datastore_services.Model). The corresponding class.
 
     Raises:
-        TypeError. When the argument is not a model.
+        KindError. Internally raised by _lookup_model when the kind is invalid.
     """
-    if isinstance(model, datastore_services.Model):
-        return model.key
-    else:
-        raise TypeError('%r is not a model instance' % model)
+    return datastore_services.Model._lookup_model(kind) # pylint: disable=protected-access
 
 
 def get_model_kind(model):
@@ -141,8 +145,6 @@ def get_model_property(model, property_name):
     """
     if property_name == 'id':
         return get_model_id(model)
-    elif property_name == '__key__':
-        return get_model_key(model)
     elif isinstance(model, datastore_services.Model):
         return getattr(model, property_name)
     else:
@@ -161,7 +163,8 @@ def get_beam_entity_from_model(model):
     """
     beam_entity = beam_datastore_types.Entity(
         beam_datastore_types.Key(
-            model.key.flat(), project=feconf.OPPIA_PROJECT_ID))
+            model.key.flat(), project=feconf.OPPIA_PROJECT_ID,
+            namespace=model.key.namespace()))
     beam_entity.set_properties(model._to_dict()) # pylint: disable=protected-access
     return beam_entity
 
@@ -175,31 +178,49 @@ def get_model_from_beam_entity(beam_entity):
     Returns:
         datastore_services.Model. The NDB model representation of the entity.
     """
-    beam_key = beam_entity.key.to_client_key()
-    model_id = beam_key.id_or_name
-    model_class = datastore_services.Model._lookup_model(beam_key.kind) # pylint: disable=protected-access
-    return model_class(id=model_id, **beam_entity.properties)
+    ds_key = beam_entity.key.to_client_key()
+    ndb_key = datastore_services.Key._from_ds_key(ds_key)
+    ndb_model_class = datastore_services.Model._lookup_model(ds_key.kind) # pylint: disable=protected-access
+    ndb_properties = {}
+    for name, value in beam_entity.properties.items():
+        if isinstance(value, datetime.datetime):
+            # Cloud NDB only accepts `tzinfo=None` when the datetime is in UTC.
+            # Since all of Oppia's models use UTC, we replace the `tzinfo='UTC'`
+            # values provided by the Apache Beam SDK to satisfy Cloud NDB.
+            value = value.replace(tzinfo=None)
+        ndb_properties[name] = value
+    with datastore_services.get_ndb_context():
+        return ndb_model_class(key=ndb_key, **ndb_properties)
 
 
-def get_beam_query_from_ndb_query(query):
+def get_beam_query_from_ndb_query(query, namespace=None):
     """Returns an equivalent Apache Beam query from the given NDB query.
+
+    This function helps developers avoid learning two types of query syntaxes.
+    Specifically, the datastoreio module offered by the Apache Beam SDK only
+    accepts Beam datastore queries, and are implemented very differently from
+    NDB queries. This function adapts the two patterns to make job code easier
+    to write.
 
     Args:
         query: datastore_services.Query. The NDB query to convert.
+        namespace: str|None. Namespace for isolating the NDB operations of
+            tests.
 
     Returns:
         beam_datastore_types.Query. The equivalent Apache Beam query.
     """
     kind = query.kind
-    namespace = query.namespace
+    namespace = namespace or query.namespace
+    project = query.project or feconf.OPPIA_PROJECT_ID
 
     if query.filters:
         filters = _get_beam_filters_from_ndb_filter_node(query.filters)
     else:
         filters = None
 
-    if query.orders:
-        order = _get_beam_order_from_ndb_order(query.orders)
+    if query.order_by:
+        order = _get_beam_order_from_ndb_order(query.order_by)
     else:
         order = None
 
@@ -207,47 +228,8 @@ def get_beam_query_from_ndb_query(query):
         order = ('__key__',)
 
     return beam_datastore_types.Query(
-        kind=kind, namespace=namespace, filters=filters, order=order)
-
-
-def apply_query_to_models(query, model_list):
-    """Applies the query to the list of models by removing elements in-place.
-
-    Args:
-        query: beam_datastore_types.Query. The query object representing the
-            constraints placed on the models.
-        model_list: list(Model). The models to filter.
-
-    Raises:
-        ValueError. The kind of model is specified by the Query, but the order
-            does not specifiy a sort-by key.
-    """
-    if query.kind is None and query.order != ('__key__',):
-        raise ValueError('Query(kind=None) must also have order=(\'__key__\',)')
-
-    if query.kind:
-        model_list[:] = [
-            m for m in model_list if get_model_kind(m) == query.kind
-        ]
-
-    if query.namespace:
-        model_list[:] = [
-            m for m in model_list if m.key.namespace() == query.namespace
-        ]
-
-    if query.filters:
-        model_list[:] = [
-            m for m in model_list
-            if all(_get_operator(comp)(get_model_property(m, name), value)
-                   for name, comp, value in query.filters)
-        ]
-
-    if query.order:
-        for order in reversed(query.order):
-            _sort_by_property_name(model_list, order)
-
-    if query.limit:
-        del model_list[query.limit:]
+        kind=kind, namespace=namespace, project=project, filters=filters,
+        order=order)
 
 
 def _get_beam_filters_from_ndb_filter_node(filter_node):
@@ -261,84 +243,25 @@ def _get_beam_filters_from_ndb_filter_node(filter_node):
         are: (property name, comparison operator, property value).
     """
     if isinstance(filter_node, ndb_query.ConjunctionNode):
-        nodes = list(filter_node._to_filter().filters) # pylint: disable=protected-access
+        nodes = [n for n in filter_node] # pylint: disable=protected-access
     elif isinstance(filter_node, ndb_query.FilterNode):
-        nodes = [filter_node._to_filter()] # pylint: disable=protected-access
+        nodes = [filter_node] # pylint: disable=protected-access
     else:
         raise TypeError(
             '`!=`, `IN`, and `OR` are forbidden filters. To emulate their '
             'behavior, use multiple AND queries and flatten them into a single '
             'PCollection.')
 
-    return [
-        (
-            pb.property(0).name(),
-            datastore_query.PropertyFilter._OPERATORS_INVERSE[pb.op()], # pylint: disable=protected-access
-            datastore_types.FromPropertyPb(pb.property(0)),
-        )
-        for pb in itertools.chain.from_iterable(n._to_pbs() for n in nodes) # pylint: disable=protected-access
-    ]
+    return [(n._name, n._opsymbol, n._value) for n in nodes] # pylint: disable=protected-access
 
 
-def _get_beam_order_from_ndb_order(order):
+def _get_beam_order_from_ndb_order(orders):
     """Returns an equivalent Apache Beam order from the given datastore Order.
 
     Args:
-        order: datastore_query.Order. The datastore order to convert.
+        orders: list(datastore_query.Order). The datastore order to convert.
 
     Returns:
         tuple(str). The equivalent Apache Beam order.
     """
-    if isinstance(order, datastore_query.CompositeOrder):
-        orders = order.orders
-    else:
-        orders = [order]
-
-    return tuple(
-        '%s%s' % ('-' if o.direction == o.DESCENDING else '', o.prop)
-        for o in orders)
-
-
-def _sort_by_property_name(model_list, property_name):
-    """Sorts the list of models by the given property.
-
-    Args:
-        model_list: list(Model). The models to sort.
-        property_name: str. The name of the property to sort by. If the name is
-            prefixed by '-', then the models are sorted in reverse order.
-    """
-    if property_name.startswith('-'):
-        reverse = True
-        property_name = property_name[1:]
-    else:
-        reverse = False
-
-    model_list.sort(
-        key=lambda model: get_model_property(model, property_name),
-        reverse=reverse)
-
-
-def _get_operator(comp_str):
-    """Returns the operator function corresponding to the given comparison.
-
-    Args:
-        comp_str: str. One of: '<', '<=', '=', '>=', '>'.
-
-    Returns:
-        callable. The binary operator corresponding to the comparison.
-
-    Raises:
-        ValueError. The comparison is not supported.
-    """
-    if comp_str == '<':
-        return operator.lt
-    elif comp_str == '<=':
-        return operator.le
-    elif comp_str == '=':
-        return operator.eq
-    elif comp_str == '>=':
-        return operator.ge
-    elif comp_str == '>':
-        return operator.gt
-    else:
-        raise ValueError('Unsupported comparison operator: %s' % comp_str)
+    return tuple('%s%s' % ('-' if o.reverse else '', o.name) for o in orders)

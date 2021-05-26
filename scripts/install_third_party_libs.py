@@ -216,7 +216,8 @@ def main():
     # must install these libraries to the developer's computer.
     system_pip_dependencies = [
         ('enum34', common.ENUM_VERSION),
-        ('protobuf', common.PROTOBUF_VERSION)
+        ('protobuf', common.PROTOBUF_VERSION),
+        ('grpcio', common.GRPCIO_VERSION),
     ]
     local_pip_dependencies = [
         ('coverage', common.COVERAGE_VERSION, common.OPPIA_TOOLS_DIR),

@@ -219,7 +219,10 @@ def run_tests(args):
             log_level=args.server_log_level,
             clear_datastore=True,
             skip_sdk_update_check=True,
-            env={'PORTSERVER_ADDRESS': common.PORTSERVER_SOCKET_FILEPATH}))
+            env={
+                **os.environ,
+                'PORTSERVER_ADDRESS': common.PORTSERVER_SOCKET_FILEPATH,
+            }))
 
         stack.enter_context(servers.managed_webdriver_server(
             chrome_version=args.chrome_driver_version))

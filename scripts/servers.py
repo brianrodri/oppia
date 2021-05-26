@@ -73,8 +73,9 @@ def managed_process(
 
     command = ' '.join(non_empty_args) if shell else list(non_empty_args)
     human_readable_command = command if shell else ' '.join(command)
-    python_utils.PRINT(
-        'Starting new %s: %s' % (human_readable_name, human_readable_command))
+    start_str = 'Starting new %s: %s' % (
+        human_readable_name, human_readable_command)
+    python_utils.PRINT(start_str.encode('utf-8'))
     popen_proc = psutil.Popen(command, shell=shell, **popen_kwargs)
 
     try:

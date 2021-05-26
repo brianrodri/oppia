@@ -501,11 +501,13 @@ class UtilsTests(test_utils.GenericTestBase):
             Exception,
             'Found invalid non-asset file .+'
             'There should only be a single non-asset file, and it should have '
-            'a .yaml suffix.'):
+            'a .yaml suffix.'
+        ):
             utils.get_exploration_components_from_dir('core/tests/load_tests')
 
         with self.assertRaisesRegexp(
-            Exception, 'The only directory in . should be assets/'):
+            Exception, 'The only directory in . should be assets/'
+        ):
             utils.get_exploration_components_from_dir('.')
 
     def test_get_exploration_components_from_dir_with_multiple_yaml_files(self):
@@ -529,7 +531,7 @@ class UtilsTests(test_utils.GenericTestBase):
 
     def test_base64_from_int(self):
         base64_number = utils.base64_from_int(108)
-        self.assertEqual(base64.b64decode(base64_number), '[108]')
+        self.assertEqual(base64.b64decode(base64_number), b'[108]')
 
     def test_get_supported_audio_language_description_with_invalid_code(self):
         valid_language_code = 'en'

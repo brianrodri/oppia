@@ -138,7 +138,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_COMPONENT_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -165,7 +165,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'true', 'es5', './node_modules/@types',
                     INVALID_SCOPE_TRUE_FILEPATH,
                     INVALID_DIRECTIVE_WITH_NO_RETURN_BLOCK)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -193,7 +193,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_SCOPE_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -219,7 +219,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_SORTED_DEPENDENCIES_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -252,7 +252,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_LINE_BREAK_IN_CONTROLLER_DEPENDENCIES_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -285,7 +285,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'true', 'es5', './node_modules/@types',
                     INVALID_CONSTANT_AJS_FILEPATH,
                     INVALID_CONSTANT_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -315,7 +315,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_CONSTANT_IN_TS_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -344,7 +344,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'true', 'es5', './node_modules/@types',
                     INVALID_CONSTANT_AJS_FILEPATH,
                     INVALID_CONSTANT_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -368,7 +368,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_AS_CONST_CONSTANTS_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -394,7 +394,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'true', 'es5', './node_modules/@types',
                     VALID_CONSTANT_OUTSIDE_CLASS_AJS_FILEPATH,
                     VALID_CONSTANT_OUTSIDE_CLASS_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -419,7 +419,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'true', 'es5', './node_modules/@types',
                     VALID_APP_CONSTANTS_AJS_FILEPATH,
                     VALID_APP_CONSTANTS_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -443,7 +443,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_CONSTANT_IN_TS_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -534,7 +534,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_TS_IGNORE_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         ts_ignore_exceptions_swap = self.swap(
             js_ts_linter, 'TS_IGNORE_EXCEPTIONS', {})
@@ -571,7 +571,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     VALID_TS_IGNORE_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         ts_ignore_exceptions_swap = self.swap(
             js_ts_linter, 'TS_IGNORE_EXCEPTIONS', {
@@ -599,7 +599,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_TS_EXPECT_ERROR_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -636,7 +636,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     VALID_TS_EXPECT_ERROR_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -660,7 +660,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     INVALID_FORMATTED_COMMENT_FILEPATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -686,7 +686,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     VALID_UNLISTED_SERVICE_PATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)
@@ -725,7 +725,7 @@ class JsTsLintTests(test_utils.LinterTestBase):
                     'scripts/linters/test_files/', 'true', 'es2017,dom', 'true',
                     'true', 'es5', './node_modules/@types',
                     VALID_IGNORED_SERVICE_PATH)
-            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
+            subprocess.call(cmd, stdout=subprocess.PIPE)
 
         compile_all_ts_files_swap = self.swap(
             js_ts_linter, 'compile_all_ts_files', mock_compile_all_ts_files)

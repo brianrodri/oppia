@@ -555,7 +555,7 @@ def generate_random_string(length):
     Returns:
         str. Random string of specified length.
     """
-    return str(base64.urlsafe_b64encode(os.urandom(length))[:length])
+    return base64.urlsafe_b64encode(os.urandom(length))[:length].decode('utf-8')
 
 
 def generate_new_session_id():

@@ -19,6 +19,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import collections
 import contextlib
+import io
 import logging
 import os
 import re
@@ -65,7 +66,7 @@ class ManagedProcessTests(test_utils.TestBase):
             num_children: int. The number of child processes the process created
                 by the mock should create. Children inherit the same termination
                 behavior.
-            outputs: list(str). The outputs of the mock process.
+            outputs: list(bytes). The outputs of the mock process.
 
         Returns:
             Context manager. A context manager in which calls to psutil.Popen()
@@ -93,7 +94,7 @@ class ManagedProcessTests(test_utils.TestBase):
             popen_calls.append(self.POPEN_CALL(program_args, kwargs))
 
             pid = 1
-            stdout = ''.join('%s\n' % o for o in outputs)
+            stdout = b''.join(b'%b\n' % o for o in outputs)
             child_procs = [
                 scripts_test_utils.PopenStub(pid=i, unresponsive=unresponsive)
                 for i in python_utils.RANGE(pid + 1, pid + 1 + num_children)
@@ -179,7 +180,7 @@ class ManagedProcessTests(test_utils.TestBase):
         logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(servers.managed_process(
-            ['a', 1], shell=True, timeout_secs=10))
+            ['a', 1], timeout_secs=10))
         self.exit_stack.close()
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
@@ -202,7 +203,7 @@ class ManagedProcessTests(test_utils.TestBase):
         logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(servers.managed_process(
-            ['', 'a', '', 1], shell=True, timeout_secs=10))
+            ['', 'a', '', 1], timeout_secs=10))
         self.exit_stack.close()
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
@@ -639,9 +640,9 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_in_watch_mode_when_build_succeeds(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
-            outputs=['abc', 'Built at: 123', 'def']))
-        str_io = python_utils.string_io()
-        self.exit_stack.enter_context(python_utils.redirect_stdout(str_io))
+            outputs=[b'abc', b'Built at: 123', b'def']))
+        bytes_io = io.BytesIO()
+        self.exit_stack.enter_context(python_utils.redirect_stdout(bytes_io))
         logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(servers.managed_webpack_compiler(
@@ -653,7 +654,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertIn('--color', popen_calls[0].program_args)
         self.assertIn('--watch', popen_calls[0].program_args)
         self.assertIn('--progress', popen_calls[0].program_args)
-        self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
+        self.assert_matches_regexps(bytes_io.getvalue().strip().split('\n'), [
             'Starting new Webpack Compiler',
             'abc',
             'Built at: 123',
@@ -663,15 +664,15 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_in_watch_mode_raises_when_not_built(self):
         # NOTE: The 'Built at: ' message is never printed.
-        self.exit_stack.enter_context(self.swap_popen(outputs=['abc', 'def']))
-        str_io = python_utils.string_io()
-        self.exit_stack.enter_context(python_utils.redirect_stdout(str_io))
+        self.exit_stack.enter_context(self.swap_popen(outputs=[b'abc', b'def']))
+        bytes_io = io.BytesIO()
+        self.exit_stack.enter_context(python_utils.redirect_stdout(bytes_io))
 
         self.assertRaisesRegexp(
             IOError, 'First build never completed',
             lambda: self.exit_stack.enter_context(
                 servers.managed_webpack_compiler(watch_mode=True)))
-        self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
+        self.assert_matches_regexps(bytes_io.getvalue().strip().split(b'\n'), [
             'Starting new Webpack Compiler',
             'abc',
             'def',
@@ -680,7 +681,7 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_explicit_config_path(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
-            outputs=['Built at: 123']))
+            outputs=[b'Built at: 123']))
 
         self.exit_stack.enter_context(servers.managed_webpack_compiler(
             config_path='config.json'))
@@ -694,7 +695,7 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_prod_source_maps_config(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
-            outputs=['Built at: 123']))
+            outputs=[b'Built at: 123']))
 
         self.exit_stack.enter_context(servers.managed_webpack_compiler(
             use_prod_env=True, use_source_maps=True))
@@ -709,7 +710,7 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_prod_config(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
-            outputs=['Built at: 123']))
+            outputs=[b'Built at: 123']))
 
         self.exit_stack.enter_context(servers.managed_webpack_compiler(
             use_prod_env=True, use_source_maps=False))
@@ -724,7 +725,7 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_dev_source_maps_config(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
-            outputs=['Built at: 123']))
+            outputs=[b'Built at: 123']))
 
         self.exit_stack.enter_context(servers.managed_webpack_compiler(
             use_prod_env=False, use_source_maps=True))
@@ -739,7 +740,7 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_uses_dev_config(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
-            outputs=['Built at: 123']))
+            outputs=[b'Built at: 123']))
 
         self.exit_stack.enter_context(servers.managed_webpack_compiler(
             use_prod_env=False, use_source_maps=False))
@@ -754,7 +755,7 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_with_max_old_space_size(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
-            outputs=['Built at: 123']))
+            outputs=[b'Built at: 123']))
 
         self.exit_stack.enter_context(servers.managed_webpack_compiler(
             max_old_space_size=2056))
@@ -882,12 +883,12 @@ class ManagedProcessTests(test_utils.TestBase):
             lambda *_: python_utils.nullcontext(), expected_args=[
                 (
                     common.CHROME_PROVIDER_FILE_PATH,
-                    r'this\.osArch\ \=\ os\.arch\(\)\;',
+                    re.escape('this.osArch = os.arch();'),
                     'this.osArch = "x64";',
                 ),
                 (
                     common.GECKO_PROVIDER_FILE_PATH,
-                    r'this\.osArch\ \=\ os\.arch\(\)\;',
+                    re.escape('this.osArch = os.arch();'),
                     'this.osArch = "x64";',
                 ),
             ]))
@@ -903,6 +904,7 @@ class ManagedProcessTests(test_utils.TestBase):
             popen_calls[0].program_args,
             '%s %s start --versions.chrome 1.2.3 --quiet --standalone' % (
                 common.NODE_BIN_PATH, common.WEBDRIVER_MANAGER_BIN_PATH))
+        print('TEST')
 
     def test_managed_protractor_with_invalid_sharding_instances(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen())

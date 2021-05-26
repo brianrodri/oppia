@@ -2991,7 +2991,9 @@ class UpdateStateTests(ExplorationServicesUnitTests):
             'inputs']['x'] = 'abc'
         with self.assertRaisesRegexp(
             Exception,
-            'abc has the wrong type. It should be a NonnegativeInt.'):
+            'Value has the wrong type. It should be a NonnegativeInt. '
+            'The value is abc'
+        ):
             exp_services.update_exploration(
                 self.owner_id, self.EXP_0_ID,
                 _get_change_list(

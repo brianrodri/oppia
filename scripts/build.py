@@ -286,7 +286,7 @@ def _minify(source_path, target_path):
     yuicompressor_dir = common.convert_to_posixpath(YUICOMPRESSOR_DIR)
     cmd = 'java -Xmx24m -jar %s -o %s %s' % (
         yuicompressor_dir, target_path, source_path)
-    subprocess.check_call(cmd, shell=True)
+    subprocess.check_call(cmd)
 
 
 def write_to_file_stream(file_stream, content):
@@ -324,7 +324,7 @@ def _minify_and_create_sourcemap(source_path, target_file_path):
     cmd = '%s %s %s -c -m --source-map %s -o %s ' % (
         common.NODE_BIN_PATH, UGLIFY_FILE, source_path,
         source_map_properties, target_file_path)
-    subprocess.check_call(cmd, shell=True)
+    subprocess.check_call(cmd)
 
 
 def _generate_copy_tasks_for_fonts(source_paths, target_path):

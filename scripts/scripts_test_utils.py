@@ -19,6 +19,7 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
+import io
 import signal
 
 import python_utils
@@ -58,7 +59,7 @@ class PopenStub(python_utils.OBJECT):
     """
 
     def __init__(
-            self, pid=1, name='process', stdout='', stderr='',
+            self, pid=1, name='process', stdout=b'', stderr=b'',
             reject_signal=False, reject_terminate=False, reject_kill=False,
             alive=True, unresponsive=False, return_code=0, child_procs=None):
         """Initializes a new PopenStub instance.
@@ -79,8 +80,8 @@ class PopenStub(python_utils.OBJECT):
         """
         self.pid = pid
         self.stdin = python_utils.string_io()
-        self.stdout = python_utils.string_io(buffer_value=stdout)
-        self.stderr = python_utils.string_io(buffer_value=stderr)
+        self.stdout = io.BytesIO(stdout)
+        self.stderr = io.BytesIO(stderr)
         self.poll_count = 0
         self.signals_received = []
         self.terminate_count = 0

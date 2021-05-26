@@ -18,7 +18,6 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import logging
-import random
 
 from constants import constants
 from core.domain import config_services
@@ -148,7 +147,7 @@ class SkillServicesUnitTests(test_utils.GenericTestBase):
             })
         )
         filenames = skill_services.get_image_filenames_from_skill(self.skill)
-        self.assertItemsEqual(filenames, ['img2.svg', 'img.svg'])
+        self.assertEqual(filenames, ['img.svg', 'img2.svg'])
 
     def test_get_new_skill_id(self):
         new_skill_id = skill_services.get_new_skill_id()
@@ -1290,73 +1289,35 @@ class SkillMasteryServicesUnitTests(test_utils.GenericTestBase):
             degrees_of_mastery, {skill_id_4: 0.3, skill_id_5: 0.5})
 
     def test_get_sorted_skill_ids(self):
-        masteries = [self.DEGREE_OF_MASTERY_1, self.DEGREE_OF_MASTERY_2, None]
-
-        for _ in python_utils.RANGE(feconf.MAX_NUMBER_OF_SKILL_IDS):
-            skill_id = skill_services.get_new_skill_id()
-            mastery = random.random()
-            masteries.append(mastery)
-            skill_services.create_user_skill_mastery(
-                self.USER_ID, skill_id, mastery)
-            self.SKILL_IDS.append(skill_id)
-
-        masteries.sort()
         degrees_of_masteries = skill_services.get_multi_user_skill_mastery(
             self.USER_ID, self.SKILL_IDS)
-        arranged_filtered_skill_ids = skill_services.filter_skills_by_mastery(
-            self.USER_ID, self.SKILL_IDS)
+        with self.swap(feconf, 'MAX_NUMBER_OF_SKILL_IDS', 2):
+            sorted_skill_ids = skill_services.get_sorted_skill_ids(
+                degrees_of_masteries)
+        expected_sorted_skill_ids = [self.SKILL_ID_3, self.SKILL_ID_1]
+        self.assertEqual(len(sorted_skill_ids), 2)
+        self.assertEqual(sorted_skill_ids, expected_sorted_skill_ids)
 
-        self.assertEqual(
-            len(arranged_filtered_skill_ids), feconf.MAX_NUMBER_OF_SKILL_IDS)
-
-        for i in python_utils.RANGE(feconf.MAX_NUMBER_OF_SKILL_IDS):
-            self.assertIn(
-                degrees_of_masteries[arranged_filtered_skill_ids[i]],
-                masteries[:feconf.MAX_NUMBER_OF_SKILL_IDS])
+        with self.swap(feconf, 'MAX_NUMBER_OF_SKILL_IDS', 3):
+            sorted_skill_ids = skill_services.get_sorted_skill_ids(
+                degrees_of_masteries)
+        expected_sorted_skill_ids = [
+            self.SKILL_ID_3, self.SKILL_ID_1, self.SKILL_ID_2]
+        self.assertEqual(sorted_skill_ids, expected_sorted_skill_ids)
 
     def test_filter_skills_by_mastery(self):
-        # Create feconf.MAX_NUMBER_OF_SKILL_IDS + 3 skill_ids
-        # to test two things:
-        #   1. The skill_ids should be sorted.
-        #   2. The filtered skill_ids should be feconf.MAX_NUMBER_OF_SKILL_IDS
-        # in number.
+        with self.swap(feconf, 'MAX_NUMBER_OF_SKILL_IDS', 2):
+            arranged_filtered_skill_ids = (
+                skill_services.filter_skills_by_mastery(
+                    self.USER_ID, self.SKILL_IDS))
+        self.assertEqual(len(arranged_filtered_skill_ids), 2)
+        expected_skill_ids = [self.SKILL_ID_1, self.SKILL_ID_3]
+        self.assertEqual(arranged_filtered_skill_ids, expected_skill_ids)
 
-        # List of mastery values (float values between 0.0 and 1.0)
-        masteries = [self.DEGREE_OF_MASTERY_1, self.DEGREE_OF_MASTERY_2,]
-
-        # Creating feconf.MAX_NUMBER_OF_SKILL_IDS additional user skill
-        # masteries.
-        for _ in python_utils.RANGE(feconf.MAX_NUMBER_OF_SKILL_IDS):
-            skill_id = skill_services.get_new_skill_id()
-            mastery = random.random()
-            masteries.append(mastery)
-            skill_services.create_user_skill_mastery(
-                self.USER_ID, skill_id, mastery)
-            self.SKILL_IDS.append(skill_id)
-
-        # Sorting the masteries, which should represent the masteries of the
-        # skill_ids that are finally returned.
-        masteries.sort()
-        degrees_of_masteries = skill_services.get_multi_user_skill_mastery(
-            self.USER_ID, self.SKILL_IDS)
-        arranged_filtered_skill_ids = skill_services.filter_skills_by_mastery(
-            self.USER_ID, self.SKILL_IDS)
-
-        self.assertEqual(
-            len(arranged_filtered_skill_ids), feconf.MAX_NUMBER_OF_SKILL_IDS)
-
-        # Assert that all the returned skill_ids are a part of the first
-        # feconf.MAX_NUMBER_OF_SKILL_IDS sorted skill_ids.
-        for i in python_utils.RANGE(feconf.MAX_NUMBER_OF_SKILL_IDS):
-            self.assertIn(
-                degrees_of_masteries[arranged_filtered_skill_ids[i]],
-                masteries[:feconf.MAX_NUMBER_OF_SKILL_IDS])
-
-        # Testing the arrangement.
-        excluded_skill_ids = list(set(self.SKILL_IDS) - set(
-            arranged_filtered_skill_ids))
-        for skill_id in excluded_skill_ids:
-            self.SKILL_IDS.remove(skill_id)
+        with self.swap(feconf, 'MAX_NUMBER_OF_SKILL_IDS', len(self.SKILL_IDS)):
+            arranged_filtered_skill_ids = (
+                skill_services.filter_skills_by_mastery(
+                    self.USER_ID, self.SKILL_IDS))
         self.assertEqual(arranged_filtered_skill_ids, self.SKILL_IDS)
 
 

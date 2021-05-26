@@ -163,12 +163,9 @@ def managed_dev_appserver(
         '--dev_appserver_log_level', log_level,
         app_yaml_path
     ]
-    # OK to use shell=True here because we are not passing anything that came
-    # from an untrusted user, only other callers of the script, so there's no
-    # risk of shell-injection attacks.
     proc_context = managed_process(
         dev_appserver_args, human_readable_name='GAE Development Server',
-        shell=True, env=env)
+        env=env)
     with proc_context as proc:
         common.wait_for_port_to_be_in_use(port)
         yield proc
@@ -196,10 +193,8 @@ def managed_firebase_auth_emulator(recover_users=False):
         if recover_users else
         ['--export-on-exit', common.FIREBASE_EMULATOR_CACHE_DIR])
 
-    # OK to use shell=True here because we are passing string literals and
-    # constants, so there is no risk of a shell-injection attack.
     proc_context = managed_process(
-        emulator_args, human_readable_name='Firebase Emulator', shell=True)
+        emulator_args, human_readable_name='Firebase Emulator')
     with proc_context as proc:
         common.wait_for_port_to_be_in_use(feconf.FIREBASE_EMULATOR_PORT)
         yield proc
@@ -222,11 +217,8 @@ def managed_elasticsearch_dev_server():
     es_args = ['%s/bin/elasticsearch' % common.ES_PATH, '-q']
     # Override the default path to ElasticSearch config files.
     es_env = {'ES_PATH_CONF': common.ES_PATH_CONFIG_DIR}
-    # OK to use shell=True here because we are passing string literals and
-    # constants, so there is no risk of a shell-injection attack.
     proc_context = managed_process(
-        es_args, human_readable_name='ElasticSearch Server', env=es_env,
-        shell=True)
+        es_args, human_readable_name='ElasticSearch Server', env=es_env)
     with proc_context as proc:
         common.wait_for_port_to_be_in_use(feconf.ES_LOCALHOST_PORT)
         yield proc
@@ -264,11 +256,8 @@ def managed_cloud_datastore_emulator(clear_datastore=False):
         elif not data_dir_exists:
             os.makedirs(common.CLOUD_DATASTORE_EMULATOR_DATA_DIR)
 
-        # OK to use shell=True here because we are passing string literals and
-        # constants, so there is no risk of a shell-injection attack.
         proc = stack.enter_context(managed_process(
-            emulator_args, human_readable_name='Cloud Datastore Emulator',
-            shell=True))
+            emulator_args, human_readable_name='Cloud Datastore Emulator'))
 
         common.wait_for_port_to_be_in_use(feconf.CLOUD_DATASTORE_EMULATOR_PORT)
 
@@ -306,11 +295,9 @@ def managed_redis_server():
     if os.path.exists(common.REDIS_DUMP_PATH):
         os.remove(common.REDIS_DUMP_PATH)
 
-    # OK to use shell=True here because we are passing string literals and
-    # constants, so there is no risk of a shell-injection attack.
     proc_context = managed_process(
         [common.REDIS_SERVER_PATH, common.REDIS_CONF_PATH],
-        human_readable_name='Redis Server', shell=True)
+        human_readable_name='Redis Server')
     with proc_context as proc:
         common.wait_for_port_to_be_in_use(feconf.REDISPORT)
         yield proc
@@ -388,10 +375,8 @@ def managed_webpack_compiler(
         compiler_args.extend(['--color', '--watch', '--progress'])
 
     with python_utils.ExitStack() as exit_stack:
-        # OK to use shell=True here because we are passing string literals and
-        # constants, so there is no risk of a shell-injection attack.
         proc = exit_stack.enter_context(managed_process(
-            compiler_args, human_readable_name='Webpack Compiler', shell=True,
+            compiler_args, human_readable_name='Webpack Compiler',
             # Capture compiler's output to detect when builds have completed.
             stdout=subprocess.PIPE))
 
@@ -455,8 +440,6 @@ def managed_portserver():
         'python', '-m', 'scripts.run_portserver',
         '--portserver_unix_socket_address', common.PORTSERVER_SOCKET_FILEPATH,
     ]
-    # OK to use shell=True here because we are passing string literals and
-    # constants, so there is no risk of a shell-injection attack.
     proc_context = (
         managed_process(portserver_args, human_readable_name='Portserver'))
     with proc_context as proc:
@@ -562,12 +545,10 @@ def managed_webdriver_server(chrome_version=None):
                 common.GECKO_PROVIDER_FILE_PATH, regex_pattern,
                 replacement_string))
 
-        # OK to use shell=True here because we are passing string literals and
-        # constants, so there is no risk of a shell-injection attack.
         proc = exit_stack.enter_context(managed_process([
             common.NODE_BIN_PATH, common.WEBDRIVER_MANAGER_BIN_PATH, 'start',
             '--versions.chrome', chrome_version, '--quiet', '--standalone',
-        ], human_readable_name='Webdriver manager', shell=True))
+        ], human_readable_name='Webdriver manager'))
 
         common.wait_for_port_to_be_in_use(4444)
 
@@ -617,10 +598,7 @@ def managed_protractor_server(
             '--capabilities.maxInstances=%d' % sharding_instances,
         ])
 
-    # OK to use shell=True here because we are passing string literals and
-    # constants, so there is no risk of a shell-injection attack.
     managed_protractor_proc = managed_process(
-        protractor_args, human_readable_name='Protractor Server', shell=True,
-        **kwargs)
+        protractor_args, human_readable_name='Protractor Server', **kwargs)
     with managed_protractor_proc as proc:
         yield proc

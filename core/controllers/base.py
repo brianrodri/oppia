@@ -364,7 +364,7 @@ class BaseHandler(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = content_type
         self.response.headers[
             'Content-Disposition'] = str('attachment; filename=%s' % filename)
-        self.response.write(values)
+        super(webapp2.Response, self.response).write(values)
 
     def render_template(self, filepath, iframe_restriction='DENY'):
         """Prepares an HTML response to be sent to the client.

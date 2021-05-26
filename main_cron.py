@@ -30,8 +30,6 @@ transaction_services = models.Registry.import_transaction_services()
 # Register the URLs with the classes responsible for handling them.
 URLS = [
     main.get_redirect_route(
-        r'/cron/mail/admin/job_status', cron.JobStatusMailerHandler),
-    main.get_redirect_route(
         r'/cron/models/cleanup', cron.CronModelsCleanupHandler),
     main.get_redirect_route(
         r'/cron/mail/admins/contributor_dashboard_bottlenecks',

@@ -683,7 +683,7 @@ class RenderDownloadableTests(test_utils.GenericTestBase):
         self.assertEqual(
             response.content_disposition,
             'attachment; filename=example.pdf')
-        self.assertEqual(response.body, 'example')
+        self.assertEqual(response.body, b'example')
         self.assertEqual(response.content_type, 'text/plain')
 
 

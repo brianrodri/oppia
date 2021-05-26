@@ -85,7 +85,6 @@ import webtest
 
 datastore_services = models.Registry.import_datastore_services()
 storage_services = models.Registry.import_storage_services()
-transaction_services = models.Registry.import_transaction_services()
 email_services = models.Registry.import_email_services()
 memory_cache_services = models.Registry.import_cache_services()
 platform_auth_services = models.Registry.import_auth_services()

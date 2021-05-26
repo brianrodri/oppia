@@ -20,6 +20,7 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import datetime
+import io
 import logging
 import os
 import zipfile
@@ -119,7 +120,7 @@ class EditorTests(BaseEditorControllerTests):
         # Check that non-editors can access, but not edit, the editor page.
         response = self.get_html_response('/create/0')
         self.assertIn(
-            '<exploration-editor-page></exploration-editor-page>',
+            b'<exploration-editor-page></exploration-editor-page>',
             response.body)
         self.assert_cannot_edit('0')
 
@@ -129,7 +130,7 @@ class EditorTests(BaseEditorControllerTests):
         # Check that it is now possible to access and edit the editor page.
         response = self.get_html_response('/create/0')
         self.assertIn(
-            '<exploration-editor-page></exploration-editor-page>',
+            b'<exploration-editor-page></exploration-editor-page>',
             response.body)
         self.assert_can_edit('0')
 
@@ -583,8 +584,7 @@ written_translations:
         self.assertEqual(
             response.headers['Content-Disposition'],
             'attachment; filename=%s' % filename)
-        zf_saved = zipfile.ZipFile(
-            python_utils.string_io(buffer_value=response.body))
+        zf_saved = zipfile.ZipFile(io.BytesIO(response.body))
         self.assertEqual(
             zf_saved.namelist(),
             ['The title for ZIP download handler test!.yaml'])
@@ -596,8 +596,7 @@ written_translations:
         with python_utils.open_file(
             golden_zip_filepath, 'rb', encoding=None) as f:
             golden_zipfile = f.read()
-        zf_gold = zipfile.ZipFile(
-            python_utils.string_io(buffer_value=golden_zipfile))
+        zf_gold = zipfile.ZipFile(io.BytesIO(golden_zipfile))
         # Compare saved with golden file.
         self.assertEqual(
             zf_saved.open(
@@ -665,8 +664,7 @@ written_translations:
             response.headers['Content-Disposition'],
             'attachment; filename=%s' % filename)
 
-        zf_saved = zipfile.ZipFile(
-            python_utils.string_io(buffer_value=response.body))
+        zf_saved = zipfile.ZipFile(io.BytesIO(response.body))
         self.assertEqual(zf_saved.namelist(), [u'¡Hola!.yaml'])
 
         self.logout()
@@ -694,8 +692,7 @@ written_translations:
             response.headers['Content-Disposition'],
             'attachment; filename=%s' % filename)
 
-        zf_saved = zipfile.ZipFile(
-            python_utils.string_io(buffer_value=response.body))
+        zf_saved = zipfile.ZipFile(io.BytesIO(response.body))
         self.assertEqual(zf_saved.namelist(), ['Unpublished_exploration.yaml'])
 
         self.logout()

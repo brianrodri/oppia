@@ -59,7 +59,7 @@ class CronJobTests(test_utils.GenericTestBase):
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
         self.testapp_swap = self.swap(
-            self, 'testapp', webtest.TestApp(main_cron.app))
+            self, 'testapp', webtest.TestApp(main_cron.app_without_context))
 
         self.email_subjects = []
         self.email_bodies = []
@@ -73,108 +73,6 @@ class CronJobTests(test_utils.GenericTestBase):
 
         self.send_mail_to_admin_swap = self.swap(
             email_manager, 'send_mail_to_admin', _mock_send_mail_to_admin)
-
-    def test_send_mail_to_admin_on_job_success(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-
-        with self.testapp_swap, self.send_mail_to_admin_swap:
-            self.get_html_response('/cron/mail/admin/job_status')
-
-        self.assertEqual(self.email_subjects, ['MapReduce status report'])
-        self.assertEqual(
-            self.email_bodies, ['All MapReduce jobs are running fine.'])
-
-        self.logout()
-
-    def test_cron_dashboard_stats_handler(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-
-        with self.testapp_swap:
-            self.get_html_response('/cron/users/dashboard_stats')
-
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-
-        all_jobs = job_models.JobModel.get_all_unfinished_jobs(3)
-        self.assertEqual(len(all_jobs), 1)
-        self.assertEqual(all_jobs[0].job_type, 'DashboardStatsOneOffJob')
-        self.logout()
-
-    def test_cron_user_deletion_handler(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-
-        with self.testapp_swap:
-            self.get_html_response('/cron/users/user_deletion')
-
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-
-        all_jobs = job_models.JobModel.get_all_unfinished_jobs(3)
-        self.assertEqual(len(all_jobs), 1)
-        self.assertEqual(all_jobs[0].job_type, 'UserDeletionOneOffJob')
-        self.logout()
-
-    def test_cron_fully_complete_user_deletion_handler(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-
-        with self.testapp_swap:
-            self.get_html_response('/cron/users/fully_complete_user_deletion')
-
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-
-        all_jobs = job_models.JobModel.get_all_unfinished_jobs(3)
-        self.assertEqual(len(all_jobs), 1)
-        self.assertEqual(
-            all_jobs[0].job_type, 'FullyCompleteUserDeletionOneOffJob')
-        self.logout()
-
-    def test_cron_exploration_recommendations_handler(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-
-        with self.testapp_swap:
-            self.get_html_response('/cron/explorations/recommendations')
-
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-
-        all_jobs = job_models.JobModel.get_all_unfinished_jobs(3)
-        self.assertEqual(len(all_jobs), 1)
-        self.assertEqual(
-            all_jobs[0].job_type, 'ExplorationRecommendationsOneOffJob')
-
-    def test_cron_activity_search_rank_handler(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-
-        with self.testapp_swap:
-            self.get_html_response('/cron/explorations/search_rank')
-
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-
-        all_jobs = job_models.JobModel.get_all_unfinished_jobs(3)
-        self.assertEqual(len(all_jobs), 1)
-        self.assertEqual(all_jobs[0].job_type, 'IndexAllActivitiesJobManager')
 
     def test_run_cron_to_hard_delete_models_marked_as_deleted(self):
         self.login(self.ADMIN_EMAIL, is_super_admin=True)

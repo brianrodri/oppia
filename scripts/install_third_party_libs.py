@@ -19,6 +19,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import argparse
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
@@ -172,6 +173,14 @@ def compile_protobuf_files(proto_files_paths):
         else:
             python_utils.PRINT(stderr)
             raise Exception('Error compiling proto files at %s' % path)
+
+    compiled_protobuf_dir = (
+        pathlib.Path(os.path.join(common.CURR_DIR, 'proto_files')))
+    for p in compiled_protobuf_dir.iterdir():
+        if p.suffix == '.py':
+            common.inplace_replace_file(
+                p.absolute(),
+                '^import (\w*_pb2 as)', r'from proto_files import \1')
 
 
 def ensure_pip_library_is_installed(package, version, path):

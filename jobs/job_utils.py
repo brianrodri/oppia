@@ -251,7 +251,8 @@ def get_beam_query_from_ndb_query(query, namespace=None):
         order = ('__key__',)
 
     return beam_datastore_types.Query(
-        kind=kind, namespace=namespace, filters=filters, order=order)
+        kind=kind, namespace=namespace, project=project, filters=filters,
+        order=order)
 
 
 def apply_query_to_models(query, model_list):

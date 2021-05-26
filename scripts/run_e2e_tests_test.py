@@ -254,6 +254,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_webdriver_server', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
+            servers, 'managed_cloud_datastore_emulator', mock_managed_process))
+        self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_protractor_server', mock_managed_process,
             expected_kwargs=[
                 {
@@ -278,7 +280,7 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         def mock_managed_protractor_server(**unused_kwargs): # pylint: disable=unused-argument
             return python_utils.nullcontext(
                 enter_result=scripts_test_utils.PopenStub(
-                    stdout=b'sample\n✓\noutput\n', alive=False))
+                    stdout='sample\n✓\noutput\n', alive=False))
 
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running', lambda *_: False))
@@ -298,6 +300,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             servers, 'managed_redis_server', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_webdriver_server', mock_managed_process))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            servers, 'managed_cloud_datastore_emulator', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_protractor_server',
             mock_managed_protractor_server,
@@ -447,6 +451,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_webdriver_server', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
+            servers, 'managed_cloud_datastore_emulator', mock_managed_process))
+        self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_protractor_server', mock_managed_process,
             expected_kwargs=[
                 {
@@ -488,6 +494,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
             servers, 'managed_portserver', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_webdriver_server', mock_managed_process))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            servers, 'managed_cloud_datastore_emulator', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_protractor_server', mock_managed_process,
             expected_kwargs=[
@@ -531,6 +539,8 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_webdriver_server', mock_managed_process,
             expected_kwargs=[{'chrome_version': CHROME_DRIVER_VERSION}]))
+        self.exit_stack.enter_context(self.swap_with_checks(
+            servers, 'managed_cloud_datastore_emulator', mock_managed_process))
         self.exit_stack.enter_context(self.swap_with_checks(
             servers, 'managed_protractor_server', mock_managed_process,
             expected_kwargs=[

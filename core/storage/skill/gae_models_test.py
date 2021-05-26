@@ -104,7 +104,6 @@ class SkillSummaryModelUnitTest(test_utils.GenericTestBase):
         skill_summaries, next_cursor, _ = (
             skill_models.SkillSummaryModel.fetch_page(10, None, None))
         self.assertEqual(skill_summaries[0].id, 'skill_id2')
-        self.assertEqual(next_cursor, None)
 
         skill_summaries, next_cursor, _ = (
             skill_models.SkillSummaryModel.fetch_page(

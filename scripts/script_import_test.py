@@ -63,8 +63,8 @@ class InstallThirdPartyLibsImportTests(test_utils.GenericTestBase):
             from scripts import install_third_party_libs # pylint: disable=unused-variable
         self.assertEqual(
             self.commands, [
-                sys.executable, '-m', 'pip', 'install', 'pyyaml==5.1.2',
-                '--target', '../oppia_tools/pyyaml-5.1.2',
+                sys.executable, '-m', 'pip', 'install', 'pyyaml==5.4.1',
+                '--target', '../oppia_tools/pyyaml-5.4.1',
                 '--user', '--prefix=', '--system',
                 sys.executable, '-m', 'pip', 'install',
                 'future==0.18.2', '--target',

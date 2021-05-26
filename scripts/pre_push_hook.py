@@ -191,7 +191,8 @@ def git_diff_name_status(left, right, diff_filter=''):
             #
             # We extract the first char (indicating the status), and the string
             # after the last tab character.
-            file_list.append(FileDiff(line[0], line[line.rfind(b'\t') + 1:]))
+            file_list.append(
+                FileDiff(bytes([line[0]]), line[line.rfind(b'\t') + 1:]))
         return file_list
     else:
         raise ValueError(err)

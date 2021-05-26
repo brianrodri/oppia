@@ -223,7 +223,7 @@ class PrePushHookTests(test_utils.GenericTestBase):
 
     def test_git_diff_name_status_without_error(self):
         def mock_start_subprocess_for_result(unused_cmd_tokens):
-            return ('M\tfile1\nA\tfile2', None)
+            return (b'M\tfile1\nA\tfile2', None)
         subprocess_swap = self.swap(
             pre_push_hook, 'start_subprocess_for_result',
             mock_start_subprocess_for_result)
@@ -233,8 +233,8 @@ class PrePushHookTests(test_utils.GenericTestBase):
                 pre_push_hook.git_diff_name_status(
                     'left', 'right', diff_filter='filter'),
                 [
-                    pre_push_hook.FileDiff(status='M', name='file1'),
-                    pre_push_hook.FileDiff(status='A', name='file2')])
+                    pre_push_hook.FileDiff(status=b'M', name=b'file1'),
+                    pre_push_hook.FileDiff(status=b'A', name=b'file2')])
 
     def test_git_diff_name_status_with_error(self):
         def mock_start_subprocess_for_result(unused_cmd_tokens):
@@ -315,10 +315,10 @@ class PrePushHookTests(test_utils.GenericTestBase):
     def test_extract_files_to_lint_with_non_empty_file_diffs(self):
         self.assertEqual(
             pre_push_hook.extract_files_to_lint([
-                pre_push_hook.FileDiff(status='M', name='file1'),
-                pre_push_hook.FileDiff(status='A', name='file2'),
-                pre_push_hook.FileDiff(status='W', name='file3')]),
-            ['file1', 'file2'])
+                pre_push_hook.FileDiff(status=b'M', name=b'file1'),
+                pre_push_hook.FileDiff(status=b'A', name=b'file2'),
+                pre_push_hook.FileDiff(status=b'W', name=b'file3')]),
+            [b'file1', b'file2'])
 
     def test_get_parent_branch_name_for_diff_with_hotfix_branch(self):
         def mock_get_branch():

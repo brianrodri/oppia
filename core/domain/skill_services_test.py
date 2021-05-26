@@ -1111,7 +1111,7 @@ class SkillServicesUnitTests(test_utils.GenericTestBase):
 
         logging_swap = self.swap(logging, 'error', _mock_logging_function)
         assert_raises_context_manager = self.assertRaisesRegexp(
-            Exception, '\'unicode\' object has no attribute \'cmd\'')
+            Exception, '\'str\' object has no attribute \'cmd\'')
 
         with logging_swap, assert_raises_context_manager:
             skill_services.update_skill(

@@ -1105,7 +1105,6 @@ def filter_skills_by_mastery(user_id, skill_ids):
         list(str). A list of the filtered skill_ids.
     """
     degrees_of_mastery = get_multi_user_skill_mastery(user_id, skill_ids)
-
     filtered_skill_ids = get_sorted_skill_ids(degrees_of_mastery)
 
     # Arranges the skill_ids in the order as it was received.

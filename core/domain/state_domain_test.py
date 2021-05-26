@@ -4215,9 +4215,8 @@ class StateDomainUnitTests(test_utils.GenericTestBase):
         with self.assertRaisesRegexp(
             Exception,
             re.escape(
-                '{\'normalizedStrSet\': [[]], \'contentId\': \'rule_input_'
-                'Equals\'} has the wrong type. It should be a TranslatableSetOf'
-                'NormalizedString.'
+                'Value has the wrong type. It should be a TranslatableSetOf'
+                'NormalizedString. The value is'
             )
         ):
             exploration.init_state.update_interaction_answer_groups(

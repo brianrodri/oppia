@@ -124,7 +124,7 @@ class CheckE2eTestsCapturedInCITests(test_utils.GenericTestBase):
                         re.escape(
                             'Protractor test suites and CI test suites are not '
                             'in sync. Following suites are not in sync: '
-                            '[\'notPresent\', \'invalid\']'
+                            '[\'invalid\', \'notPresent\']'
                         )
                     ):
                         check_e2e_tests_are_captured_in_ci.main()

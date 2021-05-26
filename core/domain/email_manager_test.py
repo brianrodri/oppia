@@ -5199,7 +5199,7 @@ class QueryStatusNotificationEmailTests(test_utils.EmailTestBase):
             'You can change your email preferences via the Preferences page.')
 
         expected_admin_email_text_body = (
-            '(Sent from None)\n\n'
+            '(Sent from dev-project-id)\n\n'
             'Query job with qid query id has failed in its execution.\n'
             'Query parameters:\n\n'
             'key1: val1\n'

@@ -2883,8 +2883,9 @@ class State(python_utils.OBJECT):
                             normalized_param = param_type.normalize(value)
                         except Exception:
                             raise Exception(
-                                '%s has the wrong type. It should be a %s.' %
-                                (value, param_type.__name__))
+                                'Value has the wrong type. It should be a %s. '
+                                'The value is %s' %
+                                (param_type.__name__, value))
 
                     rule_inputs[param_name] = normalized_param
 

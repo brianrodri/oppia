@@ -1677,7 +1677,8 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
 
         expected_dict = {
             'state_names_with_changed_answer_groups': [
-                'Renamed state', 'New state3'],
+                'New state3', 'Renamed state'
+            ],
             'state_names_with_unchanged_answer_groups': []
         }
         exp_versions_diff = exp_domain.ExplorationVersionsDiff(change_list)

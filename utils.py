@@ -986,7 +986,7 @@ def compute_list_difference(list_a, list_b):
     Returns:
         list. List of the set difference of list_a - list_b.
     """
-    return list(set(list_a) - set(list_b))
+    return list(sorted(set(list_a) - set(list_b)))
 
 
 class OrderedCounter(collections.Counter, collections.OrderedDict):

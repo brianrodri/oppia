@@ -35,4 +35,3 @@ google-cloud-translate==2.0.1
 pytest==6.2.3
 webapp2==3.0.0b1
 elasticsearch==7.10.0
-grpcio==1.38.0

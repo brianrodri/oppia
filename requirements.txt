@@ -157,7 +157,6 @@ grpcio-gcp==0.2.2
     #   google-api-core
 grpcio==1.38.0
     # via
-    #   -r requirements.in
     #   apache-beam
     #   google-api-core
     #   googleapis-common-protos

@@ -992,8 +992,7 @@ class StateInteractionStatsHandlerTests(test_utils.GenericTestBase):
         # filepaths which will vary depending on the machine that runs the
         # test. So the starting portion of the traceback that will remain
         # constant is matched instead.
-        self.assertTrue(
-            'Traceback (most recent call last):' in observed_log_messages[2])
+        self.assertIn('Exception raised:', observed_log_messages[2])
 
         self.logout()
 

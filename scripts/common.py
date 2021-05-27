@@ -782,3 +782,19 @@ def swap_env(key, value):
             del os.environ[key]
         else:
             os.environ[key] = old_value
+
+
+def stdout_write(s):
+    """Tries to write the input string to stdout in a non-blocking way.
+
+    https://stackoverflow.com/a/44961052/4859885
+
+    Args:
+        s: str. The string to write to stdout.
+    """
+    written = 0
+    while written < len(s):
+        try:
+            written += os.write(sys.stdout.fileno(), s[written:])
+        except OSError as e:
+            pass

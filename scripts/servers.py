@@ -388,7 +388,7 @@ def managed_webpack_compiler(
             # Iterate until an empty string is printed, which signals the end of
             # the process.
             for line in iter(proc.stdout.readline, ''):
-                sys.stdout.write(line.decode('utf-8'))
+                common.stdout_write(line.decode('utf-8'))
                 # Message printed when a compilation has succeeded. We break
                 # after the first one to ensure the site is ready to be visited.
                 if b'Built at: ' in line:
@@ -403,7 +403,7 @@ def managed_webpack_compiler(
             # Iterate until an empty string is printed, which signals the end of
             # the output.
             for line in iter(proc.stdout.readline, b''):
-                sys.stdout.write(line.decode('utf-8'))
+                common.stdout_write(line.decode('utf-8'))
 
         # Start a thread to print the rest of the compiler's output to stdout.
         printer_thread = threading.Thread(target=print_proc_output)

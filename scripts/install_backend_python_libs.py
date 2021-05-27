@@ -470,7 +470,7 @@ def _run_pip_command(cmd_parts):
         subprocess.check_call(
             command + ['--user', '--prefix=', '--system'])
     else:
-        python_utils.PRINT(stderr)
+        python_utils.PRINT(stderr.decode('utf-8'))
         python_utils.PRINT(
             'Refer to https://github.com/oppia/oppia/wiki/Troubleshooting')
         raise Exception('Error installing package')

@@ -961,7 +961,7 @@ class StateInteractionStatsHandlerTests(test_utils.GenericTestBase):
             self):
         observed_log_messages = []
 
-        def _mock_logging_function(msg, *args):
+        def _mock_logging_function(msg, *args, **unused_kwargs):
             """Mocks logging.error()."""
             observed_log_messages.append(msg % args)
 

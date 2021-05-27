@@ -114,7 +114,8 @@ class ClassifierTrainingJobModelUnitTests(test_utils.GenericTestBase):
     def test_query_new_and_pending_training_jobs_with_non_zero_offset(self):
         with self.swap(
             classifier_models, 'NEW_AND_PENDING_TRAINING_JOBS_FETCH_LIMIT', 2):
-            next_scheduled_check_time = datetime.datetime.utcnow()
+            next_scheduled_check_time = (
+                datetime.datetime.utcnow() - datetime.timedelta(minutes=1))
             # Creating 6 jobs out of which 4 will be fetched in steps.
             classifier_models.ClassifierTrainingJobModel.create(
                 'TextClassifier', 'TextInput', 'exp_id01', 1,
@@ -123,7 +124,7 @@ class ClassifierTrainingJobModelUnitTests(test_utils.GenericTestBase):
                 'state_name2', feconf.TRAINING_JOB_STATUS_NEW, 1)
             classifier_models.ClassifierTrainingJobModel.create(
                 'TextClassifier', 'TextInput', 'exp_id02', 2,
-                next_scheduled_check_time,
+                next_scheduled_check_time  + datetime.timedelta(seconds=1),
                 [{'answer_group_index': 1, 'answers': ['a1', 'a2']}],
                 'state_name2', feconf.TRAINING_JOB_STATUS_PENDING, 1)
             classifier_models.ClassifierTrainingJobModel.create(
@@ -139,12 +140,12 @@ class ClassifierTrainingJobModelUnitTests(test_utils.GenericTestBase):
                 'state_name2', feconf.TRAINING_JOB_STATUS_FAILED, 1)
             classifier_models.ClassifierTrainingJobModel.create(
                 'TextClassifier', 'TextInput', 'exp_id05', 1,
-                next_scheduled_check_time,
+                next_scheduled_check_time + datetime.timedelta(seconds=2),
                 [{'answer_group_index': 1, 'answers': ['a1', 'a2']}],
                 'state_name2', feconf.TRAINING_JOB_STATUS_NEW, 1)
             classifier_models.ClassifierTrainingJobModel.create(
                 'TextClassifier', 'TextInput', 'exp_id06', 1,
-                next_scheduled_check_time,
+                next_scheduled_check_time + datetime.timedelta(seconds=3),
                 [{'answer_group_index': 1, 'answers': ['a1', 'a2']}],
                 'state_name2', feconf.TRAINING_JOB_STATUS_PENDING, 1)
 
@@ -152,6 +153,7 @@ class ClassifierTrainingJobModelUnitTests(test_utils.GenericTestBase):
                 classifier_models.ClassifierTrainingJobModel.
                 query_new_and_pending_training_jobs(0))
 
+            print(training_jobs)
             self.assertEqual(len(training_jobs), 2)
             self.assertEqual(training_jobs[0].algorithm_id, 'TextClassifier')
             self.assertEqual(training_jobs[0].interaction_id, 'TextInput')
@@ -183,7 +185,7 @@ class ClassifierTrainingJobModelUnitTests(test_utils.GenericTestBase):
             self.assertEqual(training_jobs[0].exp_version, 1)
             self.assertEqual(
                 training_jobs[0].next_scheduled_check_time,
-                next_scheduled_check_time)
+                next_scheduled_check_time + datetime.timedelta(seconds=2))
             self.assertEqual(training_jobs[0].state_name, 'state_name2')
             self.assertEqual(
                 training_jobs[0].status,

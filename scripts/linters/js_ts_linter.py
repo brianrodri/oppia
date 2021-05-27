@@ -144,7 +144,7 @@ def compile_all_ts_files():
     """
     cmd = ('./node_modules/typescript/bin/tsc -p %s -outDir %s') % (
         './tsconfig.json', COMPILED_TYPESCRIPT_TMP_PATH)
-    subprocess.call(cmd, stdout=subprocess.PIPE)
+    subprocess.call(cmd, stdout=subprocess.PIPE, shell=True)
 
 
 class JsTsLintChecksManager(python_utils.OBJECT):

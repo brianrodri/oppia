@@ -123,6 +123,7 @@ class TaskThread(threading.Thread):
         except Exception as e:
             self.exception = e
             self.stacktrace = traceback.format_exc()
+            print(self.exception.args)
             if 'KeyboardInterrupt' not in self.exception.args[0]:
                 log(e)
                 log(

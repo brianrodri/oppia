@@ -293,3 +293,8 @@ def main(args=None):
 
 if __name__ == '__main__':  # pragma: no cover
     main()
+
+
+from apache_beam.runners.dataflow import dataflow_runner
+
+dataflow_runner.DataflowPipelineResult()

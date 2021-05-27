@@ -63,7 +63,7 @@ def run_lighthouse_puppeteer_script():
     bash_command = [common.NODE_BIN_PATH, puppeteer_path]
 
     try:
-        script_output = subprocess.check_output(bash_command).split('\n')
+        script_output = subprocess.check_output(bash_command).split(b'\n')
     except subprocess.CalledProcessError:
         python_utils.PRINT(
             'Puppeteer script failed. More details can be found above.')

@@ -197,7 +197,7 @@ def main(args=None):
             ])
             stack.enter_context(managed_web_browser)
 
-        common.wait_for_port_to_not_be_in_use(PORT_NUMBER_FOR_GAE_SERVER)
+        dev_appserver.wait()
 
 
 if __name__ == '__main__':

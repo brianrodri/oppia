@@ -961,7 +961,7 @@ class StateInteractionStatsHandlerTests(test_utils.GenericTestBase):
             self):
         observed_log_messages = []
 
-        def _mock_logging_function(msg, *args):
+        def _mock_logging_function(msg, *args, **unused_kwargs):
             """Mocks logging.error()."""
             observed_log_messages.append(msg % args)
 
@@ -992,8 +992,7 @@ class StateInteractionStatsHandlerTests(test_utils.GenericTestBase):
         # filepaths which will vary depending on the machine that runs the
         # test. So the starting portion of the traceback that will remain
         # constant is matched instead.
-        self.assertTrue(
-            'Traceback (most recent call last):' in observed_log_messages[2])
+        self.assertIn('Exception raised:', observed_log_messages[2])
 
         self.logout()
 

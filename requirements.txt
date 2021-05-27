@@ -159,7 +159,7 @@ grpcio-gcp==0.2.2
     # via
     #   apache-beam
     #   google-api-core
-grpcio==1.38.0
+grpcio==1.32.0
     # via
     #   apache-beam
     #   google-api-core

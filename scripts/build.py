@@ -286,7 +286,7 @@ def _minify(source_path, target_path):
     yuicompressor_dir = common.convert_to_posixpath(YUICOMPRESSOR_DIR)
     cmd = 'java -Xmx24m -jar %s -o %s %s' % (
         yuicompressor_dir, target_path, source_path)
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, shell=True)
 
 
 def write_to_file_stream(file_stream, content):

@@ -64,9 +64,9 @@ def managed_process(
         sys.path.insert(1, common.PSUTIL_DIR)
     import psutil
 
-    stripped_args = (python_utils.UNICODE(arg).strip() for arg in command_args)
-    command = [s for s in stripped_args if s]
-    human_readable_command = ' '.join(command)
+    get_proc_info = lambda p: (
+        '%s(name="%s", pid=%d)' % (human_readable_name, p.name(), p.pid)
+        if p.is_running() else '%s(pid=%d)' % (human_readable_name, p.pid))
 
     stripped_args = (('%s' % arg).strip() for arg in command_args)
     non_empty_args = (s for s in stripped_args if s)
@@ -75,30 +75,41 @@ def managed_process(
     human_readable_command = command if shell else ' '.join(command)
     python_utils.PRINT(
         'Starting new %s: %s' % (human_readable_name, human_readable_command))
-    proc = psutil.Popen(command, shell=shell, **popen_kwargs)
+    popen_proc = psutil.Popen(command, shell=shell, **popen_kwargs)
 
     try:
-        yield proc
+        yield popen_proc
     finally:
-        if proc.is_running():
-            # IMPORTANT: Children must be terminated before the parent otherwise
-            # they can become zombies.
-            proc_tree = proc.children(recursive=True)
-            proc_tree.append(proc)
+        python_utils.PRINT('Stopping %s...' % get_proc_info(popen_proc))
+        procs_still_alive = [popen_proc]
+        try:
+            if popen_proc.is_running():
+                # Children must be terminated before the parent, otherwise they
+                # may become zombie processes.
+                procs_still_alive = (
+                    popen_proc.children(recursive=True) + [popen_proc])
 
-            logging.info('Sending terminate signal to %s' % human_readable_name)
-            sys.stdout.flush()
+            procs_to_kill = []
+            for proc in procs_still_alive:
+                if proc.is_running():
+                    logging.info('Terminating %s...' % get_proc_info(proc))
+                    proc.terminate()
+                    procs_to_kill.append(proc)
+                else:
+                    logging.info('%s has already ended.' % get_proc_info(proc))
 
-            for p in proc_tree:
-                p.terminate()
-
-            logging.info('Waiting for %s to terminate...' % human_readable_name)
-            _, alive = psutil.wait_procs(proc_tree, timeout=timeout_secs)
-
-            for p in alive:
-                logging.warn('Forced to kill pid=%s!' % p.pid)
-                sys.stdout.flush()
-                p.kill()
+            procs_gone, procs_still_alive = (
+                psutil.wait_procs(procs_to_kill, timeout=timeout_secs))
+            for proc in procs_still_alive:
+                logging.warn('Forced to kill %s!' % get_proc_info(proc))
+                proc.kill()
+            for proc in procs_gone:
+                logging.info('%s has already ended.' % get_proc_info(proc))
+        except Exception:
+            # NOTE: Raising an exception while exiting a context manager is bad
+            # practice, so we log and suppress exceptions instead.
+            logging.exception(
+                'Failed to stop %s gracefully!' % get_proc_info(popen_proc))
 
 
 @contextlib.contextmanager
@@ -387,7 +398,7 @@ def managed_webpack_compiler(
         if watch_mode:
             # Iterate until an empty string is printed, which signals the end of
             # the process.
-            for line in iter(proc.stdout.readline, ''):
+            for line in iter(proc.stdout.readline, b''):
                 common.stdout_write(line.decode('utf-8'))
                 # Message printed when a compilation has succeeded. We break
                 # after the first one to ensure the site is ready to be visited.

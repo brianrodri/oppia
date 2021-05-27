@@ -793,6 +793,8 @@ def stdout_write(string):
     Args:
         string: str. The string to write to stdout.
     """
+    if isinstance(string, str):
+        string = string.encode('utf-8')
     written = 0
     while written < len(string):
         try:

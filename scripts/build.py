@@ -324,7 +324,7 @@ def _minify_and_create_sourcemap(source_path, target_file_path):
     cmd = '%s %s %s -c -m --source-map %s -o %s ' % (
         common.NODE_BIN_PATH, UGLIFY_FILE, source_path,
         source_map_properties, target_file_path)
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, shell=True)
 
 
 def _generate_copy_tasks_for_fonts(source_paths, target_path):

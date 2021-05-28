@@ -522,8 +522,9 @@ def managed_webdriver_server(chrome_version=None):
                 'https://chromedriver.chromium.org/downloads/version-selection'
                 % chrome_command.replace(' ', r'\ '))
 
-        installed_version_parts = ''.join(re.findall(r'[0-9.]', output))
-        installed_version = '.'.join(installed_version_parts.split('.')[:-1])
+        installed_version_parts = b''.join(re.findall(rb'[0-9.]', output))
+        installed_version = '.'.join(
+            installed_version_parts.decode('utf-8').split('.')[:-1])
         response = python_utils.url_open(
             'https://chromedriver.storage.googleapis.com/LATEST_RELEASE_%s' % (
                 installed_version))

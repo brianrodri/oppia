@@ -798,7 +798,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.enter_context(self.swap_to_always_return(
             subprocess, 'check_call'))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'check_output', lambda _: '4.5.6.78', expected_args=[
+            subprocess, 'check_output', lambda _: b'4.5.6.78', expected_args=[
                 (
                     ['/Applications/Google Chrome.app/Contents/MacOS'
                      '/Google Chrome',
@@ -832,7 +832,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.enter_context(self.swap_to_always_return(
             subprocess, 'check_call'))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'check_output', lambda _: '1.2.3.45', expected_args=[
+            subprocess, 'check_output', lambda _: b'1.2.3.45', expected_args=[
                 (['google-chrome', '--version'],),
             ]))
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -876,7 +876,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.enter_context(self.swap_to_always_return(
             subprocess, 'check_call'))
         self.exit_stack.enter_context(self.swap_to_always_return(
-            subprocess, 'check_output', value='1.2.3.45'))
+            subprocess, 'check_output', value=b'1.2.3.45'))
         self.exit_stack.enter_context(self.swap_to_always_return(
             python_utils, 'url_open', value=mock.Mock(read=lambda: '1.2.3')))
         self.exit_stack.enter_context(self.swap_to_always_return(

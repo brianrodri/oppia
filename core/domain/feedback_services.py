@@ -617,7 +617,7 @@ def get_thread_analytics(exploration_id):
     Returns:
         FeedbackAnalytics. The feedback analytics of the given exploration.
     """
-    return []
+    return feedback_domain.FeedbackAnalytics(exploration_id, None, 0, 0)
 
 
 def get_total_open_threads(feedback_analytics_list):

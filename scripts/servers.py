@@ -398,11 +398,11 @@ def managed_webpack_compiler(
         if watch_mode:
             # Iterate until an empty string is printed, which signals the end of
             # the process.
-            for line in iter(proc.stdout.readline, b''):
-                common.stdout_write(line.decode('utf-8'))
+            for line in iter(proc.stdout.readline, ''):
+                common.stdout_write(line)
                 # Message printed when a compilation has succeeded. We break
                 # after the first one to ensure the site is ready to be visited.
-                if b'Built at: ' in line:
+                if 'Built at: ' in line:
                     break
             else:
                 # If the code never ran `break`, raise an error because a build
@@ -522,12 +522,12 @@ def managed_webdriver_server(chrome_version=None):
                 'https://chromedriver.chromium.org/downloads/version-selection'
                 % chrome_command.replace(' ', r'\ '))
 
-        installed_version_parts = b''.join(re.findall(rb'[0-9\.]', output))
-        installed_version = b'.'.join(installed_version_parts.split(b'.')[:-1])
+        installed_version_parts = ''.join(re.findall(r'[0-9.]', output))
+        installed_version = '.'.join(installed_version_parts.split('.')[:-1])
         response = python_utils.url_open(
             'https://chromedriver.storage.googleapis.com/LATEST_RELEASE_%s' % (
-                installed_version.decode('utf-8')))
-        chrome_version = response.read().decode('utf-8')
+                installed_version))
+        chrome_version = response.read()
 
     python_utils.PRINT('\n\nCHROME VERSION: %s' % chrome_version)
     subprocess.check_call([

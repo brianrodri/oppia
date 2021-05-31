@@ -264,6 +264,7 @@ def run_tests(args):
             env={
                 **os.environ,
                 'PORTSERVER_ADDRESS': common.PORTSERVER_SOCKET_FILEPATH,
+                'SERVER_PORT': str(GOOGLE_APP_ENGINE_PORT)
             }))
 
         stack.enter_context(servers.managed_webdriver_server(

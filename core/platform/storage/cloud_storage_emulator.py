@@ -14,9 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""An emulator that mocks the core.platform.cloud_translate API. This emulator
-models the Cloud Translate API.
-"""
+"""An emulator that mocks the core.platform.storage API."""
 
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals # pylint: disable=import-only-modules
@@ -26,26 +24,60 @@ import python_utils
 
 class Blob(python_utils.OBJECT):
 
-    @classmethod
-    def create_copy(cls, blob):
-        return cls(blob.name, blob.download_as_bytes, blob.content_type)
+    def __init__(self, name, data, content_type):
+        """Initialize blob.
 
-    def __init__(self, name, raw_bytes, content_type):
+        Args:
+            name: str. The name of the blob.
+            data: str|bytes. The data of the blob. If the data are string,
+                they are encoded to bytes.
+            content_type: str. The content type of the blob.
+        """
         self._name = name
-        if isinstance(raw_bytes, str):
-            raw_bytes = raw_bytes.encode('utf-8')
-        self._raw_bytes = raw_bytes
+        self._raw_bytes = (
+            data.encode('utf-8') if isinstance(data, str) else data)
         self._content_type = content_type
+
+    @classmethod
+    def create_copy(cls, original_blob):
+        """Create new instance of Blob with the same values.
+
+        Args:
+            original_blob: Blob. Original blob to copy.
+
+        Returns:
+            Blob. New instance with the same values as original_blob.
+        """
+        return cls(
+            original_blob.name,
+            original_blob.download_as_bytes,
+            original_blob.content_type
+        )
 
     @property
     def name(self):
+        """Get the name of the blob.
+
+        Returns:
+            str. The name of the blob.
+        """
         return self._name
 
     @property
     def content_type(self):
+        """Get the content type of the blob.
+
+        Returns:
+            str. The content type of the blob.
+        """
         return self._content_type
 
     def download_as_bytes(self):
+        """Get the raw bytes of the blob.
+
+        Returns:
+            bytes. The raw bytes of the blob.
+        """
         return self._raw_bytes
 
 

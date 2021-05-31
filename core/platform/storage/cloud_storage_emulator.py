@@ -50,16 +50,17 @@ class Blob(python_utils.OBJECT):
         """
         return cls(
             original_blob.name,
-            original_blob.download_as_bytes,
+            original_blob._raw_bytes,
             original_blob.content_type
         )
 
     @property
     def name(self):
-        """Get the name of the blob.
+        """Get the filepath of the blob. This is called name since this mimics
+        the property of Google Cloud Storage API.
 
         Returns:
-            str. The name of the blob.
+            str. The filepath of the blob.
         """
         return self._name
 
@@ -85,25 +86,60 @@ class CloudStorageEmulator(python_utils.OBJECT):
     """Emulator for the storage client."""
 
     def __init__(self):
+        """Initialize the emulator."""
         self._blob_dict = {}
 
     def get_blob(self, filepath):
+        """Get blob by the filepath.
+
+        Args:
+            filepath: str. Filepath to the blob.
+
+        Returns:
+            Blob. The blob.
+        """
         return self._blob_dict.get(filepath)
 
     def upload_blob(self, filepath, blob):
+        """Upload blob to the filepath.
+
+        Args:
+            filepath: str. Filepath where to upload the blob.
+            blob: Blob. The blob to upload.
+        """
         self._blob_dict[filepath] = blob
 
     def delete_blob(self, filepath):
+        """Delete blob by the filepath.
+
+        Args:
+            filepath: str. Filepath to the blob.
+        """
         del self._blob_dict[filepath]
 
-    def copy_blob(self, blob, new_name):
-        self._blob_dict[new_name] = Blob.create_copy(blob)
+    def copy_blob(self, blob, filepath):
+        """Copy existing blob to new filepath.
+
+        Args:
+            blob: Blob. The blob to copy.
+            filepath: str. Filepath where the blob should be copied.
+        """
+        self._blob_dict[filepath] = Blob.create_copy(blob)
 
     def list_blobs(self, prefix):
+        """Get blobs whose filepaths start with prefix.
+
+        Args:
+            prefix: str. Prefix that is matched.
+
+        Returns:
+            list(Blob). The list of blobs whose filepaths start with prefix.
+        """
         return [
             value for key, value in self._blob_dict.items()
             if key.startswith(prefix)
         ]
 
     def reset(self):
+        """Reset the emulator and remove all blobs."""
         self._blob_dict = {}

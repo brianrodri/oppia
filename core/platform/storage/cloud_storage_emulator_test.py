@@ -38,11 +38,12 @@ class BlobUnitTests(test_utils.TestBase):
         self.assertEqual(blob.download_as_bytes(), b'string')
         self.assertEqual(blob.content_type, 'png')
 
-    def test_create_copy_creates_separate_instance_with_same_values(self):
+    def test_create_copy(self):
         orig_blob = cloud_storage_emulator.Blob('name', 'string', 'png')
         copy_blob = cloud_storage_emulator.Blob.create_copy(orig_blob)
         self.assertNotEqual(orig_blob, copy_blob)
         self.assertEqual(orig_blob.name, copy_blob.name)
+        print(copy_blob.download_as_bytes())
         self.assertEqual(
             orig_blob.download_as_bytes(), copy_blob.download_as_bytes())
         self.assertEqual(orig_blob.content_type, copy_blob.content_type)
@@ -54,25 +55,55 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
     def setUp(self):
         super(CloudStorageEmulatorUnitTests, self).setUp()
         self.emulator = cloud_storage_emulator.CloudStorageEmulator()
+        self.blob1 = cloud_storage_emulator.Blob(
+            '/file/path.png', b'data', 'png')
+        self.blob2 = cloud_storage_emulator.Blob(
+            '/file/path2.png', b'data2', 'png')
+        self.blob3 = cloud_storage_emulator.Blob(
+            '/different/path.png', b'data2', 'png')
 
-    def test_get_blob_returns_correct_blob(self, filepath):
-        return self._blob_dict.get(filepath)
+    def test_get_blob(self):
+        self.emulator._blob_dict['/file/path.png'] = self.blob1
 
-    def upload_blob(self, filepath, blob):
-        self._blob_dict[filepath] = blob
+        self.assertEqual(self.emulator.get_blob('/file/path.png'), self.blob1)
 
-    def delete_blob(self, filepath):
-        del self._blob_dict[filepath]
+    def test_upload_blob(self):
+        self.emulator.upload_blob('/file/path.png', self.blob1)
 
-    def copy_blob(self, blob, new_name):
-        self._blob_dict[new_name] = Blob.create_copy(blob)
+        self.assertEqual(self.emulator._blob_dict['/file/path.png'], self.blob1)
 
-    def list_blobs(self, prefix):
-        return [
-            value for key, value in self._blob_dict.items()
-            if key.startswith(prefix)
-        ]
+    def test_delete_blob(self):
+        self.emulator._blob_dict['/file/path.png'] = self.blob1
+        self.emulator.delete_blob('/file/path.png')
 
-    def reset(self):
-        self._blob_dict = {}
+        self.assertIsNone(self.emulator.get_blob('/file/path.png'))
+
+    def test_copy_blob(self):
+        self.emulator._blob_dict['/file/path.png'] = self.blob1
+        self.emulator.copy_blob(
+            self.emulator._blob_dict['/file/path.png'], '/different/path2.png')
+
+        orig_blob = self.emulator.get_blob('/file/path.png')
+        copy_blob = self.emulator.get_blob('/different/path2.png')
+        self.assertEqual(orig_blob.name, copy_blob.name)
+        self.assertEqual(
+            orig_blob.download_as_bytes(), copy_blob.download_as_bytes())
+
+    def test_list_blobs(self):
+        self.emulator._blob_dict['/file/path.png'] = self.blob1
+        self.emulator._blob_dict['/file/path2.png'] = self.blob2
+        self.emulator._blob_dict['/different/path.png'] = self.blob3
+        self.assertItemsEqual(
+            self.emulator.list_blobs('/'), [self.blob1, self.blob2, self.blob3])
+        self.assertItemsEqual(
+            self.emulator.list_blobs('/file'), [self.blob1, self.blob2])
+        self.assertItemsEqual(
+            self.emulator.list_blobs('/different'), [self.blob3])
+
+    def test_reset(self):
+        self.emulator._blob_dict['/file/path.png'] = self.blob1
+        self.emulator.reset()
+
+        self.assertEqual(self.emulator._blob_dict, {})
+
 

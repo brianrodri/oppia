@@ -166,10 +166,11 @@ def managed_dev_appserver(
     # OK to use shell=True here because we are not passing anything that came
     # from an untrusted user, only other callers of the script, so there's no
     # risk of shell-injection attacks.
-    proc_context = managed_process(
-        dev_appserver_args, human_readable_name='GAE Development Server',
-        shell=True, env=env)
-    with proc_context as proc:
+    with python_utils.ExitStack() as stack:
+        proc = stack.enter_context(managed_process(
+            dev_appserver_args, human_readable_name='GAE Development Server',
+            shell=True, env=env))
+        stack.enter_context(common.swap_env('SERVER_PORT', str(port)))
         common.wait_for_port_to_be_in_use(port)
         yield proc
 

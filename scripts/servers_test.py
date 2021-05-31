@@ -180,7 +180,7 @@ class ManagedProcessTests(test_utils.TestBase):
         logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(servers.managed_process(
-            ['a', 1], timeout_secs=10))
+            ['a', 1], timeout_secs=10, shell=True))
         self.exit_stack.close()
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
@@ -203,7 +203,7 @@ class ManagedProcessTests(test_utils.TestBase):
         logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(servers.managed_process(
-            ['', 'a', '', 1], timeout_secs=10))
+            ['', 'a', '', 1], timeout_secs=10, shell=True))
         self.exit_stack.close()
 
         self.assert_proc_was_managed_as_expected(logs, proc.pid)
@@ -595,11 +595,12 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
-        self.assertEqual(popen_calls[0].program_args, [
-            'python', '-m', 'scripts.run_portserver',
-            '--portserver_unix_socket_address',
-            common.PORTSERVER_SOCKET_FILEPATH,
-        ])
+        self.assertEqual(
+            popen_calls[0].program_args,
+            'python -m scripts.run_portserver '
+            '--portserver_unix_socket_address %s' % (
+                common.PORTSERVER_SOCKET_FILEPATH),
+        )
         self.assertEqual(proc.signals_received, [signal.SIGINT])
         self.assertEqual(proc.terminate_count, 0)
         self.assertEqual(proc.kill_count, 0)
@@ -612,11 +613,12 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
-        self.assertEqual(popen_calls[0].program_args, [
-            'python', '-m', 'scripts.run_portserver',
-            '--portserver_unix_socket_address',
-            common.PORTSERVER_SOCKET_FILEPATH,
-        ])
+        self.assertEqual(
+            popen_calls[0].program_args,
+            'python -m scripts.run_portserver '
+            '--portserver_unix_socket_address %s' % (
+                common.PORTSERVER_SOCKET_FILEPATH),
+        )
         self.assertEqual(proc.signals_received, [signal.SIGINT])
         self.assertEqual(proc.terminate_count, 1)
         self.assertEqual(proc.kill_count, 0)
@@ -629,11 +631,12 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
-        self.assertEqual(popen_calls[0].program_args, [
-            'python', '-m', 'scripts.run_portserver',
-            '--portserver_unix_socket_address',
-            common.PORTSERVER_SOCKET_FILEPATH,
-        ])
+        self.assertEqual(
+            popen_calls[0].program_args,
+            'python -m scripts.run_portserver '
+            '--portserver_unix_socket_address %s' % (
+                common.PORTSERVER_SOCKET_FILEPATH),
+        )
         self.assertEqual(proc.signals_received, [signal.SIGINT])
         self.assertEqual(proc.terminate_count, 1)
         self.assertEqual(proc.kill_count, 1)
@@ -641,8 +644,8 @@ class ManagedProcessTests(test_utils.TestBase):
     def test_managed_webpack_compiler_in_watch_mode_when_build_succeeds(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
             outputs=[b'abc', b'Built at: 123', b'def']))
-        bytes_io = io.BytesIO()
-        self.exit_stack.enter_context(python_utils.redirect_stdout(bytes_io))
+        str_io = python_utils.string_io()
+        self.exit_stack.enter_context(python_utils.redirect_stdout(str_io))
         logs = self.exit_stack.enter_context(self.capture_logging())
 
         proc = self.exit_stack.enter_context(servers.managed_webpack_compiler(
@@ -654,7 +657,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertIn('--color', popen_calls[0].program_args)
         self.assertIn('--watch', popen_calls[0].program_args)
         self.assertIn('--progress', popen_calls[0].program_args)
-        self.assert_matches_regexps(bytes_io.getvalue().strip().split('\n'), [
+        self.assert_matches_regexps(str_io.getvalue().strip().split(b'\n'), [
             'Starting new Webpack Compiler',
             'abc',
             'Built at: 123',
@@ -664,15 +667,15 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_in_watch_mode_raises_when_not_built(self):
         # NOTE: The 'Built at: ' message is never printed.
-        self.exit_stack.enter_context(self.swap_popen(outputs=[b'abc', b'def']))
-        bytes_io = io.BytesIO()
-        self.exit_stack.enter_context(python_utils.redirect_stdout(bytes_io))
+        self.exit_stack.enter_context(self.swap_popen(outputs=['abc', 'def']))
+        str_io = python_utils.string_io()
+        self.exit_stack.enter_context(python_utils.redirect_stdout(str_io))
 
         self.assertRaisesRegexp(
             IOError, 'First build never completed',
             lambda: self.exit_stack.enter_context(
                 servers.managed_webpack_compiler(watch_mode=True)))
-        self.assert_matches_regexps(bytes_io.getvalue().strip().split(b'\n'), [
+        self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
             'Starting new Webpack Compiler',
             'abc',
             'def',
@@ -795,7 +798,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.enter_context(self.swap_to_always_return(
             subprocess, 'check_call'))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'check_output', lambda _: '4.5.6.78', expected_args=[
+            subprocess, 'check_output', lambda _: b'4.5.6.78', expected_args=[
                 (
                     ['/Applications/Google Chrome.app/Contents/MacOS'
                      '/Google Chrome',
@@ -829,7 +832,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.enter_context(self.swap_to_always_return(
             subprocess, 'check_call'))
         self.exit_stack.enter_context(self.swap_with_checks(
-            subprocess, 'check_output', lambda _: '1.2.3.45', expected_args=[
+            subprocess, 'check_output', lambda _: b'1.2.3.45', expected_args=[
                 (['google-chrome', '--version'],),
             ]))
         self.exit_stack.enter_context(self.swap_with_checks(
@@ -873,7 +876,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.enter_context(self.swap_to_always_return(
             subprocess, 'check_call'))
         self.exit_stack.enter_context(self.swap_to_always_return(
-            subprocess, 'check_output', value='1.2.3.45'))
+            subprocess, 'check_output', value=b'1.2.3.45'))
         self.exit_stack.enter_context(self.swap_to_always_return(
             python_utils, 'url_open', value=mock.Mock(read=lambda: '1.2.3')))
         self.exit_stack.enter_context(self.swap_to_always_return(

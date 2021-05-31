@@ -21,6 +21,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import json
 import os
+import re
 
 import bs4
 from core.domain import fs_domain
@@ -780,8 +781,7 @@ class ContentMigrationTests(test_utils.GenericTestBase):
             )
         }]
         with self.assertRaisesRegexp(
-            Exception,
-            'Expecting value: line 1 column 1 (char 0)'
+            Exception, re.escape('Expecting value: line 1 column 1 (char 0)')
         ):
             html_validation_service.add_math_content_to_math_rte_components(
                 invalid_cases[0]['html_content'])

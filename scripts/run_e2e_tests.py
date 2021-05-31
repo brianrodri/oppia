@@ -31,11 +31,9 @@ from scripts import install_third_party_libs
 from scripts import servers
 
 MAX_RETRY_COUNT = 3
-OPPIA_SERVER_PORT = 8181
 GOOGLE_APP_ENGINE_PORT = 9001
 ELASTICSEARCH_SERVER_PORT = 9200
 PORTS_USED_BY_OPPIA_PROCESSES = [
-    OPPIA_SERVER_PORT,
     GOOGLE_APP_ENGINE_PORT,
     ELASTICSEARCH_SERVER_PORT,
 ]
@@ -296,7 +294,7 @@ def run_tests(args):
                     line = line.encode('utf-8')  # pragma: nocover
                 output_lines.append(line.rstrip())
                 # Replaces non-ASCII characters with '?'.
-                sys.stdout.write(line.decode('ascii', errors='replace'))
+                common.stdout_write(line.decode('ascii', errors='replace'))
             # The poll() method returns None while the process is running,
             # otherwise it returns the return code of the process (an int).
             if proc.poll() is not None:

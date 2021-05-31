@@ -18,6 +18,7 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import contextlib
+import errno
 import getpass
 import os
 import platform
@@ -40,13 +41,13 @@ COVERAGE_VERSION = '5.3'
 ESPRIMA_VERSION = '4.0.1'
 ISORT_VERSION = '5.8.0'
 PYCODESTYLE_VERSION = '2.6.0'
-PSUTIL_VERSION = '5.7.3'
+PSUTIL_VERSION = '5.8.0'
 PYLINT_VERSION = '2.7.4'
 PYLINT_QUOTES_VERSION = '0.1.8'
 PYGITHUB_VERSION = '1.45'
 WEBTEST_VERSION = '2.0.35'
 PIP_TOOLS_VERSION = '6.0.1'
-GRPCIO_VERSION = '1.32.0'
+GRPCIO_VERSION = '1.38.0'
 ENUM_VERSION = '1.1.10'
 PROTOBUF_VERSION = '3.13.0'
 SETUPTOOLS_VERSION = '36.6.0'
@@ -782,3 +783,24 @@ def swap_env(key, value):
             del os.environ[key]
         else:
             os.environ[key] = old_value
+
+
+def stdout_write(string):
+    """Tries to write the input string to stdout in a non-blocking way.
+
+    https://stackoverflow.com/a/44961052/4859885
+
+    Args:
+        string: str. The string to write to stdout.
+    """
+    if isinstance(string, str):
+        string = string.encode('utf-8')
+    written = 0
+    while written < len(string):
+        try:
+            written = written + os.write(sys.stdout.fileno(), string[written:])
+        except OSError as e:
+            if e.errno == errno.EAGAIN:
+                continue
+            else:
+                raise

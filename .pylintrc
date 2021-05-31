@@ -136,7 +136,10 @@ disable=consider-using-ternary,
         wrong-import-order,
 # TODO(#12912): Remove these after the Python 3 migration.
         super-with-arguments,
-        deprecated-method
+        deprecated-method,
+        useless-object-inheritance,
+        import-outside-toplevel,
+        raise-missing-from
 
 [REPORTS]
 

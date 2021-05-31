@@ -528,7 +528,7 @@ def managed_webdriver_server(chrome_version=None):
         response = python_utils.url_open(
             'https://chromedriver.storage.googleapis.com/LATEST_RELEASE_%s' % (
                 installed_version))
-        chrome_version = response.read()
+        chrome_version = response.read().decode('utf-8')
 
     python_utils.PRINT('\n\nCHROME VERSION: %s' % chrome_version)
     subprocess.check_call([

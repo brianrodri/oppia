@@ -170,7 +170,6 @@ def managed_dev_appserver(
         proc = stack.enter_context(managed_process(
             dev_appserver_args, human_readable_name='GAE Development Server',
             shell=True, env=env))
-        stack.enter_context(common.swap_env('SERVER_PORT', str(port)))
         common.wait_for_port_to_be_in_use(port)
         yield proc
 

@@ -110,23 +110,6 @@ handlers:
   secure: always
   expiration: "0"
 
-# DYNAMIC
-- url: /mapreduce(/.*)?
-  script: mapreduce.main.APP
-  secure: always
-- url: /mapreduce/worker(/.*)?
-  script: mapreduce.main.APP
-  secure: always
-- url: /cron/.*
-  script: main_cron.app
-  secure: always
-- url: /task/.*
-  script: main_taskqueue.app
-  secure: always
-- url: /_ah/mail/.*
-  script: main_mail.app
-  secure: always
-
 # STATIC PAGES.
 - url: /about
   static_files: webpack_bundles/about-page.mainpage.html
@@ -249,9 +232,6 @@ handlers:
     X-Xss-Protection: "1; mode=block"
   secure: always
   expiration: "0"
-- url: /.*
-  script: main.app
-  secure: always
 
 # This is an access connector that connects to the Google Cloud Redis instance
 # used for memory caching. Please replace PROJECT_ID with the correct project id

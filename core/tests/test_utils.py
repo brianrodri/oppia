@@ -63,7 +63,6 @@ from core.platform.search import elastic_search_services
 from core.platform.taskqueue import cloud_tasks_emulator
 import feconf
 import main
-import main_taskqueue
 from proto_files import text_classifier_pb2
 import python_utils
 import schema_utils
@@ -1367,8 +1366,6 @@ class AppEngineTestBase(TestBase):
         super(AppEngineTestBase, self).setUp()
         # Set up apps for testing.
         self.testapp = webtest.TestApp(main.app_without_context)
-        self.taskqueue_testapp = webtest.TestApp(
-            main_taskqueue.app_without_context)
 
     def tearDown(self):
         datastore_services.delete_multi(
@@ -1474,10 +1471,7 @@ class AppEngineTestBase(TestBase):
                     (key, python_utils.UNICODE(val).encode())
                     for key, val in task.headers.items())
 
-                app = (
-                    self.taskqueue_testapp if task.url.startswith('/task') else
-                    self.testapp)
-                response = app.post(
+                response = self.testapp.post(
                     task.url, params=params, headers=headers,
                     expect_errors=True)
 
@@ -2354,7 +2348,7 @@ title: Title
         """
         if csrf_token:
             payload['csrf_token'] = csrf_token
-        return self.taskqueue_testapp.post(
+        return self.testapp.post(
             url, params=json.dumps(payload), headers=headers,
             status=expected_status_int, expect_errors=expect_errors,
             content_type='application/json')

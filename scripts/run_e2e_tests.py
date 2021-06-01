@@ -295,7 +295,7 @@ def run_tests(args):
                     line = line.encode('utf-8')  # pragma: nocover
                 output_lines.append(line.rstrip())
                 # Replaces non-ASCII characters with '?'.
-                common.stdout_write(line.decode('ascii', errors='replace'))
+                common.write_stdout_safe(line.decode('ascii', errors='replace'))
             # The poll() method returns None while the process is running,
             # otherwise it returns the return code of the process (an int).
             if proc.poll() is not None:

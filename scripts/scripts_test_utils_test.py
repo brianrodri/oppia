@@ -230,19 +230,19 @@ class PopenStubTests(test_utils.TestBase):
     def test_communicate_with_input(self):
         popen = scripts_test_utils.PopenStub(stdout=b'abc', stderr=b'def')
 
-        self.assertEqual(popen.stdin.getvalue(), '')
+        self.assertEqual(popen.stdin.getvalue(), b'')
         self.assertTrue(popen.is_running())
         self.assertEqual(popen.returncode, 0)
 
-        self.assertEqual(popen.communicate(input='ghi'), (b'abc', b'def'))
+        self.assertEqual(popen.communicate(input=b'ghi'), (b'abc', b'def'))
 
-        self.assertEqual(popen.stdin.getvalue(), 'ghi')
+        self.assertEqual(popen.stdin.getvalue(), b'ghi')
         self.assertFalse(popen.is_running())
         self.assertEqual(popen.returncode, 0)
 
-        self.assertEqual(popen.communicate(input='ghi'), (b'abc', b'def'))
+        self.assertEqual(popen.communicate(input=b'ghi'), (b'abc', b'def'))
 
-        self.assertEqual(popen.stdin.getvalue(), 'ghi')
+        self.assertEqual(popen.stdin.getvalue(), b'ghi')
         self.assertFalse(popen.is_running())
         self.assertEqual(popen.returncode, 0)
 

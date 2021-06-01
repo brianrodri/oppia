@@ -20,6 +20,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 import contextlib
 import errno
 import getpass
+import io
 import os
 import platform
 import re
@@ -785,20 +786,23 @@ def swap_env(key, value):
             os.environ[key] = old_value
 
 
-def stdout_write(string):
+def write_stdout_safe(string):
     """Tries to write the input string to stdout in a non-blocking way.
 
     https://stackoverflow.com/a/44961052/4859885
 
     Args:
-        string: str. The string to write to stdout.
+        string: str|bytes. The string to write to stdout.
     """
-    if isinstance(string, str):
-        string = string.encode('utf-8')
+    string_bytes = string.encode('utf-8') if isinstance(string, str) else string
+
     written = 0
-    while written < len(string):
+    while written < len(string_bytes):
         try:
-            written = written + os.write(sys.stdout.fileno(), string[written:])
+            written += os.write(sys.stdout.fileno(), string_bytes[written:])
+        except io.UnsupportedOperation:
+            sys.stdout.write(string_bytes.decode('utf-8'))
+            return
         except OSError as e:
             if e.errno == errno.EAGAIN:
                 continue

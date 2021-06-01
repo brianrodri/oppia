@@ -43,8 +43,8 @@ class PopenStub(python_utils.OBJECT):
 
     Attributes:
         pid: int. The ID of the process.
-        stdout: str. The text written to standard output by the process.
-        stderr: str. The text written to error output by the process.
+        stdout: bytes. The text written to standard output by the process.
+        stderr: bytes. The text written to error output by the process.
         poll_count: int. The number of times poll() has been called.
         signals_received: list(int). List of received signals (as ints) in order
             of receipt.
@@ -67,8 +67,8 @@ class PopenStub(python_utils.OBJECT):
         Args:
             pid: int. The ID of the process.
             name: str. The name of the process.
-            stdout: str. The text written to standard output by the process.
-            stderr: str. The text written to error output by the process.
+            stdout: bytes. The text written to standard output by the process.
+            stderr: bytes. The text written to error output by the process.
             return_code: int. The return code of the process.
             reject_signal: bool. Whether to raise OSError in send_signal().
             reject_terminate: bool. Whether to raise OSError in terminate().
@@ -79,7 +79,7 @@ class PopenStub(python_utils.OBJECT):
                 None if there aren't any.
         """
         self.pid = pid
-        self.stdin = python_utils.string_io()
+        self.stdin = io.BytesIO()
         self.stdout = io.BytesIO(stdout)
         self.stderr = io.BytesIO(stderr)
         self.poll_count = 0
@@ -220,14 +220,15 @@ class PopenStub(python_utils.OBJECT):
         else:
             raise RuntimeError('PopenStub has entered an infinite loop')
 
-    def communicate(self, input=''): # pylint: disable=unused-argument, redefined-builtin
+    def communicate(self, input=b''): # pylint: disable=unused-argument, redefined-builtin
         """Mocks an interaction with the process.
 
         Args:
-            input: str. Input string to write to the process's stdin.
+            input: bytes. Input string to write to the process's stdin.
 
         Returns:
-            tuple(str, str). The stdout and stderr of the process, respectively.
+            tuple(bytes, bytes). The stdout and stderr of the process,
+            respectively.
         """
         if not self.alive:
             return self.stdout.getvalue(), self.stderr.getvalue()

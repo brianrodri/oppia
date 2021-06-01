@@ -14,11 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Provides translate_text functionality from the cloud translate emulator.
-Responses are prepopulated, to add additional translations, use:
-    CLIENT.add_expected_response(
-        source_language_code, target_language_code, source_text, response)
-See cloud_translate_emulator.py for more details"""
+"""Provides various functions from the Cloud Storage emulator."""
 
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
@@ -28,79 +24,76 @@ from core.platform.storage import cloud_storage_emulator
 CLIENT = cloud_storage_emulator.CloudStorageEmulator()
 
 
-def isfile(_, filepath):
-    """Checks if the file with the given filepath exists in the GCS.
+def isfile(unused_bucket_name, filepath):
+    """Checks if the file with the given filepath exists.
 
     Args:
-        filepath: str. The path to the relevant file within the entity's
-            assets folder.
+        unused_bucket_name: str. Unused name of the GCS bucket.
+        filepath: str. The path to the relevant file.
 
     Returns:
-        bool. Whether the file exists in GCS.
+        bool. Whether the file exists.
     """
     return CLIENT.get_blob(filepath) is not None
 
 
-def get(_, filepath):
-    """Gets a file as an unencoded stream of raw bytes.
+def get(unused_bucket_name, filepath):
+    """Gets a file data as bytes.
 
     Args:
-        filepath: str. The path to the relevant file within the entity's
-            assets folder.
+        unused_bucket_name: str. Unused name of the GCS bucket.
+        filepath: str. The path to the relevant file.
 
     Returns:
-        FileStream or None. It returns FileStream domain object if the file
-        exists. Otherwise, it returns None.
+        bytes. Returns data of the file as bytes.
     """
     blob = CLIENT.get_blob(filepath)
-    data = blob.download_as_bytes()
-    return data
+    return blob.download_as_bytes()
 
 
-def commit(_, filepath, raw_bytes, mimetype):
-    """Commit raw_bytes to the relevant file in the entity's assets folder.
+def commit(unused_bucket_name, filepath, raw_bytes, mimetype):
+    """Commit bytes to the relevant file.
 
     Args:
-        filepath: str. The path to the relevant file within the entity's
-            assets folder.
-        raw_bytes: str. The content to be stored in the file.
-        mimetype: str. The content-type of the cloud file.
+        filepath: str. The path to the relevant file.
+        raw_bytes: bytes|str. The content to be stored in the file.
+        mimetype: str. The content-type of the file.
     """
     blob = cloud_storage_emulator.Blob(
         filepath, raw_bytes, content_type=mimetype)
     CLIENT.upload_blob(filepath, blob)
 
 
-def delete(_, filepath):
+def delete(unused_bucket_name, filepath):
     """Deletes a file and the metadata associated with it.
 
     Args:
-        filepath: str. The path to the relevant file within the entity's
-            assets folder.
+        unused_bucket_name: str. Unused name of the GCS bucket.
+        filepath: str. The path to the relevant file.
     """
     CLIENT.delete_blob(filepath)
 
 
-def copy(_, source_assets_path, dest_assets_path):
+def copy(unused_bucket_name, source_assets_path, dest_assets_path):
     """Copy images from source_path.
 
     Args:
+        unused_bucket_name: str. Unused name of the GCS bucket.
         source_assets_path: str. The path to the source entity's assets
             folder.
         filepath: str. The path to the relevant file within the entity's
             assets folder.
     """
     src_blob = CLIENT.get_blob(source_assets_path)
-    CLIENT.copy_blob(
-        src_blob, new_name=dest_assets_path)
+    CLIENT.copy_blob(src_blob, dest_assets_path)
 
 
-def listdir(_, dir_name):
+def listdir(unused_bucket_name, dir_name):
     """Lists all files in a directory.
 
     Args:
-        dir_name: str. The directory whose files should be listed. This
-            should not start with '/' or end with '/'.
+        unused_bucket_name: str. Unused name of the GCS bucket.
+        dir_name: str. The directory whose files should be listed.
 
     Returns:
         list(str). A lexicographically-sorted list of filenames.

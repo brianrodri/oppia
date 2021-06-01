@@ -11,14 +11,14 @@
     "CREDITS_FORM_URL": "https://docs.google.com/forms/d/1yH6ZO2UiD_VspgKJR40byRSjUP1AaBF9ARSe814p8K0/edit#responses",
     "CRON_YAML_PATH": "cron.yaml",
     "CRITICAL_USER_JOURNEYS_DOC": "http://docs.google.com/document/d/1s3MG2MVh_7m7B0wIlZb7sAcoyUdY0zq7a1JEFtwYBjI",
-    "CUT_BRANCH_MODULE_TARGET": "scripts.release_scripts.cut_release_or_hotfix_branch",
+    "CUT_BRANCH_MODULE_TARGET": "oppia.scripts.release_scripts.cut_release_or_hotfix_branch",
     "EMAIL_HEADER": "### Email C&P Blurbs about authors:\n",
     "EXISTING_AUTHORS_HEADER": "### Existing Authors:\n",
     "GAE_DIR": "../oppia_tools/google-cloud-sdk-335.0.0/google-cloud-sdk/platform/google_appengine",
     "GCLOUD_PATH": "../oppia_tools/google-cloud-sdk-335.0.0/google-cloud-sdk/bin/gcloud",
     "GITHUB_RELEASE_TAB_URL": "https://github.com/oppia/oppia/releases",
     "INDEX_YAML_PATH": "index.yaml",
-    "INSTALL_THIRD_PARTY_MODULE_TARGET": "scripts.install_third_party_libs",
+    "INSTALL_THIRD_PARTY_MODULE_TARGET": "oppia.scripts.install_third_party_libs",
     "INVALID_EMAIL_SUFFIX": "users.noreply.github.com",
     "ISSUE_FILING_URL": "https://github.com/oppia/oppia/milestone/39",
     "ISSUE_URL_FORMAT_STRING": "https://github.com/oppia/oppia/issues/%s",
@@ -39,7 +39,7 @@
     "RELEASE_ROTA_URL": "https://github.com/oppia/oppia/wiki/Release-Schedule#release-coordinators-and-qa-coordinators-for-upcoming-releases",
     "RELEASE_SUMMARY_FILEPATH": "../release_summary.md",
     "REMOTE_URL": "git@github.com:oppia/oppia.git",
-    "REPO_SPECIFIC_CHANGE_MODULE_TARGET": "scripts.release_scripts.repo_specific_changes_fetcher",
+    "REPO_SPECIFIC_CHANGE_MODULE_TARGET": "oppia.scripts.release_scripts.repo_specific_changes_fetcher",
     "DEPLOYMENT_CONFIG_PATH": "feconf.py",
     "SCHEMA_VERSIONS_TO_JOBS_MAPPING": {
         "CURRENT_COLLECTION_SCHEMA_VERSION": ["CollectionMigrationOneOffJob"],
@@ -54,5 +54,5 @@
         "CURRENT_STORY_REFERENCE_SCHEMA_VERSION": ["TopicMigrationOneOffJob"]
     },
     "THIRD_PARTY_DIR": "third_party",
-    "UPDATE_CONFIGS_MODULE_TARGET": "scripts.release_scripts.update_configs"
+    "UPDATE_CONFIGS_MODULE_TARGET": "oppia.scripts.release_scripts.update_configs"
 }

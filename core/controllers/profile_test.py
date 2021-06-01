@@ -31,7 +31,6 @@ from core.domain import user_services
 from core.platform import models
 from core.tests import test_utils
 import feconf
-import main_cron
 import utils
 
 import webtest

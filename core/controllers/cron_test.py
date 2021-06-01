@@ -23,19 +23,16 @@ import logging
 
 from constants import constants
 from core.domain import config_services
-from core.domain import cron_services
 from core.domain import email_manager
 from core.domain import exp_domain
 from core.domain import exp_services
 from core.domain import question_domain
 from core.domain import suggestion_services
-from core.domain import taskqueue_services
 from core.domain import user_services
 from core.platform import models
 from core.tests import test_utils
 import feconf
-import main_cron
-import utils
+import main
 
 import webtest
 
@@ -59,14 +56,14 @@ class CronJobTests(test_utils.GenericTestBase):
         self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
         self.set_admins([self.ADMIN_USERNAME])
         self.testapp_swap = self.swap(
-            self, 'testapp', webtest.TestApp(main_cron.app_without_context))
+            self, 'testapp', webtest.TestApp(main.app_without_context))
 
         self.email_subjects = []
         self.email_bodies = []
         def _mock_send_mail_to_admin(email_subject, email_body):
             """Mocks email_manager.send_mail_to_admin() as it's not possible to
             send mail with self.testapp_swap, i.e with the URLs defined in
-            main_cron.
+            main.
             """
             self.email_subjects.append(email_subject)
             self.email_bodies.append(email_body)
@@ -184,7 +181,7 @@ class CronMailReviewersContributorDashboardSuggestionsHandlerTests(
         """Mocks
         email_manager.send_mail_to_notify_contributor_dashboard_reviewers as
         it's not possible to send mail with self.testapp_swap, i.e with the URLs
-        defined in main_cron.
+        defined in main.
         """
         self.reviewer_ids = reviewer_ids
         self.reviewers_suggestion_email_infos = reviewers_suggestion_email_infos
@@ -218,7 +215,7 @@ class CronMailReviewersContributorDashboardSuggestionsHandlerTests(
         self.can_send_emails = self.swap(feconf, 'CAN_SEND_EMAILS', True)
         self.cannot_send_emails = self.swap(feconf, 'CAN_SEND_EMAILS', False)
         self.testapp_swap = self.swap(
-            self, 'testapp', webtest.TestApp(main_cron.app_without_context))
+            self, 'testapp', webtest.TestApp(main.app_without_context))
 
         self.reviewers_suggestion_email_infos = []
         self.reviewer_ids = []
@@ -381,7 +378,7 @@ class CronMailAdminContributorDashboardBottlenecksHandlerTests(
         """Mocks
         email_manager.send_mail_to_notify_admins_that_reviewers_are_needed as
         it's not possible to send mail with self.testapp_swap, i.e with the URLs
-        defined in main_cron.
+        defined in main.
         """
         self.admin_ids = admin_ids
         self.suggestion_types_needing_reviewers = (
@@ -392,7 +389,7 @@ class CronMailAdminContributorDashboardBottlenecksHandlerTests(
         """Mocks
         email_manager.send_mail_to_notify_admins_suggestions_waiting_long as
         it's not possible to send mail with self.testapp_swap, i.e with the URLs
-        defined in main_cron.
+        defined in main.
         """
         self.admin_ids = admin_ids
         self.reviewable_suggestion_email_infos = (
@@ -433,7 +430,7 @@ class CronMailAdminContributorDashboardBottlenecksHandlerTests(
         self.can_send_emails = self.swap(feconf, 'CAN_SEND_EMAILS', True)
         self.cannot_send_emails = self.swap(feconf, 'CAN_SEND_EMAILS', False)
         self.testapp_swap = self.swap(
-            self, 'testapp', webtest.TestApp(main_cron.app_without_context))
+            self, 'testapp', webtest.TestApp(main.app_without_context))
 
         self.admin_ids = []
         self.suggestion_types_needing_reviewers = {}

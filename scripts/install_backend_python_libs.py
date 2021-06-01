@@ -26,7 +26,7 @@ import subprocess
 import sys
 
 import python_utils
-from scripts import common
+from . import common
 import utils
 
 import pkg_resources

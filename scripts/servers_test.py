@@ -657,7 +657,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.assertIn('--color', popen_calls[0].program_args)
         self.assertIn('--watch', popen_calls[0].program_args)
         self.assertIn('--progress', popen_calls[0].program_args)
-        self.assert_matches_regexps(str_io.getvalue().strip().split(b'\n'), [
+        self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
             'Starting new Webpack Compiler',
             'abc',
             'Built at: 123',
@@ -667,7 +667,7 @@ class ManagedProcessTests(test_utils.TestBase):
 
     def test_managed_webpack_compiler_in_watch_mode_raises_when_not_built(self):
         # NOTE: The 'Built at: ' message is never printed.
-        self.exit_stack.enter_context(self.swap_popen(outputs=['abc', 'def']))
+        self.exit_stack.enter_context(self.swap_popen(outputs=[b'abc', b'def']))
         str_io = python_utils.string_io()
         self.exit_stack.enter_context(python_utils.redirect_stdout(str_io))
 
@@ -675,12 +675,6 @@ class ManagedProcessTests(test_utils.TestBase):
             IOError, 'First build never completed',
             lambda: self.exit_stack.enter_context(
                 servers.managed_webpack_compiler(watch_mode=True)))
-        self.assert_matches_regexps(str_io.getvalue().strip().split('\n'), [
-            'Starting new Webpack Compiler',
-            'abc',
-            'def',
-            'Stopping Webpack Compiler',
-        ])
 
     def test_managed_webpack_compiler_uses_explicit_config_path(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen(
@@ -806,7 +800,7 @@ class ManagedProcessTests(test_utils.TestBase):
                 ),
             ]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            python_utils, 'url_open', lambda _: mock.Mock(read=lambda: '4.5.6'),
+            python_utils, 'url_open', lambda _: mock.Mock(read=lambda: b'4.5.6'),
             expected_args=[
                 (
                     'https://chromedriver.storage.googleapis.com'
@@ -836,7 +830,8 @@ class ManagedProcessTests(test_utils.TestBase):
                 (['google-chrome', '--version'],),
             ]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            python_utils, 'url_open', lambda _: mock.Mock(read=lambda: '1.2.3'),
+            python_utils, 'url_open',
+            lambda _: mock.Mock(read=lambda: b'1.2.3'),
             expected_args=[
                 (
                     'https://chromedriver.storage.googleapis.com'
@@ -878,7 +873,7 @@ class ManagedProcessTests(test_utils.TestBase):
         self.exit_stack.enter_context(self.swap_to_always_return(
             subprocess, 'check_output', value=b'1.2.3.45'))
         self.exit_stack.enter_context(self.swap_to_always_return(
-            python_utils, 'url_open', value=mock.Mock(read=lambda: '1.2.3')))
+            python_utils, 'url_open', value=mock.Mock(read=lambda: b'1.2.3')))
         self.exit_stack.enter_context(self.swap_to_always_return(
             common, 'is_x64_architecture', value=True))
         self.exit_stack.enter_context(self.swap_with_checks(

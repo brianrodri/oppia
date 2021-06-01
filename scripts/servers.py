@@ -73,8 +73,8 @@ def managed_process(
 
     command = ' '.join(non_empty_args) if shell else list(non_empty_args)
     human_readable_command = command if shell else ' '.join(command)
-    python_utils.PRINT(
-        'Starting new %s: %s' % (human_readable_name, human_readable_command))
+    msg = 'Starting new %s: %s' % (human_readable_name, human_readable_command)
+    python_utils.PRINT(msg)
     popen_proc = psutil.Popen(command, shell=shell, **popen_kwargs)
 
     try:
@@ -396,25 +396,21 @@ def managed_webpack_compiler(
             stdout=subprocess.PIPE))
 
         if watch_mode:
-            # Iterate until an empty string is printed, which signals the end of
-            # the process.
-            for line in iter(proc.stdout.readline, ''):
-                common.stdout_write(line)
+            for line in iter(lambda: proc.stdout.readline() or None, None):
+                common.write_stdout_safe(line)
                 # Message printed when a compilation has succeeded. We break
                 # after the first one to ensure the site is ready to be visited.
-                if 'Built at: ' in line:
+                if b'Built at: ' in line:
                     break
             else:
-                # If the code never ran `break`, raise an error because a build
-                # hasn't finished successfully.
+                # If the none of the lines contained the string 'Built at',
+                # raise an error because a build hasn't finished successfully.
                 raise IOError('First build never completed')
 
         def print_proc_output():
             """Prints the proc's output until it is exhausted."""
-            # Iterate until an empty string is printed, which signals the end of
-            # the output.
-            for line in iter(proc.stdout.readline, b''):
-                common.stdout_write(line.decode('utf-8'))
+            for line in iter(lambda: proc.stdout.readline() or None, None):
+                common.write_stdout_safe(line)
 
         # Start a thread to print the rest of the compiler's output to stdout.
         printer_thread = threading.Thread(target=print_proc_output)
@@ -471,7 +467,7 @@ def managed_portserver():
             except OSError:
                 # Raises when the process has already shutdown, in which case we
                 # can just return immediately.
-                pass
+                return
             else:
                 # Otherwise, give the portserver 10 seconds to shut down after
                 # sending CTRL-C (SIGINT).

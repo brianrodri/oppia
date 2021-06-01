@@ -174,7 +174,7 @@ class BeamEntityToAndFromModelTests(test_utils.TestBase):
     def test_get_beam_entity_from_model(self):
         model = FooModel(id='abc', prop='123')
 
-        beam_entity = job_utils.get_beam_entity_from_model(model)
+        beam_entity = job_utils.get_beam_entity_from_ndb_model(model)
 
         self.assertEqual(beam_entity.key.path_elements, ('FooModel', 'abc'))
         self.assertEqual(beam_entity.key.project, feconf.OPPIA_PROJECT_ID)
@@ -188,8 +188,8 @@ class BeamEntityToAndFromModelTests(test_utils.TestBase):
         beam_entity.set_properties({'prop': '123'})
 
         self.assertEqual(
-            FooModel(id='abc', prop='123'),
-            job_utils.get_model_from_beam_entity(beam_entity))
+            FooModel(id='abc', app=feconf.OPPIA_PROJECT_ID, prop='123'),
+            job_utils.get_ndb_model_from_beam_entity(beam_entity))
 
     def test_get_model_from_beam_entity_with_utc_tzinfo(self):
         utcnow = datetime.datetime.utcnow()
@@ -211,12 +211,12 @@ class BeamEntityToAndFromModelTests(test_utils.TestBase):
             job_utils.get_model_from_beam_entity(beam_entity))
 
     def test_from_and_then_to_model(self):
-        model = FooModel(id='abc', prop='123')
+        model = FooModel(id='abc', app=feconf.OPPIA_PROJECT_ID, prop='123')
 
         self.assertEqual(
             model,
-            job_utils.get_model_from_beam_entity(
-                job_utils.get_beam_entity_from_model(model)))
+            job_utils.get_ndb_model_from_beam_entity(
+                job_utils.get_beam_entity_from_ndb_model(model)))
 
     def test_from_and_then_to_beam_entity(self):
         beam_entity = beam_datastore_types.Entity(
@@ -231,8 +231,8 @@ class BeamEntityToAndFromModelTests(test_utils.TestBase):
 
         self.assertEqual(
             beam_entity,
-            job_utils.get_beam_entity_from_model(
-                job_utils.get_model_from_beam_entity(beam_entity)))
+            job_utils.get_beam_entity_from_ndb_model(
+                job_utils.get_ndb_model_from_beam_entity(beam_entity)))
 
 
 class GetBeamQueryFromNdbQueryTests(test_utils.TestBase):
@@ -258,6 +258,13 @@ class GetBeamQueryFromNdbQueryTests(test_utils.TestBase):
         beam_query = job_utils.get_beam_query_from_ndb_query(query)
 
         self.assertEqual(beam_query.namespace, 'abc')
+
+    def test_query_with_project(self):
+        query = datastore_services.Query(app='foo-project')
+
+        beam_query = job_utils.get_beam_query_from_ndb_query(query)
+
+        self.assertEqual(beam_query.project, 'foo-project')
 
     def test_query_with_filter(self):
         query = datastore_services.Query(filters=BarModel.prop >= 3)

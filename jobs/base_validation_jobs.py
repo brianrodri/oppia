@@ -24,6 +24,7 @@ import collections
 from core.platform import models
 from jobs import base_jobs
 from jobs import job_utils
+from jobs.io import ndb_io
 from jobs.transforms import base_validation
 from jobs.transforms import base_validation_registry
 from jobs.types import base_validation_errors
@@ -78,16 +79,10 @@ class AuditAllStorageModelsJob(base_jobs.JobBase):
             PCollection. A PCollection of audit errors discovered during the
             audit.
         """
-        query_everything = job_utils.get_beam_query_from_ndb_query(
-            datastore_services.query_everything(),
-            namespace=self.job_options.namespace)
-
         existing_models, deleted_models = (
             self.pipeline
-            | 'Get all beam entities' >> (
-                datastoreio.ReadFromDatastore(query_everything))
-            | 'Convert to NDB models' >> (
-                beam.Map(job_utils.get_model_from_beam_entity))
+            | 'Get all models' >> ndb_io.GetModels(
+                datastore_services.query_everything(), self.datastoreio_stub)
             | 'Partition by model.deleted' >> (
                 beam.Partition(lambda model, _: int(model.deleted), 2))
         )

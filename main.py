@@ -30,6 +30,7 @@ from core.controllers import collection_viewer
 from core.controllers import concept_card_viewer
 from core.controllers import contributor_dashboard
 from core.controllers import creator_dashboard
+from core.controllers import cron
 from core.controllers import custom_landing_pages
 from core.controllers import editor
 from core.controllers import email_dashboard
@@ -57,6 +58,7 @@ from core.controllers import story_viewer
 from core.controllers import subscriptions
 from core.controllers import subtopic_viewer
 from core.controllers import suggestion
+from core.controllers import tasks
 from core.controllers import topic_editor
 from core.controllers import topic_viewer
 from core.controllers import topics_and_skills_dashboard
@@ -833,6 +835,41 @@ for subject in feconf.AVAILABLE_LANDING_PAGES:
             get_redirect_route(
                 r'/%s/%s' % (subject, topic),
                 custom_landing_pages.TopicLandingPage))
+
+# Add cron urls.
+URLS.extend((
+    get_redirect_route(
+        r'/cron/models/cleanup', cron.CronModelsCleanupHandler),
+    get_redirect_route(
+        r'/cron/mail/admins/contributor_dashboard_bottlenecks',
+        cron.CronMailAdminContributorDashboardBottlenecksHandler),
+    get_redirect_route(
+        r'/cron/mail/reviewers/contributor_dashboard_suggestions',
+        cron.CronMailReviewersContributorDashboardSuggestionsHandler),
+))
+
+# Add tasks urls.
+URLS.extend((
+    get_redirect_route(
+        r'%s' % feconf.TASK_URL_FEEDBACK_MESSAGE_EMAILS,
+        tasks.UnsentFeedbackEmailHandler),
+    get_redirect_route(
+        r'%s' % feconf.TASK_URL_SUGGESTION_EMAILS,
+        tasks.SuggestionEmailHandler),
+    get_redirect_route(
+        r'%s' % feconf.TASK_URL_FLAG_EXPLORATION_EMAILS,
+        tasks.FlagExplorationEmailHandler),
+    get_redirect_route(
+        r'%s' % feconf.TASK_URL_INSTANT_FEEDBACK_EMAILS,
+        tasks.InstantFeedbackMessageEmailHandler),
+    get_redirect_route(
+        r'%s' % feconf.TASK_URL_FEEDBACK_STATUS_EMAILS,
+        tasks.FeedbackThreadStatusChangeEmailHandler),
+    get_redirect_route(
+        r'%s' % feconf.TASK_URL_DEFERRED,
+        tasks.DeferredTasksHandler),
+))
+
 
 # 404 error handler (Needs to be at the end of the URLS list).
 URLS.append(get_redirect_route(r'/<:.*>', base.Error404Handler))

@@ -28,7 +28,7 @@ import requests
 
 GOOGLE_APP_ENGINE_PORT = (
     os.environ['SERVER_PORT']
-    if 'SERVER_PORT' in os.environ else '8181')
+    if 'SERVER_PORT' in os.environ else '9001')
 
 
 def _task_handler(url, payload, queue_name, task_name=None):

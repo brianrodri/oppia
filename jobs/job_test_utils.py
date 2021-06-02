@@ -27,6 +27,7 @@ import re
 from core.platform import models
 from core.tests import test_utils
 from jobs import base_jobs
+from jobs import job_options
 import python_utils
 
 from apache_beam import runners
@@ -48,7 +49,7 @@ class PipelinedTestBase(test_utils.AppEngineTestBase):
         super(PipelinedTestBase, self).__init__(*args, **kwargs)
         self.pipeline = test_pipeline.TestPipeline(
             runner=runners.DirectRunner(),
-            options=test_pipeline.PipelineOptions(runtime_type_check=True))
+            options=job_options.JobOptions(namespace=self.namespace))
         self._pipeline_context_stack = None
 
     def setUp(self):
@@ -157,12 +158,6 @@ class JobTestBase(PipelinedTestBase):
     def __init__(self, *args, **kwargs):
         super(JobTestBase, self).__init__(*args, **kwargs)
         self.job = self.JOB_CLASS(self.pipeline)
-
-    def setUp(self):
-        super(JobTestBase, self).setUp()
-        with self._pipeline_context_stack as stack:
-            stack.enter_context(self.job.datastoreio_stub.context())
-            self._pipeline_context_stack = stack.pop_all()
 
     def run_job(self):
         """Runs a new instance of self.JOB_CLASS and returns its output.

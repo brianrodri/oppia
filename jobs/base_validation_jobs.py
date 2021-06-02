@@ -81,8 +81,8 @@ class AuditAllStorageModelsJob(base_jobs.JobBase):
         """
         existing_models, deleted_models = (
             self.pipeline
-            | 'Get all models' >> ndb_io.GetModels(
-                datastore_services.query_everything(), self.datastoreio_stub)
+            | 'Get all models' >> (
+                ndb_io.GetModels(datastore_services.query_everything()))
             | 'Partition by model.deleted' >> (
                 beam.Partition(lambda model, _: int(model.deleted), 2))
         )

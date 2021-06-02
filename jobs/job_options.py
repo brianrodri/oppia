@@ -20,8 +20,23 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import feconf
+from jobs.io import stub_io
 
 from apache_beam.options import pipeline_options
+
+
+def validate_datastoreio_stub(obj):
+    """Asserts that the given object is an instance of DatastoreioStub.
+    Args:
+        obj: *. The object to validate.
+    Returns:
+        DatastoreioStub. The validated object, unchanged.
+    Raises:
+        TypeError. The object is not an instance of DatastoreioStub.
+    """
+    if not isinstance(obj, stub_io.DatastoreioStub):
+        raise TypeError('obj=%r is not an instance of DatastoreioStub' % obj)
+    return obj
 
 
 class JobOptions(pipeline_options.GoogleCloudOptions):

@@ -2232,7 +2232,7 @@ title: Title
 
         return json.loads(json_response.body[len(feconf.XSSI_PREFIX):])
 
-    def get_json(self, url, params=None, expected_status_int=200):
+    def get_json(self, url, params=None, expected_status_int=200, headers=None):
         """Get a JSON response, transformed to a Python object."""
         if params is not None:
             self.assertIsInstance(params, dict)
@@ -2241,7 +2241,7 @@ title: Title
 
         json_response = self.testapp.get(
             url, params=params, expect_errors=expect_errors,
-            status=expected_status_int)
+            status=expected_status_int, headers=headers)
 
         # Testapp takes in a status parameter which is the expected status of
         # the response. However this expected status is verified only when

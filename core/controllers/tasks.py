@@ -20,6 +20,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 import json
 
 from core import jobs_registry
+from core.controllers import acl_decorators
 from core.controllers import base
 from core.domain import email_manager
 from core.domain import exp_fetchers
@@ -37,6 +38,7 @@ import python_utils
 class UnsentFeedbackEmailHandler(base.BaseHandler):
     """Handler task of sending emails of feedback messages."""
 
+    @acl_decorators.can_perform_tasks_in_taskqueue
     def post(self):
         payload = json.loads(self.request.body)
         user_id = payload['user_id']
@@ -76,6 +78,7 @@ class UnsentFeedbackEmailHandler(base.BaseHandler):
 class SuggestionEmailHandler(base.BaseHandler):
     """Handler task of sending email of suggestion."""
 
+    @acl_decorators.can_perform_tasks_in_taskqueue
     def post(self):
         payload = json.loads(self.request.body)
         exploration_id = payload['exploration_id']
@@ -95,6 +98,7 @@ class SuggestionEmailHandler(base.BaseHandler):
 class InstantFeedbackMessageEmailHandler(base.BaseHandler):
     """Handles task of sending feedback message emails instantly."""
 
+    @acl_decorators.can_perform_tasks_in_taskqueue
     def post(self):
         payload = json.loads(self.request.body)
         user_id = payload['user_id']
@@ -118,6 +122,7 @@ class FeedbackThreadStatusChangeEmailHandler(base.BaseHandler):
     changed.
     """
 
+    @acl_decorators.can_perform_tasks_in_taskqueue
     def post(self):
         payload = json.loads(self.request.body)
         user_id = payload['user_id']
@@ -144,6 +149,7 @@ class FlagExplorationEmailHandler(base.BaseHandler):
     to moderators.
     """
 
+    @acl_decorators.can_perform_tasks_in_taskqueue
     def post(self):
         payload = json.loads(self.request.body)
         exploration_id = payload['exploration_id']
@@ -186,6 +192,7 @@ class DeferredTasksHandler(base.BaseHandler):
             .remove_user_from_activities_with_associated_rights_models)
     }
 
+    @acl_decorators.can_perform_tasks_in_taskqueue
     def post(self):
         payload = json.loads(self.request.body.decode())
         if 'fn_identifier' not in payload:

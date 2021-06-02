@@ -237,7 +237,6 @@
 /cron.yaml @vojtechjelinek
 /index.yaml @vojtechjelinek
 /queue.yaml @vojtechjelinek
-/main_taskqueue.py @vojtechjelinek
 
 
 # Global components and filters.
@@ -455,8 +454,6 @@
 /core/controllers/cron*.py @vojtechjelinek
 # TODO(#12694): Replace @nithusha21 as owner after 2021-05-08
 /core/domain/cron_services*.py @vojtechjelinek
-# TODO(#12694): Replace @nithusha21 as owner after 2021-05-08
-/main_cron.py @vojtechjelinek
 # TODO(#12694): Add @nithusha21 as owner after 2021-05-08
 /main.py @DubeySandeep
 # TODO(#12694): Add @nithusha21 as owner after 2021-05-08
@@ -466,9 +463,6 @@
 # TODO(#12694): Replace @nithusha21 as owner after 2021-05-08
 /assets/constants.ts @vojtechjelinek
 /core/controllers/tasks*.py @aks681
-/core/domain/audit_validators*.py @vojtechjelinek
-/core/domain/base_model_validators*.py @vojtechjelinek
-/core/domain/beam_job*.py @brianrodri
 /core/domain/email*.py @aks681
 /core/domain/image_service*.py @DubeySandeep
 /core/jobs*.py @brianrodri

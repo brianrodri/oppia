@@ -3233,8 +3233,12 @@ class LinterTestBase(GenericTestBase):
             stdout: list(str). A list of the output results from the method's
                 execution.
         """
-        self.assertTrue(
-            any(all(p in output for p in phrases) for output in stdout))
+        for output in stdout:
+            if all(p in output for p in phrases):
+                return
+        self.fail(
+            msg='None of the following outputs contained all phrases=%r: %s' % (
+                phrases, '\n'.join(stdout)))
 
     def assert_failed_messages_count(self, stdout, expected_failed_count):
         """Assert number of expected failed checks to actual number of failed

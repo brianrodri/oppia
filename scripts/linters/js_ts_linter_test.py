@@ -44,8 +44,7 @@ import esprima  # isort:skip  pylint: disable=wrong-import-order, wrong-import-p
 
 NAME_SPACE = multiprocessing.Manager().Namespace()
 PROCESSES = multiprocessing.Manager().dict()
-NAME_SPACE.files = pre_commit_linter.FileCache()
-FILE_CACHE = NAME_SPACE.files
+FILE_CACHE = pre_commit_linter.FileCache()
 
 LINTER_TESTS_DIR = os.path.join(os.getcwd(), 'scripts', 'linters', 'test_files')
 VALID_JS_FILEPATH = os.path.join(LINTER_TESTS_DIR, 'valid.js')

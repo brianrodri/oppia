@@ -150,6 +150,10 @@ _PATHS_TO_INSERT = [
 for path in _PATHS_TO_INSERT:
     sys.path.insert(0, path)
 
+_TARGET_STDOUT = python_utils.string_io()
+_STDOUT_LIST = multiprocessing.Manager().list()
+_FILES = multiprocessing.Manager().dict()
+
 
 class FileCache(python_utils.OBJECT):
     """Provides thread-safe access to cached file content."""
@@ -204,7 +208,7 @@ class FileCache(python_utils.OBJECT):
         return self._CACHE_DATA_DICT[key]
 
 
-def _get_linters_for_file_extension(file_extension_to_lint, name_space, files):
+def _get_linters_for_file_extension(file_extension_to_lint):
     """Return linters for the file extension type.
 
     Args:
@@ -214,8 +218,6 @@ def _get_linters_for_file_extension(file_extension_to_lint, name_space, files):
         (CustomLintChecks, ThirdPartyLintChecks). A 2-tuple containing objects
         of lint check classes to run in parallel processing.
     """
-    name_space.files = FileCache()
-    file_cache = name_space.files
     parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
     custom_linters = []
     third_party_linters = []
@@ -224,51 +226,51 @@ def _get_linters_for_file_extension(file_extension_to_lint, name_space, files):
         file_extension_to_lint == 'ts')
 
     if file_extension_type_js_ts:
-        general_files_to_lint = files['.js'] + files['.ts']
+        general_files_to_lint = _FILES['.js'] + _FILES['.ts']
     elif file_extension_to_lint == 'other':
-        general_files_to_lint = files['other']
+        general_files_to_lint = _FILES['other']
     else:
-        general_files_to_lint = files['.%s' % file_extension_to_lint]
+        general_files_to_lint = _FILES['.%s' % file_extension_to_lint]
 
     custom_linter, third_party_linter = general_purpose_linter.get_linters(
-        general_files_to_lint, file_cache)
+        general_files_to_lint, FILE_CACHE)
     custom_linters.append(custom_linter)
 
     if file_extension_type_js_ts:
         custom_linter, third_party_linter = js_ts_linter.get_linters(
-            files['.js'], files['.ts'], file_cache)
+            _FILES['.js'], _FILES['.ts'], FILE_CACHE)
         custom_linters.append(custom_linter)
         third_party_linters.append(third_party_linter)
 
     elif file_extension_to_lint == 'html':
         custom_linter, third_party_linter = html_linter.get_linters(
-            files['.html'], file_cache)
+            _FILES['.html'], FILE_CACHE)
         custom_linters.append(custom_linter)
         third_party_linters.append(third_party_linter)
 
         config_path_for_css_in_html = os.path.join(
             parent_dir, 'oppia', '.stylelintrc')
         custom_linter, third_party_linter = css_linter.get_linters(
-            config_path_for_css_in_html, files['.html'])
+            config_path_for_css_in_html, _FILES['.html'])
         third_party_linters.append(third_party_linter)
 
     elif file_extension_to_lint == 'css':
         config_path_for_oppia_css = os.path.join(
             parent_dir, 'oppia', 'core', 'templates', 'css', '.stylelintrc')
         custom_linter, third_party_linter = css_linter.get_linters(
-            config_path_for_oppia_css, files['.css'])
+            config_path_for_oppia_css, _FILES['.css'])
         third_party_linters.append(third_party_linter)
 
     elif file_extension_to_lint == 'py':
         _, third_party_linter = python_linter.get_linters(
-            files['.py'], file_cache)
+            _FILES['.py'], FILE_CACHE)
         third_party_linters.append(third_party_linter)
 
     elif file_extension_to_lint == 'other':
-        custom_linter, _ = codeowner_linter.get_linters(file_cache)
+        custom_linter, _ = codeowner_linter.get_linters(FILE_CACHE)
         custom_linters.append(custom_linter)
 
-        custom_linter, _ = other_files_linter.get_linters(file_cache)
+        custom_linter, _ = other_files_linter.get_linters(FILE_CACHE)
         custom_linters.append(custom_linter)
 
     return custom_linters, third_party_linters
@@ -347,7 +349,7 @@ def _get_file_extensions(file_extensions_to_lint):
     return all_file_extensions_type
 
 
-def _get_filepaths_from_path(input_path, name_space=None):
+def _get_filepaths_from_path(input_path):
     """Get paths to all lintable files recursively under a path.
 
     This function applies some ignore rules (from .eslintignore) but not
@@ -359,8 +361,6 @@ def _get_filepaths_from_path(input_path, name_space=None):
     Returns:
         list. Paths to lintable files.
     """
-    name_space.files = FileCache()
-    file_cache = name_space.files
     input_path = os.path.join(os.getcwd(), input_path)
     if not os.path.exists(input_path):
         python_utils.PRINT(
@@ -371,12 +371,12 @@ def _get_filepaths_from_path(input_path, name_space=None):
         return [input_path]
     else:
         eslintignore_path = os.path.join(os.getcwd(), '.eslintignore')
-        excluded_glob_patterns = file_cache.readlines(eslintignore_path)
+        excluded_glob_patterns = FILE_CACHE.readlines(eslintignore_path)
         return _get_all_files_in_directory(
             input_path, excluded_glob_patterns)
 
 
-def _get_filepaths_from_non_other_shard(shard, name_space=None):
+def _get_filepaths_from_non_other_shard(shard):
     """Get paths to lintable files in a shard besides the other shard.
 
     This function applies some ignore rules (from .eslintignore) but not
@@ -391,8 +391,7 @@ def _get_filepaths_from_non_other_shard(shard, name_space=None):
     filepaths = []
     assert shard != OTHER_SHARD_NAME
     for filepath in SHARDS[shard]:
-        filepaths.extend(
-            _get_filepaths_from_path(filepath, name_space=name_space))
+        filepaths.extend(_get_filepaths_from_path(filepath))
     if len(filepaths) != len(set(filepaths)):
         # Shards are invalid because of a duplicate file.
         for filepath in filepaths:
@@ -408,7 +407,7 @@ def _get_filepaths_from_non_other_shard(shard, name_space=None):
     return filepaths
 
 
-def _get_filepaths_from_other_shard(name_space=None):
+def _get_filepaths_from_other_shard():
     """Get paths to lintable files in the other shard.
 
     This function applies some ignore rules (from .eslintignore) but not
@@ -417,19 +416,17 @@ def _get_filepaths_from_other_shard(name_space=None):
     Returns:
         list(str). Paths to lintable files.
     """
-    all_filepaths = set(
-        _get_filepaths_from_path(os.getcwd(), name_space=name_space))
+    all_filepaths = set(_get_filepaths_from_path(os.getcwd()))
     filepaths_in_shards = set()
     for shard in SHARDS:
         if shard == OTHER_SHARD_NAME:
             continue
         filepaths_in_shards |= set(
-            _get_filepaths_from_non_other_shard(shard, name_space=name_space))
+            _get_filepaths_from_non_other_shard(shard))
     return list(all_filepaths - filepaths_in_shards)
 
 
-def _get_all_filepaths(
-        input_path, input_filenames, input_shard, name_space=None):
+def _get_all_filepaths(input_path, input_filenames, input_shard):
     """This function is used to return the filepaths which needs to be linted
     and checked.
 
@@ -444,8 +441,7 @@ def _get_all_filepaths(
         list(str). The list of filepaths to be linted and checked.
     """
     if input_path:
-        all_filepaths = _get_filepaths_from_path(
-            input_path, name_space=name_space)
+        all_filepaths = _get_filepaths_from_path(input_path)
     elif input_filenames:
         valid_filepaths = []
         invalid_filepaths = []
@@ -463,10 +459,9 @@ def _get_all_filepaths(
     elif input_shard:
         if input_shard != OTHER_SHARD_NAME:
             all_filepaths = _get_filepaths_from_non_other_shard(
-                input_shard, name_space=name_space)
+                input_shard)
         else:
-            all_filepaths = _get_filepaths_from_other_shard(
-                name_space=name_space)
+            all_filepaths = _get_filepaths_from_other_shard()
     else:
         all_filepaths = _get_changed_filepaths()
     all_filepaths = [
@@ -479,15 +474,13 @@ def _get_all_filepaths(
     return all_filepaths
 
 
-def read_files(file_paths, name_space=None):
+def read_files(file_paths):
     """Read all files to be checked and cache them. This will spin off multiple
     threads to increase the efficiency.
     """
-    name_space.files = FileCache()
-    file_cache = name_space.files
     threads = []
     for file_path in file_paths:
-        thread = threading.Thread(target=file_cache.read, args=(file_path,))
+        thread = threading.Thread(target=FILE_CACHE.read, args=(file_path,))
         thread.start()
         threads.append(thread)
 
@@ -495,8 +488,8 @@ def read_files(file_paths, name_space=None):
         thread.join()
 
 
-def categorize_files(file_paths, files):
-    """Categorize all the files and store them in shared variable files."""
+def categorize_files(file_paths):
+    """Categorize all the files and store them in shared variable _FILES."""
     all_filepaths_dict = {
         '.py': [], '.html': [], '.ts': [], '.js': [], 'other': [], '.css': []
     }
@@ -506,7 +499,7 @@ def categorize_files(file_paths, files):
             all_filepaths_dict[extension].append(file_path)
         else:
             all_filepaths_dict['other'].append(file_path)
-    files.update(all_filepaths_dict)
+    _FILES.update(all_filepaths_dict)
 
 
 def _print_summary_of_error_messages(lint_messages):
@@ -583,8 +576,6 @@ def main(args=None):
     """Main method for pre commit linter script that lints Python, JavaScript,
     HTML, and CSS files.
     """
-    name_space = multiprocessing.Manager().Namespace()
-
     parsed_args = _PARSER.parse_args(args=args)
     # File extension to be linted.
     file_extension_types = _get_file_extensions(
@@ -593,11 +584,7 @@ def main(args=None):
     # will be made True, which will represent verbose mode.
     verbose_mode_enabled = bool(parsed_args.verbose)
     all_filepaths = _get_all_filepaths(
-        parsed_args.path,
-        parsed_args.files,
-        parsed_args.shard,
-        name_space=name_space
-    )
+        parsed_args.path, parsed_args.files, parsed_args.shard)
 
     install_third_party_libs.main()
     common.fix_third_party_imports()
@@ -610,9 +597,8 @@ def main(args=None):
         python_utils.PRINT('---------------------------')
         return
 
-    read_files(all_filepaths, name_space=name_space)
-    files = multiprocessing.Manager().dict()
-    categorize_files(all_filepaths, files)
+    read_files(all_filepaths)
+    categorize_files(all_filepaths)
 
     # Prepare custom tasks.
     custom_max_concurrent_runs = 25
@@ -630,13 +616,13 @@ def main(args=None):
     third_party_linters = []
     for file_extension_type in file_extension_types:
         if (file_extension_type == 'js' or file_extension_type == 'ts'):
-            if len(files['.js'] + files['.ts']) == 0:
+            if len(_FILES['.js'] + _FILES['.ts']) == 0:
                 continue
         elif (not file_extension_type == 'other' and not
-              len(files['.%s' % file_extension_type])):
+              len(_FILES['.%s' % file_extension_type])):
             continue
         custom_linter, third_party_linter = _get_linters_for_file_extension(
-            file_extension_type, name_space, files)
+            file_extension_type)
         custom_linters += custom_linter
         third_party_linters += third_party_linter
 
@@ -698,6 +684,11 @@ def main(args=None):
             '---------------------------',
             'All Checks Passed.',
             '---------------------------']))
+
+
+NAME_SPACE = multiprocessing.Manager().Namespace()
+PROCESSES = multiprocessing.Manager().dict()
+FILE_CACHE = FileCache()
 
 
 # The 'no coverage' pragma is used as this line is un-testable. This is because

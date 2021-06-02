@@ -27,9 +27,7 @@ from core.tests import test_utils
 from . import general_purpose_linter
 from . import pre_commit_linter
 
-NAME_SPACE = multiprocessing.Manager().Namespace()
-NAME_SPACE.files = pre_commit_linter.FileCache()
-FILE_CACHE = NAME_SPACE.files
+FILE_CACHE = pre_commit_linter.FileCache()
 
 LINTER_TESTS_DIR = os.path.join(os.getcwd(), 'scripts', 'linters', 'test_files')
 

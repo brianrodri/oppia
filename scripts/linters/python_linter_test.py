@@ -39,18 +39,7 @@ INVALID_PYTHON3_FILEPATH = os.path.join(
 INVALID_DOCSTRING_FILEPATH = os.path.join(
     LINTER_TESTS_DIR, 'invalid_docstring.py')
 
-INVALID_JOBS_ONE_OFF_FILEPATHS = [
-    'scripts/linters/test_files/invalid_duplicate_jobs_one_off.py']
-VALID_JOBS_ONE_OFF_FILEPATHS = [
-    'scripts/linters/test_files/valid_jobs_one_off.py']
-INVALID_PROD_VALIDATION_JOBS_ONE_OFF_FILEPATHS = [
-    'scripts/linters/test_files/invalid_duplicate_prod_validation_jobs_one_off'
-    '.py', 'scripts/linters/test_files/invalid_prod_validation_jobs_one_off.py']
-
-NAME_SPACE = multiprocessing.Manager().Namespace()
-PROCESSES = multiprocessing.Manager().dict()
-NAME_SPACE.files = pre_commit_linter.FileCache()
-FILE_CACHE = NAME_SPACE.files
+FILE_CACHE = pre_commit_linter.FileCache()
 
 
 class PythonLintChecksManagerTests(test_utils.LinterTestBase):
@@ -59,7 +48,6 @@ class PythonLintChecksManagerTests(test_utils.LinterTestBase):
     def test_unsorted_import_order(self):
         lint_task_report = python_linter.ThirdPartyPythonLintChecksManager(
             [INVALID_IMPORT_FILEPATH]).check_import_order()
-        print(lint_task_report.get_report())
         self.assert_same_list_elements([
             'FAILED  Import order check failed'], lint_task_report.get_report())
         self.assertEqual('Import order', lint_task_report.name)
@@ -85,7 +73,6 @@ class PythonLintChecksManagerTests(test_utils.LinterTestBase):
     def test_invalid_file_with_pylint_error(self):
         lint_task_report = python_linter.ThirdPartyPythonLintChecksManager(
             [INVALID_DOCSTRING_FILEPATH]).lint_py_files()
-        print(lint_task_report.trimmed_messages)
         self.assert_same_list_elements(
             ['W9025: Period is not used at the end of the docstring.'],
             lint_task_report.trimmed_messages)

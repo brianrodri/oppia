@@ -28,8 +28,11 @@ class JobOptions(pipeline_options.GoogleCloudOptions):
     """Option class for configuring the behavior of Oppia jobs."""
 
     JOB_OPTIONS = {
-        'namespace': (
-            str, 'Namespace for isolating the NDB operations of tests'),
+        # TODO(#11475): Delete this option once we're able to use the real
+        # datastoreio module once we've finished migrating to Python 3.
+        'datastoreio_stub': (
+            validate_datastoreio_stub,
+            'Source of datastore operations for the pipeline to depend upon'),
     }
 
     def __init__(self, flags=None, **job_options):

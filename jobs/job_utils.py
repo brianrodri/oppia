@@ -24,7 +24,6 @@ import itertools
 import operator
 
 from core.platform import models
-import feconf
 
 from apache_beam.io.gcp.datastore.v1new import types as beam_datastore_types
 from google.cloud.ndb import query as ndb_query
@@ -68,10 +67,10 @@ def get_model_class(kind):
     """Returns the model class corresponding to the given kind.
 
     NOTE: A model's kind is usually, but not always, the same as a model's class
-    name. Specifically, the kind is different when a model overwrites the
+    name. Specifically, the kind is different when a model overrides the
     _get_kind() class method. Although Oppia never does this, the Apache Beam
-    framework uses "kind" to refer to models extensively, so we follow the same
-    convention and take special care to always return the correct value.
+    framework uses "kind" to refer to models _extensively_, so we follow the
+    same convention and take special care to always return the correct value.
 
     Args:
         kind: str. The model's kind.
@@ -174,46 +173,59 @@ def get_model_property(model, property_name):
         raise TypeError('%r is not a model instance' % model)
 
 
-def get_beam_entity_from_model(model):
-    """Returns an Apache Beam representation of the given NDB model.
+def get_beam_entity_from_ndb_model(model):
+    """Returns an Apache Beam entity equivalent to the given NDB model.
 
     Args:
-        model: datastore_services.Model. The model to convert.
+        model: datastore_services.Model. The NDB model.
 
     Returns:
-        beam_datastore_types.Entity. The Apache Beam representation of the
-        model.
+        beam_datastore_types.Entity. The Apache Beam entity.
     """
     beam_entity = beam_datastore_types.Entity(
-        beam_datastore_types.Key(
-            model.key.flat(), project=feconf.OPPIA_PROJECT_ID,
-            namespace=model.key.namespace()))
+        get_beam_key_from_ndb_key(model.key))
     beam_entity.set_properties(model._to_dict()) # pylint: disable=protected-access
     return beam_entity
 
 
-def get_model_from_beam_entity(beam_entity):
-    """Returns an NDB model representation of the given Apache Beam entity.
+def get_ndb_model_from_beam_entity(beam_entity):
+    """Returns an NDB model equivalent to the given Apache Beam entity.
 
     Args:
-        beam_entity: beam_datastore_types.Entity. The entity to convert.
+        beam_entity: beam_datastore_types.Entity. The Apache Beam entity.
 
     Returns:
-        datastore_services.Model. The NDB model representation of the entity.
+        datastore_services.Model. The NDB model.
     """
-    ds_key = beam_entity.key.to_client_key()
-    ndb_key = datastore_services.Key._from_ds_key(ds_key)
-    ndb_model_class = datastore_services.Model._lookup_model(ds_key.kind) # pylint: disable=protected-access
-    ndb_properties = {}
-    for name, value in beam_entity.properties.items():
-        if isinstance(value, datetime.datetime):
-            # Cloud NDB only accepts `tzinfo=None` when the datetime is in UTC.
-            # Since all of Oppia's models use UTC, we replace the `tzinfo='UTC'`
-            # values provided by the Apache Beam SDK to satisfy Cloud NDB.
-            value = value.replace(tzinfo=None)
-        ndb_properties[name] = value
-    with datastore_services.get_ndb_context():
-        return ndb_model_class(key=ndb_key, **ndb_properties)
+    ndb_key = get_ndb_key_from_beam_key(beam_entity.key)
+    ndb_model_class = datastore_services.Model._lookup_model(ndb_key.kind()) # pylint: disable=protected-access
+    return ndb_model_class(key=ndb_key, **beam_entity.properties)
+
+
+def get_ndb_key_from_beam_key(beam_key):
+    """Returns an NDB key equivalent to the given Apache Beam key.
+
+    Args:
+        beam_key: beam_datastore_types.Key. The Apache Beam key.
+
+    Returns:
+        datastore_services.Key. The NDB key.
+    """
+    ds_key = beam_key.to_client_key()
+    return datastore_services.Key.from_old_key(ds_key.to_legacy_urlsafe())
+
+
+def get_beam_key_from_ndb_key(ndb_key):
+    """Returns an Apache Beam key equivalent to the given NDB key.
+
+    Args:
+        ndb_key: datastore_services.Key. The NDB key.
+
+    Returns:
+        beam_datastore_types.Key. The Apache Beam key.
+    """
+    return beam_datastore_types.Key(
+        ndb_key.flat(), project=ndb_key.app(), namespace=ndb_key.namespace())
 
 
 def get_beam_query_from_ndb_query(query, namespace=None):
@@ -234,8 +246,8 @@ def get_beam_query_from_ndb_query(query, namespace=None):
         beam_datastore_types.Query. The equivalent Apache Beam query.
     """
     kind = query.kind
-    namespace = namespace or query.namespace
-    project = query.project or feconf.OPPIA_PROJECT_ID
+    namespace = query.namespace
+    project = query.app
 
     if query.filters:
         filters = _get_beam_filters_from_ndb_filter_node(query.filters)
@@ -283,6 +295,9 @@ def apply_query_to_models(query, model_list):
         model_list[:] = [
             m for m in model_list if m.key.namespace() == query.namespace
         ]
+
+    if query.project:
+        model_list[:] = [m for m in model_list if m.key.app() == query.project]
 
     if query.filters:
         model_list[:] = [

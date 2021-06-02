@@ -167,6 +167,8 @@
         "jobs.base_validation_jobs_test",
         "jobs.base_jobs_test",
         "jobs.decorators.validation_decorators_test",
+        "jobs.io.stub_io_test",
+        "jobs.io.ndb_io_test",
         "jobs.job_options_test",
         "jobs.job_test_utils_test",
         "jobs.job_utils_test",
@@ -190,7 +192,12 @@
     ],
     "10": [
         "core.domain.moderator_services_test",
-        "core.domain.image_validation_services_test"
+        "core.domain.exp_jobs_one_off_test",
+        "core.domain.collection_validators_test",
+        "core.domain.suggestion_jobs_one_off_test",
+        "core.domain.image_validation_services_test",
+        "core.storage.beam_job.gae_models_test",
+        "core.domain.beam_job_validators_test"
     ],
     "11": [
         "core.platform.taskqueue.cloud_taskqueue_services_test",

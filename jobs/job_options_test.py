@@ -31,12 +31,26 @@ class JobOptionsTests(test_utils.TestBase):
     def test_default_values(self):
         options = job_options.JobOptions()
 
-        self.assertIsNone(options.namespace)
+        self.assertIsNone(options.datastoreio_stub)
 
     def test_overwritten_values(self):
-        options = job_options.JobOptions(namespace='abc')
+        datastoreio_stub = stub_io.DatastoreioStub()
 
-        self.assertIs(options.namespace, 'abc')
+        options = job_options.JobOptions(datastoreio_stub=datastoreio_stub)
+
+        self.assertIs(options.datastoreio_stub, datastoreio_stub)
+
+    def test_valid_datastoreio_value(self):
+        obj = stub_io.DatastoreioStub()
+
+        self.assertIs(obj, job_options.validate_datastoreio_stub(obj))
+
+    def test_invalid_datastoreio_value(self):
+        obj = python_utils.OBJECT()
+
+        self.assertRaisesRegexp(
+            TypeError, 'not an instance of DatastoreioStub',
+            lambda: job_options.validate_datastoreio_stub(obj))
 
     def test_unsupported_values(self):
         self.assertRaisesRegexp(

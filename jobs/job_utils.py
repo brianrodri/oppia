@@ -24,6 +24,7 @@ import itertools
 import operator
 
 from core.platform import models
+import feconf
 
 from apache_beam.io.gcp.datastore.v1new import types as beam_datastore_types
 from google.cloud.ndb import query as ndb_query
@@ -182,8 +183,8 @@ def get_beam_entity_from_ndb_model(model):
     Returns:
         beam_datastore_types.Entity. The Apache Beam entity.
     """
-    beam_entity = beam_datastore_types.Entity(
-        get_beam_key_from_ndb_key(model.key))
+    beam_entity = (
+        beam_datastore_types.Entity(get_beam_key_from_ndb_key(model.key)))
     beam_entity.set_properties(model._to_dict()) # pylint: disable=protected-access
     return beam_entity
 
@@ -199,7 +200,13 @@ def get_ndb_model_from_beam_entity(beam_entity):
     """
     ndb_key = get_ndb_key_from_beam_key(beam_entity.key)
     ndb_model_class = datastore_services.Model._lookup_model(ndb_key.kind()) # pylint: disable=protected-access
-    return ndb_model_class(key=ndb_key, **beam_entity.properties)
+    ndb_properties = {}
+    for key, val in beam_entity.properties.items():
+        if isinstance(val, datetime.datetime):
+            val = val.replace(tzinfo=None)
+        ndb_properties[key] = val
+    with datastore_services.get_ndb_context():
+        return ndb_model_class(key=ndb_key, **ndb_properties)
 
 
 def get_ndb_key_from_beam_key(beam_key):
@@ -211,8 +218,7 @@ def get_ndb_key_from_beam_key(beam_key):
     Returns:
         datastore_services.Key. The NDB key.
     """
-    ds_key = beam_key.to_client_key()
-    return datastore_services.Key.from_old_key(ds_key.to_legacy_urlsafe())
+    return datastore_services.Key._from_ds_key(beam_key.to_client_key())
 
 
 def get_beam_key_from_ndb_key(ndb_key):
@@ -225,10 +231,11 @@ def get_beam_key_from_ndb_key(ndb_key):
         beam_datastore_types.Key. The Apache Beam key.
     """
     return beam_datastore_types.Key(
-        ndb_key.flat(), project=ndb_key.app(), namespace=ndb_key.namespace())
+        ndb_key.flat(), project=ndb_key.project(),
+        namespace=ndb_key.namespace())
 
 
-def get_beam_query_from_ndb_query(query):
+def get_beam_query_from_ndb_query(query, namespace=None):
     """Returns an equivalent Apache Beam query from the given NDB query.
 
     This function helps developers avoid learning two types of query syntaxes.
@@ -246,8 +253,8 @@ def get_beam_query_from_ndb_query(query):
         beam_datastore_types.Query. The equivalent Apache Beam query.
     """
     kind = query.kind
-    namespace = query.namespace
-    project = query.app
+    namespace = namespace or query.namespace
+    project = query.project or feconf.OPPIA_PROJECT_ID
 
     if query.filters:
         filters = _get_beam_filters_from_ndb_filter_node(query.filters)
@@ -297,7 +304,9 @@ def apply_query_to_models(query, model_list):
         ]
 
     if query.project:
-        model_list[:] = [m for m in model_list if m.key.app() == query.project]
+        model_list[:] = [
+            m for m in model_list if m.key.project() == query.project
+        ]
 
     if query.filters:
         model_list[:] = [

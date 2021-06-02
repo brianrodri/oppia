@@ -156,9 +156,9 @@ def transaction(callback):
         callback, xg=True, propagation=ndb.TransactionOptions.ALLOWED)
 
 
-def query_everything():
+def query_everything(**kwargs):
     """Returns a query that targets every single entity in the datastore."""
-    return ndb.Query()
+    return ndb.Query(**kwargs)
 
 
 def all_of(*nodes):

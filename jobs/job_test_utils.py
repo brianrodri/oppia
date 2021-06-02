@@ -28,6 +28,7 @@ from core.platform import models
 from core.tests import test_utils
 import feconf
 from jobs import base_jobs
+from jobs import job_options
 import python_utils
 
 from apache_beam import runners
@@ -53,23 +54,52 @@ class PipelinedTestBase(test_utils.AppEngineTestBase):
 
     def setUp(self):
         super(PipelinedTestBase, self).setUp()
-<<<<<<< HEAD
-        with python_utils.ExitStack() as exit_stack:
-            exit_stack.enter_context(decorate_beam_errors())
-            exit_stack.enter_context(self.pipeline)
-            self._pipeline_context_stack = exit_stack.pop_all()
-=======
         with python_utils.ExitStack() as pipeline_context_stack:
             pipeline_context_stack.enter_context(decorate_beam_errors())
             pipeline_context_stack.enter_context(self.pipeline)
             self._pipeline_context_stack = pipeline_context_stack.pop_all()
->>>>>>> upstream/develop
 
     def tearDown(self):
         try:
             self._exit_pipeline_context()
         finally:
             super(PipelinedTestBase, self).tearDown()
+
+    def _equal_to(self, expected):
+        """Returns a predicate function that raises an exception if the input
+        value is not equal to the `expected` value.
+
+        Args:
+            expected: *. The object to compare against.
+
+        Returns:
+            callable. A predicate function that raises an exception if its input
+            does not equal the `expected` value.
+        """
+        equal_to_impl = beam_testing_util.equal_to(expected)
+        def equal_to(actual):
+            """Raises BeamAssertException if actual != expected."""
+            with datastore_services.get_ndb_context():
+                return equal_to_impl(actual)
+        return equal_to
+
+    def _is_empty(self):
+        """Returns a predicate function that raises an exception if the input
+        value is not empty.
+
+        Args:
+            expected: *. The object to compare against.
+
+        Returns:
+            callable. A predicate function that raises an exception if its input
+            value is not empty.
+        """
+        is_empty_impl = beam_testing_util.is_empty()
+        def is_empty(actual):
+            """Raises BeamAssertException if actual is not empty."""
+            with datastore_services.get_ndb_context():
+                return is_empty_impl(actual)
+        return is_empty
 
     def assert_pcoll_equal(self, actual, expected):
         """Asserts that the given PCollections are equal.
@@ -88,8 +118,7 @@ class PipelinedTestBase(test_utils.AppEngineTestBase):
             RuntimeError. A PCollection assertion has already been called.
         """
         self._assert_pipeline_context_is_acquired()
-        beam_testing_util.assert_that(
-            actual, beam_testing_util.equal_to(expected))
+        beam_testing_util.assert_that(actual, self._equal_to(expected))
         self._exit_pipeline_context()
 
     def assert_pcoll_empty(self, actual):
@@ -108,7 +137,7 @@ class PipelinedTestBase(test_utils.AppEngineTestBase):
             RuntimeError. A PCollection assertion has already been called.
         """
         self._assert_pipeline_context_is_acquired()
-        beam_testing_util.assert_that(actual, beam_testing_util.is_empty())
+        beam_testing_util.assert_that(actual, self._is_empty())
         self._exit_pipeline_context()
 
     def create_model(self, model_class, **properties):
@@ -194,18 +223,6 @@ class JobTestBase(PipelinedTestBase):
         super(JobTestBase, self).__init__(*args, **kwargs)
         self.job = self.JOB_CLASS(self.pipeline)
 
-    def setUp(self):
-        super(JobTestBase, self).setUp()
-<<<<<<< HEAD
-        with self._pipeline_context_stack as exit_stack:
-            exit_stack.enter_context(self.job.datastoreio_stub.context())
-            self._pipeline_context_stack = exit_stack.pop_all()
-=======
-        with self._pipeline_context_stack as stack:
-            stack.enter_context(self.job.datastoreio_stub.context())
-            self._pipeline_context_stack = stack.pop_all()
->>>>>>> upstream/develop
-
     def run_job(self):
         """Runs a new instance of self.JOB_CLASS and returns its output.
 
@@ -229,13 +246,9 @@ class JobTestBase(PipelinedTestBase):
         Args:
             model_list: list(Model). The NDB models to put into the datastore.
         """
-<<<<<<< HEAD
-        self.job.datastoreio_stub.put_multi(models)
-=======
         datastore_services.update_timestamps_multi(
             model_list, update_last_updated_time=False)
         datastore_services.put_multi(model_list)
->>>>>>> upstream/develop
 
     def assert_job_output_is(self, expected):
         """Asserts the output of self.JOB_CLASS matches the given PCollection.

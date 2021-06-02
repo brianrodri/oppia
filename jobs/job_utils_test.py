@@ -172,7 +172,7 @@ class GetModelIdTests(test_utils.TestBase):
 class BeamEntityToAndFromModelTests(test_utils.TestBase):
 
     def test_get_beam_entity_from_model(self):
-        model = FooModel(id='abc', prop='123')
+        model = FooModel(id='abc', app=feconf.OPPIA_PROJECT_ID, prop='123')
 
         beam_entity = job_utils.get_beam_entity_from_ndb_model(model)
 
@@ -321,3 +321,169 @@ class GetBeamQueryFromNdbQueryTests(test_utils.TestBase):
         beam_query = job_utils.get_beam_query_from_ndb_query(query)
 
         self.assertEqual(beam_query.order, ('-prop',))
+<<<<<<< HEAD
+=======
+
+
+class ApplyQueryToModelsTests(test_utils.TestBase):
+
+    def make_query(
+            self, kind=None, namespace=None, project=None, filters=None,
+            order=None, limit=None):
+        """Returns a new beam_datastore_types.Query object.
+
+        Args:
+            kind: str|None. The kind to query. If None, all kinds are eligible.
+            namespace: str|None. Namespace to restrict results to.
+            project: str|None. Project associated with query.
+            filters: list(tuple(str,str,str))|None. Property filters applied
+                by this query. The sequence is:
+                `(property_name, operator, value)`.
+            order: list(str)|None. Field names used to order query results.
+                Prepend `-` to a field name to sort it in descending order.
+            limit: int|None. Maximum amount of results to return.
+
+        Returns:
+            beam_datastore_types.Query. The Query object.
+        """
+        if kind is None and order is None:
+            order = ('__key__',)
+        return beam_datastore_types.Query(
+            kind=kind, namespace=namespace, project=project, filters=filters,
+            order=order, limit=limit)
+
+    def test_query_by_kind(self):
+        foo_model = FooModel()
+        bar_model = BarModel()
+        model_list = [foo_model, bar_model]
+
+        job_utils.apply_query_to_models(
+            self.make_query(kind='FooModel'), model_list)
+
+        self.assertEqual(model_list, [foo_model])
+
+    def test_query_by_namespace(self):
+        namespace_a_model = FooModel(namespace='a')
+        namespace_b_model = FooModel(namespace='b')
+        model_list = [namespace_a_model, namespace_b_model]
+
+        job_utils.apply_query_to_models(
+            self.make_query(namespace='a'), model_list)
+
+        self.assertEqual(model_list, [namespace_a_model])
+
+    def test_query_by_project(self):
+        project_a_model = FooModel(app='a')
+        project_b_model = FooModel(app='b')
+        model_list = [project_a_model, project_b_model]
+
+        job_utils.apply_query_to_models(
+            self.make_query(project='a'), model_list)
+
+        self.assertEqual(model_list, [project_a_model])
+
+    def test_query_with_filter(self):
+        model_list = [BarModel(prop=i) for i in python_utils.RANGE(1, 10)]
+
+        job_utils.apply_query_to_models(
+            self.make_query(filters=[('prop', '>=', 3), ('prop', '<', 6)]),
+            model_list)
+
+        self.assertEqual(
+            model_list, [BarModel(prop=i) for i in python_utils.RANGE(3, 6)])
+
+    def test_query_with_order(self):
+        model_a = FooModel(prop='a')
+        model_b = FooModel(prop='b')
+        model_c = FooModel(prop='c')
+        model_list = [model_c, model_a, model_b]
+
+        job_utils.apply_query_to_models(
+            self.make_query(kind='FooModel', order=('prop',)), model_list)
+
+        self.assertEqual(model_list, [model_a, model_b, model_c])
+
+    def test_query_with_limit(self):
+        model_list = [BarModel(prop=i) for i in python_utils.RANGE(10)]
+
+        job_utils.apply_query_to_models(self.make_query(limit=3), model_list)
+
+        self.assertEqual(
+            model_list, [BarModel(prop=i) for i in python_utils.RANGE(3)])
+
+    def test_query_with_no_kind_and_wrong_order_raises_value_error(self):
+        self.assertRaisesRegexp(
+            ValueError,
+            r'Query\(kind=None\) must also have order=\(\'__key__\',\)',
+            lambda: job_utils.apply_query_to_models(
+                self.make_query(kind=None, order=('prop',)), []))
+
+    def test_query_filter_with_less_than_operator(self):
+        model_list = [BarModel(prop=1), BarModel(prop=2), BarModel(prop=3)]
+
+        job_utils.apply_query_to_models(
+            self.make_query(filters=[('prop', '<', 2)]), model_list)
+
+        self.assertEqual(model_list, [BarModel(prop=1)])
+
+    def test_query_filter_with_less_than_or_equal_operator(self):
+        model_list = [BarModel(prop=1), BarModel(prop=2), BarModel(prop=3)]
+
+        job_utils.apply_query_to_models(
+            self.make_query(filters=[('prop', '<=', 2)]), model_list)
+
+        self.assertEqual(model_list, [BarModel(prop=1), BarModel(prop=2)])
+
+    def test_query_filter_with_equal_operator(self):
+        model_list = [BarModel(prop=1), BarModel(prop=2), BarModel(prop=3)]
+
+        job_utils.apply_query_to_models(
+            self.make_query(filters=[('prop', '=', 2)]), model_list)
+
+        self.assertEqual(model_list, [BarModel(prop=2)])
+
+    def test_query_filter_with_greater_than_or_equal_operator(self):
+        model_list = [BarModel(prop=1), BarModel(prop=2), BarModel(prop=3)]
+
+        job_utils.apply_query_to_models(
+            self.make_query(filters=[('prop', '>=', 2)]), model_list)
+
+        self.assertEqual(model_list, [BarModel(prop=2), BarModel(prop=3)])
+
+    def test_query_filter_with_greater_than_operator(self):
+        model_list = [BarModel(prop=1), BarModel(prop=2), BarModel(prop=3)]
+
+        job_utils.apply_query_to_models(
+            self.make_query(filters=[('prop', '>', 2)]), model_list)
+
+        self.assertEqual(model_list, [BarModel(prop=3)])
+
+    def test_query_filter_with_unsupported_operator_raises_value_error(self):
+        model_list = [BarModel(prop=1), BarModel(prop=2), BarModel(prop=3)]
+
+        with self.assertRaisesRegexp(ValueError, 'Unsupported comparison'):
+            job_utils.apply_query_to_models(
+                self.make_query(filters=[('prop', '!=', 2)]), model_list)
+
+    def test_query_with_order_by_property_ascending(self):
+        model_a = FooModel(prop='a')
+        model_b = FooModel(prop='b')
+        model_c = FooModel(prop='c')
+        model_list = [model_c, model_a, model_b]
+
+        job_utils.apply_query_to_models(
+            self.make_query(kind='FooModel', order=('prop',)), model_list)
+
+        self.assertEqual(model_list, [model_a, model_b, model_c])
+
+    def test_query_with_order_by_property_descending(self):
+        model_a = FooModel(prop='a')
+        model_b = FooModel(prop='b')
+        model_c = FooModel(prop='c')
+        model_list = [model_c, model_a, model_b]
+
+        job_utils.apply_query_to_models(
+            self.make_query(kind='FooModel', order=('-prop',)), model_list)
+
+        self.assertEqual(model_list, [model_c, model_b, model_a])
+>>>>>>> upstream/develop

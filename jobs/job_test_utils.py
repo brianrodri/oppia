@@ -37,7 +37,7 @@ from apache_beam.testing import util as beam_testing_util
 datastore_services = models.Registry.import_datastore_services()
 
 
-class PipelinedTestBase(test_utils.TestBase):
+class PipelinedTestBase(test_utils.AppEngineTestBase):
     """Base class that runs tests within the context of a TestPipeline."""
 
     # Helpful constants used by tests to create models.
@@ -53,10 +53,17 @@ class PipelinedTestBase(test_utils.TestBase):
 
     def setUp(self):
         super(PipelinedTestBase, self).setUp()
+<<<<<<< HEAD
         with python_utils.ExitStack() as exit_stack:
             exit_stack.enter_context(decorate_beam_errors())
             exit_stack.enter_context(self.pipeline)
             self._pipeline_context_stack = exit_stack.pop_all()
+=======
+        with python_utils.ExitStack() as pipeline_context_stack:
+            pipeline_context_stack.enter_context(decorate_beam_errors())
+            pipeline_context_stack.enter_context(self.pipeline)
+            self._pipeline_context_stack = pipeline_context_stack.pop_all()
+>>>>>>> upstream/develop
 
     def tearDown(self):
         try:
@@ -146,6 +153,24 @@ class PipelinedTestBase(test_utils.TestBase):
                 'multiple assertions, then split them into separate test '
                 'cases.')
 
+    def _assert_pipeline_context_is_acquired(self):
+        """Raises a RuntimeError when the pipeline context hasn't been entered.
+
+        Raises:
+            RuntimeError. The error.
+        """
+        if not self._is_in_pipeline_context():
+            raise RuntimeError(
+                'PCollection assertions must be run in the pipeline context.\n'
+                '\n'
+                'NOTE: This error most likely means you have called more than '
+                'one PCollection assertion, which is forbidden. This is '
+                'because running assertions on pipelines require us to wait '
+                'for it to finish processing all of its data, after which '
+                'there is nothing left to inspect. If you need to make '
+                'multiple assertions, then split them into separate test '
+                'cases.')
+
     def _is_in_pipeline_context(self):
         """Returns whether the test is currently within the pipeline context."""
         return self._pipeline_context_stack is not None
@@ -171,9 +196,15 @@ class JobTestBase(PipelinedTestBase):
 
     def setUp(self):
         super(JobTestBase, self).setUp()
+<<<<<<< HEAD
         with self._pipeline_context_stack as exit_stack:
             exit_stack.enter_context(self.job.datastoreio_stub.context())
             self._pipeline_context_stack = exit_stack.pop_all()
+=======
+        with self._pipeline_context_stack as stack:
+            stack.enter_context(self.job.datastoreio_stub.context())
+            self._pipeline_context_stack = stack.pop_all()
+>>>>>>> upstream/develop
 
     def run_job(self):
         """Runs a new instance of self.JOB_CLASS and returns its output.
@@ -192,16 +223,19 @@ class JobTestBase(PipelinedTestBase):
         """
         return self.job.run()
 
-    def put_multi(self, models):
+    def put_multi(self, model_list):
         """Puts the input models into the datastore.
 
-        Since the datastore is stubbed during unit tests, no actual models are
-        created.
-
         Args:
-            models: list(Model). The NDB models to put into the stub.
+            model_list: list(Model). The NDB models to put into the datastore.
         """
+<<<<<<< HEAD
         self.job.datastoreio_stub.put_multi(models)
+=======
+        datastore_services.update_timestamps_multi(
+            model_list, update_last_updated_time=False)
+        datastore_services.put_multi(model_list)
+>>>>>>> upstream/develop
 
     def assert_job_output_is(self, expected):
         """Asserts the output of self.JOB_CLASS matches the given PCollection.

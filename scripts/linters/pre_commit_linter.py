@@ -152,7 +152,8 @@ for path in _PATHS_TO_INSERT:
 
 _TARGET_STDOUT = python_utils.string_io()
 _STDOUT_LIST = multiprocessing.Manager().list()
-_FILES = multiprocessing.Manager().dict()
+_FILES = {}
+_FILES_LOCK = threading.Lock()
 
 
 class FileCache(python_utils.OBJECT):
@@ -499,7 +500,8 @@ def categorize_files(file_paths):
             all_filepaths_dict[extension].append(file_path)
         else:
             all_filepaths_dict['other'].append(file_path)
-    _FILES.update(all_filepaths_dict)
+    with _FILES_LOCK:
+        _FILES.update(all_filepaths_dict)
 
 
 def _print_summary_of_error_messages(lint_messages):
@@ -688,7 +690,8 @@ def main(args=None):
 
 NAME_SPACE = multiprocessing.Manager().Namespace()
 PROCESSES = multiprocessing.Manager().dict()
-FILE_CACHE = FileCache()
+NAME_SPACE.files = FileCache()
+FILE_CACHE = NAME_SPACE.files
 
 
 # The 'no coverage' pragma is used as this line is un-testable. This is because

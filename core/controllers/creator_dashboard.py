@@ -134,9 +134,11 @@ class CreatorDashboardHandler(base.BaseHandler):
         average_ratings = None
         num_ratings = 0
         sum_of_ratings = 0
+        total_plays = 0
 
         mr_model = user_services.get_user_stats_model(self.user_id)
         if mr_model is not None:
+            total_plays = mr_model.total_plays
             num_ratings = mr_model.num_ratings
             if mr_model.average_ratings is not None:
                 sum_of_ratings += (
@@ -147,7 +149,7 @@ class CreatorDashboardHandler(base.BaseHandler):
                 sum_of_ratings, float(num_ratings))
 
         return {
-            'total_plays': mr_model.total_plays,
+            'total_plays': total_plays,
             'num_ratings': num_ratings,
             'average_ratings': average_ratings
         }

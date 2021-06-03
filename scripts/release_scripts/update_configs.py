@@ -52,15 +52,18 @@ _PARSER = argparse.ArgumentParser(description="Updates configs.")
 _PARSER.add_argument(
     '--release_dir_path',
     dest='release_dir_path',
-    help='Path of directory where all files are copied for release.')
+    help='Path of directory where all files are copied for release.',
+    required=True)
 _PARSER.add_argument(
     '--deploy_data_path',
     dest='deploy_data_path',
-    help='Path for deploy data directory.')
+    help='Path for deploy data directory.',
+    required=True)
 _PARSER.add_argument(
     '--personal_access_token',
     dest='personal_access_token',
-    help='The personal access token for the GitHub id of user.')
+    help='The personal access token for the GitHub id of user.',
+    default=None)
 _PARSER.add_argument(
     '--prompt_for_mailgun_and_terms_update',
     action='store_true',

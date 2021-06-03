@@ -47,17 +47,18 @@ class Blob(python_utils.OBJECT):
         self._content_type = content_type
 
     @classmethod
-    def create_copy(cls, original_blob):
+    def create_copy(cls, original_blob, new_name):
         """Create new instance of Blob with the same values.
 
         Args:
             original_blob: Blob. Original blob to copy.
+            new_name: str. New name of the blob.
 
         Returns:
             Blob. New instance with the same values as original_blob.
         """
         return cls(
-            original_blob.name,
+            new_name,
             original_blob._raw_bytes,
             original_blob.content_type
         )
@@ -88,6 +89,17 @@ class Blob(python_utils.OBJECT):
             bytes. The raw bytes of the blob.
         """
         return self._raw_bytes
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.name == other.name
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __repr__(self):
+        return 'Blob(name=%s, content_type=%s)' % (self.name, self.content_type)
 
 
 class CloudStorageEmulator(python_utils.OBJECT):
@@ -133,7 +145,8 @@ class CloudStorageEmulator(python_utils.OBJECT):
             blob: Blob. The blob to copy.
             filepath: str. Filepath where the blob should be copied.
         """
-        REDIS_CLIENT.set(filepath, pickle.dumps(Blob.create_copy(blob)))
+        REDIS_CLIENT.set(
+            filepath, pickle.dumps(Blob.create_copy(blob, filepath)))
 
     def list_blobs(self, prefix):
         """Get blobs whose filepaths start with prefix.

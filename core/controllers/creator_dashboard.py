@@ -119,6 +119,41 @@ class CreatorDashboardHandler(base.BaseHandler):
 
     GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
 
+    def _get_current_user_dashboard_stats(self):
+        """Returns the dashboard stats associated for the current user.
+
+        Returns:
+            dict. Has the keys:
+                total_plays: int. Number of times the user's explorations were
+                    played.
+                num_ratings: int. Number of times the explorations have been
+                    rated.
+                average_ratings: float. Average of average ratings across all
+                    explorations.
+        """
+        average_ratings = None
+        num_ratings = 0
+        sum_of_ratings = 0
+        total_plays = 0
+
+        mr_model = user_services.get_user_stats_model(self.user_id)
+        if mr_model is not None:
+            total_plays = mr_model.total_plays
+            num_ratings = mr_model.num_ratings
+            if mr_model.average_ratings is not None:
+                sum_of_ratings += (
+                        mr_model.average_ratings * mr_model.num_ratings)
+
+        if num_ratings > 0:
+            average_ratings = python_utils.divide(
+                sum_of_ratings, float(num_ratings))
+
+        return {
+            'total_plays': total_plays,
+            'num_ratings': num_ratings,
+            'average_ratings': average_ratings
+        }
+
     @acl_decorators.can_access_creator_dashboard
     def get(self):
         """Handles GET requests."""
@@ -187,7 +222,7 @@ class CreatorDashboardHandler(base.BaseHandler):
                         collection_summary.category),
                 })
 
-        dashboard_stats = {}
+        dashboard_stats = self._get_current_user_dashboard_stats()
         dashboard_stats.update({
             'total_open_feedback': feedback_services.get_total_open_threads(
                 feedback_thread_analytics)

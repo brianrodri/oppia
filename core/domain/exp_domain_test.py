@@ -1068,7 +1068,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
         new_answer_groups = [
             state_domain.AnswerGroup.from_dict(answer_groups)
             for answer_groups in old_answer_groups
-            ]
+        ]
         init_state.update_interaction_answer_groups(new_answer_groups)
 
         exploration.validate()
@@ -1086,7 +1086,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
         new_answer_groups = [
             state_domain.AnswerGroup.from_dict(answer_groups)
             for answer_groups in old_answer_groups
-            ]
+        ]
         init_state.update_interaction_answer_groups(new_answer_groups)
         answer_groups = interaction.answer_groups
         answer_group = answer_groups[0]
@@ -1114,7 +1114,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
         rule_spec.rule_type = 'Contains'
         with self.assertRaisesRegexp(
             AssertionError, 'Expected list, received 15'
-            ):
+        ):
             exploration.validate()
 
         self.set_interaction_for_state(
@@ -1128,7 +1128,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
         new_answer_groups = [
             state_domain.AnswerGroup.from_dict(answer_groups)
             for answer_groups in old_answer_groups
-            ]
+        ]
         init_state.update_interaction_answer_groups(new_answer_groups)
         old_answer_groups[0]['rule_specs'][0] = temp_rule
 
@@ -1170,7 +1170,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
         outcome.labelled_as_correct = True
         with self.assertRaisesRegexp(
             Exception, 'is labelled correct but is a self-loop.'
-            ):
+        ):
             exploration.validate(strict=True)
         exploration.validate()
 
@@ -1239,7 +1239,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
         new_answer_groups = [
             state_domain.AnswerGroup.from_dict(answer_groups)
             for answer_groups in old_answer_groups
-            ]
+        ]
         init_state.update_interaction_answer_groups(new_answer_groups)
         valid_text_input_cust_args = init_state.interaction.customization_args
         rule_spec.inputs = {'x': {
@@ -1281,7 +1281,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
         new_answer_groups = [
             state_domain.AnswerGroup.from_dict(answer_groups)
             for answer_groups in old_answer_groups
-            ]
+        ]
         init_state.update_interaction_answer_groups(new_answer_groups)
         self.set_interaction_for_state(init_state, 'EndExploration')
         self._assert_validation_error(
@@ -1295,7 +1295,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
             'Non-terminal interactions must have a default outcome.')
 
         self.set_interaction_for_state(init_state, 'EndExploration')
-        init_state.interaction.answer_groups = [answer_groups]
+        init_state.interaction.answer_groups = answer_groups
         self._assert_validation_error(
             exploration,
             'Terminal interactions must not have any answer groups.')
@@ -1307,11 +1307,7 @@ class ExplorationDomainUnitTests(test_utils.GenericTestBase):
 
         # Restore a valid exploration.
         self.set_interaction_for_state(init_state, 'TextInput')
-        answer_groups_list = [
-            state_domain.AnswerGroup.from_dict(answer_group)
-            for answer_group in [answer_groups]
-            ]
-        init_state.update_interaction_answer_groups(answer_groups_list)
+        init_state.update_interaction_answer_groups(answer_groups)
         init_state.update_interaction_default_outcome(default_outcome)
         exploration.validate()
         solution_dict = {

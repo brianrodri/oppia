@@ -57,7 +57,6 @@ Dataflow service: https://cloud.google.com/dataflow.
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-from jobs.io import stub_io
 import python_utils
 
 
@@ -162,7 +161,6 @@ class JobBase(python_utils.with_metaclass(JobMetaclass)):
             pipeline: beam.Pipeline. The pipeline that manages the job.
         """
         self.pipeline = pipeline
-        self.datastoreio_stub = stub_io.DatastoreioStub()
 
     def run(self):
         """Runs PTransforms with self.pipeline to compute/process PValues.

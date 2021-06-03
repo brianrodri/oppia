@@ -38,6 +38,8 @@ class CronModelsCleanupHandler(base.BaseHandler):
     specific types of models as deleted.
     """
 
+    GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
+
     @acl_decorators.can_perform_cron_tasks
     def get(self):
         """Cron handler that hard-deletes all models that were marked as deleted
@@ -57,6 +59,8 @@ class CronMailReviewersContributorDashboardSuggestionsHandler(
     """Handler for mailing reviewers suggestions on the Contributor
     Dashboard that need review.
     """
+
+    GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
 
     @acl_decorators.can_perform_cron_tasks
     def get(self):
@@ -88,6 +92,8 @@ class CronMailAdminContributorDashboardBottlenecksHandler(
     """Handler for mailing admins if there are bottlenecks that are causing a
     longer reviewer turnaround time on the Contributor Dashboard.
     """
+
+    GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
 
     @acl_decorators.can_perform_cron_tasks
     def get(self):

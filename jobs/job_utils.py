@@ -24,6 +24,7 @@ import itertools
 import operator
 
 from core.platform import models
+import feconf
 
 from apache_beam.io.gcp.datastore.v1new import types as beam_datastore_types
 from google.cloud.ndb import query as ndb_query
@@ -199,7 +200,12 @@ def get_ndb_model_from_beam_entity(beam_entity):
     """
     ndb_key = get_ndb_key_from_beam_key(beam_entity.key)
     ndb_model_class = datastore_services.Model._lookup_model(ndb_key.kind()) # pylint: disable=protected-access
-    return ndb_model_class(key=ndb_key, **beam_entity.properties)
+    ndb_properties = {}
+    for key, value in beam_entity.properties.items():
+        if isinstance(value, datetime.datetime):
+            value = value.replace(tzinfo=None)
+        ndb_properties[key] = value
+    return ndb_model_class(key=ndb_key, **ndb_properties)
 
 
 def get_ndb_key_from_beam_key(beam_key):
@@ -211,8 +217,7 @@ def get_ndb_key_from_beam_key(beam_key):
     Returns:
         datastore_services.Key. The NDB key.
     """
-    ds_key = beam_key.to_client_key()
-    return datastore_services.Key.from_old_key(ds_key.to_legacy_urlsafe())
+    return datastore_services.Key._from_ds_key(beam_key.to_client_key())
 
 
 def get_beam_key_from_ndb_key(ndb_key):
@@ -225,7 +230,8 @@ def get_beam_key_from_ndb_key(ndb_key):
         beam_datastore_types.Key. The Apache Beam key.
     """
     return beam_datastore_types.Key(
-        ndb_key.flat(), project=ndb_key.app(), namespace=ndb_key.namespace())
+        ndb_key.flat(), project=ndb_key.project(),
+        namespace=ndb_key.namespace())
 
 
 def get_beam_query_from_ndb_query(query, namespace=None):
@@ -246,8 +252,8 @@ def get_beam_query_from_ndb_query(query, namespace=None):
         beam_datastore_types.Query. The equivalent Apache Beam query.
     """
     kind = query.kind
-    namespace = query.namespace
-    project = query.app
+    namespace = namespace or query.namespace
+    project = query.project or feconf.OPPIA_PROJECT_ID
 
     if query.filters:
         filters = _get_beam_filters_from_ndb_filter_node(query.filters)
@@ -265,53 +271,6 @@ def get_beam_query_from_ndb_query(query, namespace=None):
     return beam_datastore_types.Query(
         kind=kind, namespace=namespace, project=project, filters=filters,
         order=order)
-
-
-def apply_query_to_models(query, model_list):
-    """Applies the query to the list of models by removing elements in-place.
-
-    TODO(#11475): Delete this function after we can use the real datastoreio
-    module, which implements authentic queries. Until then, we need to maintain
-    this code so we can mock the implementation of the datastoreio module.
-
-    Args:
-        query: beam_datastore_types.Query. The query object representing the
-            constraints placed on the models.
-        model_list: list(Model). The models to filter.
-
-    Raises:
-        ValueError. The kind of model is specified by the Query, but the order
-            does not specifiy a sort-by key.
-    """
-    if query.kind is None and query.order != ('__key__',):
-        raise ValueError('Query(kind=None) must also have order=(\'__key__\',)')
-
-    if query.kind:
-        model_list[:] = [
-            m for m in model_list if get_model_kind(m) == query.kind
-        ]
-
-    if query.namespace:
-        model_list[:] = [
-            m for m in model_list if m.key.namespace() == query.namespace
-        ]
-
-    if query.project:
-        model_list[:] = [m for m in model_list if m.key.app() == query.project]
-
-    if query.filters:
-        model_list[:] = [
-            m for m in model_list
-            if all(_get_operator(comp)(get_model_property(m, name), value)
-                   for name, comp, value in query.filters)
-        ]
-
-    if query.order:
-        for order in reversed(query.order):
-            _sort_by_property_name(model_list, order)
-
-    if query.limit:
-        del model_list[query.limit:]
 
 
 def _get_beam_filters_from_ndb_filter_node(filter_node):
@@ -349,46 +308,3 @@ def _get_beam_order_from_ndb_order(orders):
     return tuple('%s%s' % ('-' if o.reverse else '', o.name) for o in orders)
 
 
-def _sort_by_property_name(model_list, property_name):
-    """Sorts the list of models by the given property.
-
-    Args:
-        model_list: list(Model). The models to sort.
-        property_name: str. The name of the property to sort by. If the name is
-            prefixed by '-', then the models are sorted in reverse order.
-    """
-    if property_name.startswith('-'):
-        reverse = True
-        property_name = property_name[1:]
-    else:
-        reverse = False
-
-    model_list.sort(
-        key=lambda model: get_model_property(model, property_name),
-        reverse=reverse)
-
-
-def _get_operator(comp_str):
-    """Returns the operator function corresponding to the given comparison.
-
-    Args:
-        comp_str: str. One of: '<', '<=', '=', '>=', '>'.
-
-    Returns:
-        callable. The binary operator corresponding to the comparison.
-
-    Raises:
-        ValueError. The comparison is not supported.
-    """
-    if comp_str == '<':
-        return operator.lt
-    elif comp_str == '<=':
-        return operator.le
-    elif comp_str == '=':
-        return operator.eq
-    elif comp_str == '>=':
-        return operator.ge
-    elif comp_str == '>':
-        return operator.gt
-    else:
-        raise ValueError('Unsupported comparison operator: %s' % comp_str)

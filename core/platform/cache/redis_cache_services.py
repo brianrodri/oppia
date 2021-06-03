@@ -22,6 +22,7 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 from core.domain import caching_domain
 import feconf
 import python_utils
+
 import redis
 
 REDIS_CLIENT = redis.Redis(

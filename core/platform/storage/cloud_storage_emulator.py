@@ -19,7 +19,15 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals # pylint: disable=import-only-modules
 
+import pickle
+
+import feconf
 import python_utils
+
+import redis
+
+REDIS_CLIENT = redis.Redis(
+    host=feconf.REDISHOST, port=feconf.REDISPORT, db=3)
 
 
 class Blob(python_utils.OBJECT):
@@ -98,7 +106,8 @@ class CloudStorageEmulator(python_utils.OBJECT):
         Returns:
             Blob. The blob.
         """
-        return self._blob_dict.get(filepath)
+        blob_bytes = REDIS_CLIENT.get(filepath)
+        return pickle.loads(blob_bytes) if blob_bytes is not None else None
 
     def upload_blob(self, filepath, blob):
         """Upload blob to the filepath.
@@ -107,7 +116,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
             filepath: str. Filepath where to upload the blob.
             blob: Blob. The blob to upload.
         """
-        self._blob_dict[filepath] = blob
+        REDIS_CLIENT.set(filepath, pickle.dumps(blob))
 
     def delete_blob(self, filepath):
         """Delete blob by the filepath.
@@ -115,7 +124,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
         Args:
             filepath: str. Filepath to the blob.
         """
-        del self._blob_dict[filepath]
+        REDIS_CLIENT.delete(filepath)
 
     def copy_blob(self, blob, filepath):
         """Copy existing blob to new filepath.
@@ -124,7 +133,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
             blob: Blob. The blob to copy.
             filepath: str. Filepath where the blob should be copied.
         """
-        self._blob_dict[filepath] = Blob.create_copy(blob)
+        REDIS_CLIENT.set(filepath, pickle.dumps(Blob.create_copy(blob)))
 
     def list_blobs(self, prefix):
         """Get blobs whose filepaths start with prefix.
@@ -135,11 +144,12 @@ class CloudStorageEmulator(python_utils.OBJECT):
         Returns:
             list(Blob). The list of blobs whose filepaths start with prefix.
         """
+        matching_filepaths = REDIS_CLIENT.scan_iter('%s*' % prefix)
         return [
-            value for key, value in self._blob_dict.items()
-            if key.startswith(prefix)
+            pickle.loads(blob_bytes) for blob_bytes
+            in REDIS_CLIENT.mget(matching_filepaths)
         ]
 
     def reset(self):
         """Reset the emulator and remove all blobs."""
-        self._blob_dict = {}
+        REDIS_CLIENT.flushall()

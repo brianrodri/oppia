@@ -34,6 +34,7 @@ def isfile(unused_bucket_name, filepath):
     Returns:
         bool. Whether the file exists.
     """
+    print("isfile", filepath)
     return CLIENT.get_blob(filepath) is not None
 
 
@@ -47,6 +48,7 @@ def get(unused_bucket_name, filepath):
     Returns:
         bytes. Returns data of the file as bytes.
     """
+    print("get", filepath)
     blob = CLIENT.get_blob(filepath)
     return blob.download_as_bytes()
 
@@ -59,6 +61,7 @@ def commit(unused_bucket_name, filepath, raw_bytes, mimetype):
         raw_bytes: bytes|str. The content to be stored in the file.
         mimetype: str. The content-type of the file.
     """
+    print("commit", filepath)
     blob = cloud_storage_emulator.Blob(
         filepath, raw_bytes, content_type=mimetype)
     CLIENT.upload_blob(filepath, blob)
@@ -71,6 +74,7 @@ def delete(unused_bucket_name, filepath):
         unused_bucket_name: str. Unused name of the GCS bucket.
         filepath: str. The path to the relevant file.
     """
+    print("delete", filepath)
     CLIENT.delete_blob(filepath)
 
 
@@ -84,6 +88,7 @@ def copy(unused_bucket_name, source_assets_path, dest_assets_path):
         filepath: str. The path to the relevant file within the entity's
             assets folder.
     """
+    print("copy", source_assets_path, dest_assets_path)
     src_blob = CLIENT.get_blob(source_assets_path)
     if src_blob is None:
         raise Exception('Source asset does not exist.')

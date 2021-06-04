@@ -26,7 +26,7 @@ import python_utils
 
 import redis
 
-REDIS_CLIENT = redis.Redis(
+REDIS_CLIENT = redis.StrictRedis(
     host=feconf.REDISHOST, port=feconf.REDISPORT, db=3)
 
 
@@ -114,7 +114,6 @@ class CloudStorageEmulator(python_utils.OBJECT):
         Returns:
             Blob. The blob.
         """
-        REDIS_CLIENT.wait(1, timeout=10000)
         blob_bytes = REDIS_CLIENT.get(filepath)
         return pickle.loads(blob_bytes) if blob_bytes is not None else None
 
@@ -125,7 +124,9 @@ class CloudStorageEmulator(python_utils.OBJECT):
             filepath: str. Filepath where to upload the blob.
             blob: Blob. The blob to upload.
         """
-        REDIS_CLIENT.set(filepath, pickle.dumps(blob))
+        if not REDIS_CLIENT.set(filepath, pickle.dumps(blob)):
+            raise Exception("Blob wasn't set.")
+
 
     def delete_blob(self, filepath):
         """Delete blob by the filepath.
@@ -161,5 +162,6 @@ class CloudStorageEmulator(python_utils.OBJECT):
         ]
 
     def reset(self):
+        print("reset")
         """Reset the emulator and remove all blobs."""
         REDIS_CLIENT.flushall()

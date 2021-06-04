@@ -59,7 +59,7 @@ class Blob(python_utils.OBJECT):
         """
         return cls(
             new_name,
-            original_blob._raw_bytes,
+            original_blob.download_as_bytes(),
             original_blob.content_type
         )
 
@@ -104,10 +104,6 @@ class Blob(python_utils.OBJECT):
 
 class CloudStorageEmulator(python_utils.OBJECT):
     """Emulator for the storage client."""
-
-    def __init__(self):
-        """Initialize the emulator."""
-        self._blob_dict = {}
 
     def get_blob(self, filepath):
         """Get blob by the filepath.

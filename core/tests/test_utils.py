@@ -1370,7 +1370,6 @@ class AppEngineTestBase(TestBase):
     def tearDown(self):
         datastore_services.delete_multi(
             datastore_services.query_everything().iter(keys_only=True))
-        storage_services.CLIENT.reset()
         super(AppEngineTestBase, self).tearDown()
 
     def run(self, result=None):

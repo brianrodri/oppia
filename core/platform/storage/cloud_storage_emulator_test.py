@@ -19,6 +19,8 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
+import pickle
+
 from core.platform.storage import cloud_storage_emulator
 from core.tests import test_utils
 
@@ -40,10 +42,9 @@ class BlobUnitTests(test_utils.TestBase):
 
     def test_create_copy(self):
         orig_blob = cloud_storage_emulator.Blob('name', 'string', 'png')
-        copy_blob = cloud_storage_emulator.Blob.create_copy(orig_blob)
+        copy_blob = cloud_storage_emulator.Blob.create_copy(orig_blob, 'new')
         self.assertNotEqual(orig_blob, copy_blob)
-        self.assertEqual(orig_blob.name, copy_blob.name)
-        print(copy_blob.download_as_bytes())
+        self.assertNotEqual(orig_blob.name, copy_blob.name)
         self.assertEqual(
             orig_blob.download_as_bytes(), copy_blob.download_as_bytes())
         self.assertEqual(orig_blob.content_type, copy_blob.content_type)
@@ -55,6 +56,7 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
     def setUp(self):
         super(CloudStorageEmulatorUnitTests, self).setUp()
         self.emulator = cloud_storage_emulator.CloudStorageEmulator()
+        cloud_storage_emulator.REDIS_CLIENT.flushall()
         self.blob1 = cloud_storage_emulator.Blob(
             '/file/path.png', b'data', 'png')
         self.blob2 = cloud_storage_emulator.Blob(
@@ -63,36 +65,51 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
             '/different/path.png', b'data2', 'png')
 
     def test_get_blob(self):
-        self.emulator._blob_dict['/file/path.png'] = self.blob1
+        cloud_storage_emulator.REDIS_CLIENT.set(
+            '/file/path.png', pickle.dumps(self.blob1))
 
         self.assertEqual(self.emulator.get_blob('/file/path.png'), self.blob1)
 
     def test_upload_blob(self):
         self.emulator.upload_blob('/file/path.png', self.blob1)
 
-        self.assertEqual(self.emulator._blob_dict['/file/path.png'], self.blob1)
+        self.assertEqual(
+            pickle.loads(
+                cloud_storage_emulator.REDIS_CLIENT.get('/file/path.png')),
+            self.blob1
+        )
 
     def test_delete_blob(self):
-        self.emulator._blob_dict['/file/path.png'] = self.blob1
+        cloud_storage_emulator.REDIS_CLIENT.set(
+            '/file/path.png', pickle.dumps(self.blob1))
         self.emulator.delete_blob('/file/path.png')
 
-        self.assertIsNone(self.emulator.get_blob('/file/path.png'))
+        self.assertIsNone(
+            cloud_storage_emulator.REDIS_CLIENT.get('/file/path.png'))
 
     def test_copy_blob(self):
-        self.emulator._blob_dict['/file/path.png'] = self.blob1
+        cloud_storage_emulator.REDIS_CLIENT.set(
+            '/file/path.png', pickle.dumps(self.blob1))
         self.emulator.copy_blob(
-            self.emulator._blob_dict['/file/path.png'], '/different/path2.png')
+            pickle.loads(
+                cloud_storage_emulator.REDIS_CLIENT.get('/file/path.png')),
+            '/different/path2.png'
+        )
 
         orig_blob = self.emulator.get_blob('/file/path.png')
         copy_blob = self.emulator.get_blob('/different/path2.png')
-        self.assertEqual(orig_blob.name, copy_blob.name)
+        self.assertNotEqual(orig_blob.name, copy_blob.name)
         self.assertEqual(
             orig_blob.download_as_bytes(), copy_blob.download_as_bytes())
+        self.assertEqual(orig_blob.content_type, copy_blob.content_type)
 
     def test_list_blobs(self):
-        self.emulator._blob_dict['/file/path.png'] = self.blob1
-        self.emulator._blob_dict['/file/path2.png'] = self.blob2
-        self.emulator._blob_dict['/different/path.png'] = self.blob3
+        cloud_storage_emulator.REDIS_CLIENT.set(
+            '/file/path.png', pickle.dumps(self.blob1))
+        cloud_storage_emulator.REDIS_CLIENT.set(
+            '/file/path2.png', pickle.dumps(self.blob2))
+        cloud_storage_emulator.REDIS_CLIENT.set(
+            '/different/path.png', pickle.dumps(self.blob3))
         self.assertItemsEqual(
             self.emulator.list_blobs('/'), [self.blob1, self.blob2, self.blob3])
         self.assertItemsEqual(
@@ -101,9 +118,11 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
             self.emulator.list_blobs('/different'), [self.blob3])
 
     def test_reset(self):
-        self.emulator._blob_dict['/file/path.png'] = self.blob1
+        cloud_storage_emulator.REDIS_CLIENT.set(
+            '/file/path.png', pickle.dumps(self.blob1))
         self.emulator.reset()
 
-        self.assertEqual(self.emulator._blob_dict, {})
+        self.assertEqual(
+            list(cloud_storage_emulator.REDIS_CLIENT.scan_iter('*')), [])
 
 

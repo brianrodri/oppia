@@ -341,6 +341,7 @@ def main(args=None):
 
     with contextlib2.ExitStack() as stack:
         stack.enter_context(servers.managed_cloud_datastore_emulator())
+        stack.enter_context(servers.managed_redis_server())
         if parsed_args.test_target:
             if '_test' in parsed_args.test_target:
                 all_test_targets = [parsed_args.test_target]

@@ -318,6 +318,7 @@ NOT_FULLY_COVERED_FILENAMES = [
     'svm-prediction.service.ts',
     'teacher.ts',
     'teacher2.ts',
+    'text_classifier.ts',
     'thumbnail-uploader.directive.ts',
     'top-navigation-bar.directive.ts',
     'topic-creation.service.ts',
@@ -427,7 +428,7 @@ def check_not_fully_covered_filenames_list_is_sorted():
         python_utils.PRINT(
             'The \033[1mNOT_FULLY_COVERED_FILENAMES\033[0m list must be'
             ' kept in alphabetical order.')
-        sys.exit()
+        sys.exit(1)
 
 
 def check_coverage_changes():
@@ -489,7 +490,7 @@ def check_coverage_changes():
         python_utils.PRINT('Frontend Coverage Checks Not Passed.')
         python_utils.PRINT('------------------------------------')
         python_utils.PRINT(errors)
-        sys.exit()
+        sys.exit(1)
     else:
         python_utils.PRINT('------------------------------------')
         python_utils.PRINT('All Frontend Coverage Checks Passed.')

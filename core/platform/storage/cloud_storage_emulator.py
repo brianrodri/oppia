@@ -114,6 +114,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
         Returns:
             Blob. The blob.
         """
+        REDIS_CLIENT.wait(1, timeout=10000)
         blob_bytes = REDIS_CLIENT.get(filepath)
         return pickle.loads(blob_bytes) if blob_bytes is not None else None
 

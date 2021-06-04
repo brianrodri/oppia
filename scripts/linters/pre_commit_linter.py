@@ -152,8 +152,7 @@ for path in _PATHS_TO_INSERT:
 
 _TARGET_STDOUT = python_utils.string_io()
 _STDOUT_LIST = multiprocessing.Manager().list()
-_FILES = {}
-_FILES_LOCK = threading.Lock()
+_FILES = multiprocessing.Manager().dict()
 
 
 class FileCache(python_utils.OBJECT):
@@ -263,8 +262,9 @@ def _get_linters_for_file_extension(file_extension_to_lint):
         third_party_linters.append(third_party_linter)
 
     elif file_extension_to_lint == 'py':
-        _, third_party_linter = python_linter.get_linters(
+        custom_linter, third_party_linter = python_linter.get_linters(
             _FILES['.py'], FILE_CACHE)
+        custom_linters.append(custom_linter)
         third_party_linters.append(third_party_linter)
 
     elif file_extension_to_lint == 'other':
@@ -500,8 +500,7 @@ def categorize_files(file_paths):
             all_filepaths_dict[extension].append(file_path)
         else:
             all_filepaths_dict['other'].append(file_path)
-    with _FILES_LOCK:
-        _FILES.update(all_filepaths_dict)
+    _FILES.update(all_filepaths_dict)
 
 
 def _print_summary_of_error_messages(lint_messages):

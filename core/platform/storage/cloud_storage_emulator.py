@@ -105,6 +105,13 @@ class Blob(python_utils.OBJECT):
 class CloudStorageEmulator(python_utils.OBJECT):
     """Emulator for the storage client."""
 
+    def __init__(self):
+        """Init CloudStorageEmulator."""
+        self.namespace = ''
+
+    def _get_key(self, filepath):
+        return '%s:%s' % (self.namespace, filepath)
+
     def get_blob(self, filepath):
         """Get blob by the filepath.
 
@@ -114,7 +121,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
         Returns:
             Blob. The blob.
         """
-        blob_bytes = REDIS_CLIENT.get(filepath)
+        blob_bytes = REDIS_CLIENT.get(self._get_key(filepath))
         return pickle.loads(blob_bytes) if blob_bytes is not None else None
 
     def upload_blob(self, filepath, blob):
@@ -124,9 +131,8 @@ class CloudStorageEmulator(python_utils.OBJECT):
             filepath: str. Filepath where to upload the blob.
             blob: Blob. The blob to upload.
         """
-        if not REDIS_CLIENT.set(filepath, pickle.dumps(blob)):
+        if not REDIS_CLIENT.set(self._get_key(filepath), pickle.dumps(blob)):
             raise Exception("Blob wasn't set.")
-
 
     def delete_blob(self, filepath):
         """Delete blob by the filepath.
@@ -134,7 +140,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
         Args:
             filepath: str. Filepath to the blob.
         """
-        REDIS_CLIENT.delete(filepath)
+        REDIS_CLIENT.delete(self._get_key(filepath))
 
     def copy_blob(self, blob, filepath):
         """Copy existing blob to new filepath.
@@ -144,7 +150,8 @@ class CloudStorageEmulator(python_utils.OBJECT):
             filepath: str. Filepath where the blob should be copied.
         """
         REDIS_CLIENT.set(
-            filepath, pickle.dumps(Blob.create_copy(blob, filepath)))
+            self._get_key(filepath),
+            pickle.dumps(Blob.create_copy(blob, filepath)))
 
     def list_blobs(self, prefix):
         """Get blobs whose filepaths start with prefix.
@@ -155,13 +162,13 @@ class CloudStorageEmulator(python_utils.OBJECT):
         Returns:
             list(Blob). The list of blobs whose filepaths start with prefix.
         """
-        matching_filepaths = REDIS_CLIENT.scan_iter('%s*' % prefix)
+        matching_filepaths = (
+            REDIS_CLIENT.scan_iter('%s*' % self._get_key(prefix)))
         return [
             pickle.loads(blob_bytes) for blob_bytes
             in REDIS_CLIENT.mget(matching_filepaths)
         ]
 
     def reset(self):
-        print("reset")
         """Reset the emulator and remove all blobs."""
         REDIS_CLIENT.flushall()

@@ -1364,6 +1364,8 @@ class AppEngineTestBase(TestBase):
 
     def setUp(self):
         super(AppEngineTestBase, self).setUp()
+        # Initialize namespace for the storage emulator.
+        storage_services.CLIENT.namespace = self.id()
         # Set up apps for testing.
         self.testapp = webtest.TestApp(main.app_without_context)
 

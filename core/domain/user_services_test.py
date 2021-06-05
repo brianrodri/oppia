@@ -1557,7 +1557,7 @@ class UserDashboardStatsTests(test_utils.GenericTestBase):
             user_jobs_continuous.UserStatsAggregator.get_dashboard_stats(
                 self.owner_id),
             {
-                'total_plays': 1,
+                'total_plays': 0,
                 'num_ratings': 0,
                 'average_ratings': None
             })

@@ -109,7 +109,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
         """Init CloudStorageEmulator."""
         self.namespace = ''
 
-    def _get_key(self, filepath):
+    def _get_key(self, filepath=''):
         return '%s:%s' % (self.namespace, filepath)
 
     def get_blob(self, filepath):
@@ -171,4 +171,5 @@ class CloudStorageEmulator(python_utils.OBJECT):
 
     def reset(self):
         """Reset the emulator and remove all blobs."""
-        REDIS_CLIENT.flushall()
+        for key in REDIS_CLIENT.scan_iter('%s*' % self._get_key(self)):
+            REDIS_CLIENT.delete(key)

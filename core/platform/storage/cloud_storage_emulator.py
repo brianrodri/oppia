@@ -171,5 +171,6 @@ class CloudStorageEmulator(python_utils.OBJECT):
 
     def reset(self):
         """Reset the emulator and remove all blobs."""
-        for key in REDIS_CLIENT.scan_iter('%s*' % self._get_key(self)):
+        print(self._get_key())
+        for key in REDIS_CLIENT.scan_iter('%s*' % self._get_key()):
             REDIS_CLIENT.delete(key)

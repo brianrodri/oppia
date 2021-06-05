@@ -938,45 +938,6 @@ class NotificationsDashboardHandlerTests(test_utils.GenericTestBase):
                 'type': feconf.UPDATE_TYPE_FEEDBACK_MESSAGE,
             }])
 
-    def test_author_ids_are_handled_correctly(self):
-        """Test that author ids are converted into author usernames
-        and that anonymous authors are handled correctly.
-        """
-        with self.swap(
-            user_jobs_continuous.DashboardRecentUpdatesAggregator,
-            'get_recent_user_changes',
-            self._get_recent_user_changes_mock_by_viewer):
-
-            self.login(self.VIEWER_EMAIL)
-            response = self.get_json(self.DASHBOARD_DATA_URL)
-            self.assertEqual(len(response['recent_notifications']), 1)
-            self.assertEqual(
-                response['recent_notifications'][0]['author_username'],
-                self.VIEWER_USERNAME)
-            self.assertNotIn('author_id', response['recent_notifications'][0])
-
-        with self.swap(
-            user_jobs_continuous.DashboardRecentUpdatesAggregator,
-            'get_recent_user_changes',
-            self._get_recent_user_changes_mock_by_anonymous_user):
-
-            self.login(self.VIEWER_EMAIL)
-            response = self.get_json(self.DASHBOARD_DATA_URL)
-            self.assertEqual(len(response['recent_notifications']), 1)
-            self.assertEqual(
-                response['recent_notifications'][0]['author_username'], '')
-            self.assertNotIn('author_id', response['recent_notifications'][0])
-
-    def test_get_unseen_notifications_data(self):
-        with self.swap(
-            user_jobs_continuous.DashboardRecentUpdatesAggregator,
-            'get_recent_user_changes',
-            self._get_recent_user_changes_mock_by_anonymous_user):
-            self.login(self.VIEWER_EMAIL)
-            response = self.get_json('/notificationshandler')
-            self.assertEqual(response['num_unseen_notifications'], 1)
-            self.logout()
-
 
 class CreationButtonsTests(test_utils.GenericTestBase):
 

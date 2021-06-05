@@ -80,9 +80,7 @@ class NotificationsDashboardHandler(base.BaseHandler):
     @acl_decorators.can_access_creator_dashboard
     def get(self):
         """Handles GET requests."""
-        job_queued_msec, recent_notifications = (
-            user_jobs_continuous.DashboardRecentUpdatesAggregator
-            .get_recent_user_changes(self.user_id))
+        job_queued_msec, recent_notifications = (None, [])
 
         last_seen_msec = (
             subscription_services.get_last_seen_notifications_msec(
@@ -181,8 +179,9 @@ class CreatorDashboardHandler(base.BaseHandler):
         # TODO(bhenning): Update this to use unresolved answers from
         # stats_services once the training interface is enabled and it's cheaper
         # to retrieve top answers from stats_services.
-        for ind, exploration in enumerate(exp_summary_dicts):
-            exploration.update(feedback_thread_analytics[ind].to_dict())
+        for exploration, thread_analytics in python_utils.ZIP(
+                exp_summary_dicts, feedback_thread_analytics):
+            exploration.update(thread_analytics.to_dict())
 
         exp_summary_dicts = sorted(
             exp_summary_dicts,
@@ -340,9 +339,7 @@ class NotificationsHandler(base.BaseHandler):
         last_seen_msec = (
             subscription_services.get_last_seen_notifications_msec(
                 self.user_id))
-        _, recent_notifications = (
-            user_jobs_continuous.DashboardRecentUpdatesAggregator
-            .get_recent_user_changes(self.user_id))
+        _, recent_notifications = None, []
         for notification in recent_notifications:
             if (notification['last_updated_ms'] > last_seen_msec and
                     notification['author_id'] != self.user_id):

@@ -408,6 +408,8 @@ def get_displayable_exp_summary_dicts(exploration_summaries):
                 'thumbnail_bg_color': utils.get_hex_color_for_category(
                     exploration_summary.category),
                 'num_views': view_counts[ind],
+                'num_open_threads': 0,
+                'num_total_threads': 0,
             }
 
             displayable_exp_summaries.append(summary_dict)

@@ -24,7 +24,6 @@ import itertools
 
 from core.domain import email_manager
 from core.domain import feedback_domain
-from core.domain import feedback_jobs_continuous
 from core.domain import rights_manager
 from core.domain import subscription_services
 from core.domain import taskqueue_services
@@ -34,13 +33,11 @@ import feconf
 import python_utils
 
 (
-    email_models, expl_models, feedback_models,
-    question_models, skill_models, suggestion_models,
-    topic_models
+    exp_models, feedback_models, question_models,
+    skill_models, suggestion_models, topic_models
 ) = models.Registry.import_models([
-    models.NAMES.email, models.NAMES.exploration, models.NAMES.feedback,
-    models.NAMES.question, models.NAMES.skill, models.NAMES.suggestion,
-    models.NAMES.topic
+    models.NAMES.exploration, models.NAMES.feedback, models.NAMES.question,
+    models.NAMES.skill, models.NAMES.suggestion, models.NAMES.topic
 ])
 
 datastore_services = models.Registry.import_datastore_services()
@@ -51,7 +48,7 @@ DEFAULT_SUGGESTION_THREAD_INITIAL_MESSAGE = ''
 
 TARGET_TYPE_TO_TARGET_MODEL = {
     feconf.ENTITY_TYPE_EXPLORATION: (
-        expl_models.ExplorationModel),
+        exp_models.ExplorationModel),
     feconf.ENTITY_TYPE_QUESTION: (
         question_models.QuestionModel),
     feconf.ENTITY_TYPE_SKILL: (
@@ -591,7 +588,7 @@ def get_next_page_of_all_feedback_messages(
     return (messages_on_page, next_urlsafe_start_cursor, more)
 
 
-def get_thread_analytics_multi(exploration_ids):
+def get_thread_analytics_multi(unused_exploration_ids):
     """Fetches all FeedbackAnalytics, for all the given exploration ids.
 
     A FeedbackAnalytics contains the exploration id the analytics belongs to,
@@ -599,28 +596,26 @@ def get_thread_analytics_multi(exploration_ids):
     exist for the exploration.
 
     Args:
-        exploration_ids: list(str). A list of exploration ids.
+        unused_exploration_ids: list(str). A list of exploration ids.
 
     Returns:
         list(FeedbackAnalytics). Analytics in the the same order as the input
         list. If an exploration id is invalid, the number of threads in the
         corresponding FeedbackAnalytics object will be zero.
     """
-    return feedback_jobs_continuous.FeedbackAnalyticsAggregator.get_thread_analytics_multi( # pylint: disable=line-too-long
-        exploration_ids)
+    return []
 
 
-def get_thread_analytics(exploration_id):
+def get_thread_analytics(unused_exploration_id):
     """Fetches the FeedbackAnalytics for the given exploration.
 
     Args:
-        exploration_id: str. The id of the exploration.
+        unused_exploration_id: str. The id of the exploration.
 
     Returns:
         FeedbackAnalytics. The feedback analytics of the given exploration.
     """
-    return feedback_jobs_continuous.FeedbackAnalyticsAggregator.get_thread_analytics( # pylint: disable=line-too-long
-        exploration_id)
+    return []
 
 
 def get_total_open_threads(feedback_analytics_list):
@@ -709,7 +704,7 @@ def get_exp_thread_summaries(user_id, thread_ids):
     ]
     exp_model_ids = [model.entity_id for model in exp_thread_models]
 
-    exp_thread_user_models, exp_models = (
+    exp_thread_user_models, exploration_models = (
         datastore_services.fetch_multiple_entities_by_ids_and_models([
             ('GeneralFeedbackThreadUserModel', exp_thread_user_model_ids),
             ('ExplorationModel', exp_model_ids),
@@ -731,7 +726,7 @@ def get_exp_thread_summaries(user_id, thread_ids):
     for thread, last_two_message_models, thread_user_model, exp_model in (
             python_utils.ZIP(
                 threads, last_two_message_models_of_threads,
-                exp_thread_user_models, exp_models)):
+                exp_thread_user_models, exploration_models)):
         message_ids_read_by_user = (
             () if thread_user_model is None else
             thread_user_model.message_ids_read_by_user)

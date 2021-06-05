@@ -323,4 +323,3 @@ title: Old Title
             exploration.states_schema_version,
             feconf.CURRENT_STATE_SCHEMA_VERSION)
         self.assertEqual(exploration.to_yaml(), self._up_to_date_yaml)
-

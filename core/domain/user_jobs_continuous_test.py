@@ -25,8 +25,6 @@ import logging
 from core.domain import collection_services
 from core.domain import event_services
 from core.domain import exp_domain
-from core.domain import exp_fetchers
-from core.domain import exp_jobs_one_off
 from core.domain import exp_services
 from core.domain import feedback_services
 from core.domain import rating_services
@@ -142,91 +140,6 @@ class RecentUpdatesAggregatorUnitTests(test_utils.GenericTestBase):
                     USER_ID, EXP_ID, EXP_TITLE, 'exploration',
                     feconf.UPDATE_TYPE_EXPLORATION_COMMIT,
                     expected_last_updated_ms))
-
-    def test_basic_computation_ignores_automated_exploration_commits(self):
-        swap_states_schema_41 = self.swap(
-            feconf, 'CURRENT_STATE_SCHEMA_VERSION', 41)
-        swap_exp_schema_46 = self.swap(
-            exp_domain.Exploration, 'CURRENT_EXP_SCHEMA_VERSION', 46)
-        with swap_states_schema_41, swap_exp_schema_46:
-            exploration = exp_domain.Exploration.create_default_exploration(
-                EXP_ID, title=EXP_TITLE)
-            exp_services.save_new_exploration(USER_ID, exploration)
-
-        # Confirm that the exploration is at version 1.
-        exploration = exp_fetchers.get_exploration_by_id(EXP_ID)
-        self.assertEqual(exploration.version, 1)
-
-        with self.swap(
-            user_jobs_continuous, 'DashboardRecentUpdatesAggregator',
-            MockRecentUpdatesAggregator):
-
-            v1_last_updated_ms = (
-                self._get_most_recent_exp_snapshot_created_on_ms(EXP_ID))
-
-            # Start migration job on all explorations, including this one.
-            job_id = (
-                exp_jobs_one_off.ExplorationMigrationJobManager.create_new())
-            exp_jobs_one_off.ExplorationMigrationJobManager.enqueue(job_id)
-            self.process_and_flush_pending_mapreduce_tasks()
-
-            # Confirm that the exploration is at version 2.
-            exploration = exp_fetchers.get_exploration_by_id(EXP_ID)
-            self.assertEqual(exploration.version, 2)
-
-            v2_last_updated_ms = (
-                self._get_most_recent_exp_snapshot_created_on_ms(EXP_ID))
-
-            # Run the aggregator.
-            (
-                user_jobs_continuous.DashboardRecentUpdatesAggregator
-                .start_computation())
-            self.assertEqual(
-                self.count_jobs_in_mapreduce_taskqueue(
-                    taskqueue_services.QUEUE_NAME_CONTINUOUS_JOBS), 1)
-            self.process_and_flush_pending_mapreduce_tasks()
-            (
-                user_jobs_continuous.DashboardRecentUpdatesAggregator
-                .stop_computation(USER_ID))
-
-            recent_notifications = (
-                user_jobs_continuous.DashboardRecentUpdatesAggregator
-                .get_recent_user_changes(USER_ID)[1])
-            self.assertEqual(len(recent_notifications), 1)
-            self.assertEqual(
-                recent_notifications[0],
-                self._get_expected_activity_created_dict(
-                    USER_ID, EXP_ID, EXP_TITLE, 'exploration',
-                    feconf.UPDATE_TYPE_EXPLORATION_COMMIT, v1_last_updated_ms))
-            self.assertLess(
-                recent_notifications[0]['last_updated_ms'], v2_last_updated_ms)
-
-            # Another user makes a commit; this one should now show up in the
-            # original user's dashboard.
-            exp_services.update_exploration(
-                ANOTHER_USER_ID, EXP_ID, [], 'Update exploration')
-            v3_last_updated_ms = (
-                self._get_most_recent_exp_snapshot_created_on_ms(EXP_ID))
-
-            (
-                user_jobs_continuous.DashboardRecentUpdatesAggregator
-                .start_computation())
-            self.assertEqual(
-                self.count_jobs_in_mapreduce_taskqueue(
-                    taskqueue_services.QUEUE_NAME_CONTINUOUS_JOBS), 1)
-            self.process_and_flush_pending_mapreduce_tasks()
-
-            recent_notifications = (
-                user_jobs_continuous.DashboardRecentUpdatesAggregator
-                .get_recent_user_changes(USER_ID)[1])
-            self.assertEqual([{
-                'type': feconf.UPDATE_TYPE_EXPLORATION_COMMIT,
-                'last_updated_ms': v3_last_updated_ms,
-                'activity_id': EXP_ID,
-                'activity_title': EXP_TITLE,
-                'author_id': ANOTHER_USER_ID,
-                'subject': 'Update exploration',
-            }], recent_notifications)
 
     def test_basic_computation_with_an_update_after_exploration_is_created(
             self):

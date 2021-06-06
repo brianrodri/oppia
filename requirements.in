@@ -35,3 +35,7 @@ google-cloud-translate==2.0.1
 pytest==6.2.3
 webapp2==3.0.0b1
 elasticsearch==7.10.0
+# Libraries that are already in oppia_utils folder, but are needed for deployed
+# server.
+PyYAML==5.4.1
+certifi==2021.5.30

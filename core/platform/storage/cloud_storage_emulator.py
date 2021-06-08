@@ -27,7 +27,10 @@ import python_utils
 import redis
 
 REDIS_CLIENT = redis.StrictRedis(
-    host=feconf.REDISHOST, port=feconf.REDISPORT, db=3)
+    host=feconf.REDISHOST,
+    port=feconf.REDISPORT,
+    db=feconf.STORAGE_EMULATOR_REDIS_DB
+)
 
 
 class Blob(python_utils.OBJECT):

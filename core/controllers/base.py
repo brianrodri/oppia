@@ -581,7 +581,8 @@ class CsrfTokenManager(python_utils.OBJECT):
         digester.update(python_utils.convert_to_bytes(issued_on))
 
         digest = digester.digest()
-        token = '%s/%s' % (issued_on, base64.urlsafe_b64encode(digest))
+        token = '%s/%s' % (
+            issued_on, base64.urlsafe_b64encode(digest).decode('utf-8'))
 
         return token
 

@@ -457,6 +457,13 @@ ES_PASSWORD = None
 REDISHOST = 'localhost'
 REDISPORT = 6379
 
+# The DB numbers for various Redis instances that Oppia uses, do not reuse these
+# if you're creating new Redis client.
+OPPIA_REDIS_DB = 0
+CLOUD_NDB_REDIS_DB = 1
+STORAGE_EMULATOR_REDIS_DB = 2
+
+
 # NOTE TO RELEASE COORDINATORS: Replace this project id with the correct oppia
 # project id when switching to the prod server.
 OPPIA_PROJECT_ID = 'dev-project-id'

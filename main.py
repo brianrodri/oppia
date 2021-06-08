@@ -68,10 +68,12 @@ from core.platform import models
 from core.platform.auth import firebase_auth_services
 import feconf
 
+from google.cloud import ndb
 import webapp2
 from webapp2_extras import routes
 
 datastore_services = models.Registry.import_datastore_services()
+cache_services = models.Registry.import_cache_services()
 
 # Suppress debug logging for chardet. See https://stackoverflow.com/a/48581323.
 # Without this, a lot of unnecessary debug logs are printed in error logs,
@@ -880,8 +882,9 @@ class NdbWsgiMiddleware:
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-      with datastore_services.get_ndb_context():
-          return self.wsgi_app(environ, start_response)
+        global_cache = ndb.RedisCache(cache_services.CLOUD_NDB_REDIS_CLIENT)
+        with datastore_services.get_ndb_context(global_cache=global_cache):
+            return self.wsgi_app(environ, start_response)
 
 app_without_context = webapp2.WSGIApplication(URLS, debug=feconf.DEBUG)
 app = NdbWsgiMiddleware(app_without_context)

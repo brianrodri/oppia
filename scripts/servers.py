@@ -219,7 +219,7 @@ def managed_elasticsearch_dev_server():
         shutil.rmtree(common.ES_PATH_DATA_DIR)
 
     # -q is the quiet flag.
-    es_args = ['%s/bin/elasticsearch' % common.ES_PATH]
+    es_args = ['%s/bin/elasticsearch' % common.ES_PATH, '-q']
     # Override the default path to ElasticSearch config files.
     es_env = {'ES_PATH_CONF': common.ES_PATH_CONFIG_DIR}
     # OK to use shell=True here because we are passing string literals and

@@ -58,9 +58,10 @@ def get_memory_cache_stats():
     return memory_stats
 
 
-def flush_cache():
-    """Wipes the Redis cache clean."""
+def flush_caches():
+    """Wipes the Redis caches clean."""
     OPPIA_REDIS_CLIENT.flushdb()
+    CLOUD_NDB_REDIS_CLIENT.flushdb()
 
 
 def get_multi(keys):

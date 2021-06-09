@@ -995,7 +995,7 @@ class MemoryCacheAdminHandler(base.BaseHandler):
 
     @acl_decorators.can_access_admin_page
     def post(self):
-        caching_services.flush_memory_cache()
+        caching_services.flush_memory_caches()
         self.render_json({})
 
 

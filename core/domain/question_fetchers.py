@@ -31,7 +31,7 @@ import feconf
 
 
 def get_questions_and_skill_descriptions_by_skill_ids(
-        question_count, skill_ids, offset=0):
+        question_count, skill_ids, offset):
     """Returns the questions linked to the given skill ids.
 
     Args:
@@ -41,13 +41,14 @@ def get_questions_and_skill_descriptions_by_skill_ids(
         offset: int. Number of query results to skip.
 
     Returns:
-        list(Question), list(list(str)), int. The list of questions and the
+        list(Question), list(list(str)). The list of questions and the
         corresponding linked skill descriptions which are linked to the
-        given skill ids and the next offset value for next batch of questions.
+        given skill ids.
     """
     if not skill_ids:
-        return [], [], None
-    question_skill_link_models, next_offset = (
+        return [], []
+
+    question_skill_link_models = (
         question_models.QuestionSkillLinkModel
         .get_question_skill_links_by_skill_ids(
             question_count, skill_ids, offset))
@@ -67,7 +68,7 @@ def get_questions_and_skill_descriptions_by_skill_ids(
             [skill.description if skill else None for skill in skills])
 
     questions = get_questions_by_ids(question_ids)
-    return questions, grouped_skill_descriptions, next_offset
+    return questions, grouped_skill_descriptions
 
 
 def get_questions_by_ids(question_ids):

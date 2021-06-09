@@ -39,7 +39,7 @@ describe('Questions List Service', () => {
         question_content: ''
       }
     }],
-    next_offset: null
+    more: false
   };
 
   beforeEach(() => {

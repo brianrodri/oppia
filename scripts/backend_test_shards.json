@@ -99,6 +99,8 @@
         "core.domain.exp_services_test"
     ],
     "4": [
+        "core.domain.beam_job_domain_test",
+        "core.domain.beam_job_services_test",
         "scripts.check_if_pr_is_low_risk_test",
         "scripts.scripts_test_utils_test",
         "scripts.servers_test"

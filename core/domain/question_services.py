@@ -446,7 +446,7 @@ def replace_skill_id_for_all_questions(
 
 
 def get_displayable_question_skill_link_details(
-        question_count, skill_ids, offset=0):
+        question_count, skill_ids, offset):
     """Returns the list of question summaries and corresponding skill
     descriptions linked to all the skills given by skill_ids.
 
@@ -461,19 +461,18 @@ def get_displayable_question_skill_link_details(
             a time is not supported currently.
 
     Returns:
-        list(QuestionSummary), list(MergedQuestionSkillLink), int.
+        list(QuestionSummary), list(MergedQuestionSkillLink).
         The list of questions linked to the given skill ids, the list of
-        MergedQuestionSkillLink objects, keyed by question ID and the
-        next offset value for next batch of questions.
+        MergedQuestionSkillLink objects, keyed by question ID.
     """
     if len(skill_ids) == 0:
-        return [], [], None
+        return [], []
 
     if len(skill_ids) > 3:
         raise Exception(
             'Querying linked question summaries for more than 3 skills at a '
             'time is not supported currently.')
-    question_skill_link_models, offset = (
+    question_skill_link_models = (
         question_models.QuestionSkillLinkModel.
         get_question_skill_links_by_skill_ids(
             question_count, skill_ids, offset))
@@ -503,8 +502,7 @@ def get_displayable_question_skill_link_details(
                 grouped_difficulties[ind]))
 
     question_summaries = get_question_summaries_by_ids(question_ids)
-    return (
-        question_summaries, merged_question_skill_links, offset)
+    return (question_summaries, merged_question_skill_links)
 
 
 def get_question_summaries_by_ids(question_ids):

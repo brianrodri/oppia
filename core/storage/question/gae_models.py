@@ -344,7 +344,7 @@ class QuestionSkillLinkModel(base_models.BaseModel):
 
     @classmethod
     def get_question_skill_links_by_skill_ids(
-            cls, question_count, skill_ids, offset=0):
+            cls, question_count, skill_ids, offset):
         """Fetches the list of QuestionSkillLinkModels linked to the skill in
         batches.
 
@@ -355,9 +355,8 @@ class QuestionSkillLinkModel(base_models.BaseModel):
             offset: int. Number of query results to skip.
 
         Returns:
-            list(QuestionSkillLinkModel), int. The QuestionSkillLinkModels
-            corresponding to given skill_ids, the next offset value for
-            next batch of questions.
+            list(QuestionSkillLinkModel). The QuestionSkillLinkModels
+            corresponding to given skill_ids.
         """
         question_skill_count = min(
             len(skill_ids), constants.MAX_SKILLS_PER_QUESTION
@@ -365,16 +364,10 @@ class QuestionSkillLinkModel(base_models.BaseModel):
 
         question_skill_link_models = cls.query(
             cls.skill_id.IN(skill_ids)
-            # Order by cls.key is needed alongside cls.last_updated so as to
-            # resolve conflicts, if any.
-            # Reference SO link: https://stackoverflow.com/q/12449197
         ).order(-cls.last_updated).fetch(
             question_skill_count, offset=offset)
 
-        return (
-            question_skill_link_models,
-            offset + len(question_skill_link_models)
-        )
+        return question_skill_link_models
 
     @classmethod
     def get_question_skill_links_based_on_difficulty_equidistributed_by_skill(

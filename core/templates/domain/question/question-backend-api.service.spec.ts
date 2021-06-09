@@ -92,7 +92,7 @@ describe('Question backend Api service', () => {
           question_content: ''
         }
       }],
-      next_offset: null
+      more: false
     };
   });
 
@@ -329,7 +329,7 @@ describe('Question backend Api service', () => {
 
       expect(successHandler).toHaveBeenCalledWith({
         questionSummaries: sampleResponse.question_summary_dicts,
-        nextOffset: null
+        more: false
       });
       expect(failHandler).not.toHaveBeenCalled();
     })
@@ -374,7 +374,7 @@ describe('Question backend Api service', () => {
 
       expect(successHandler).toHaveBeenCalledWith({
         questionSummaries: sampleResponse.question_summary_dicts,
-        nextOffset: null
+        more: false
       });
       expect(failHandler).not.toHaveBeenCalled();
     })

@@ -21,7 +21,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import importlib
 import inspect
-import os
 import re
 
 from core.domain import value_generators_domain

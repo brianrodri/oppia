@@ -36,7 +36,10 @@ DATA_TYPES = python_utils.create_enum('bool', 'string', 'number') # pylint: disa
 ALLOWED_SERVER_MODES = [
     SERVER_MODES.dev.value, SERVER_MODES.test.value, SERVER_MODES.prod.value]
 ALLOWED_FEATURE_STAGES = [
-    FEATURE_STAGES.dev.value, FEATURE_STAGES.test.value, FEATURE_STAGES.prod.value]
+    FEATURE_STAGES.dev.value,
+    FEATURE_STAGES.test.value,
+    FEATURE_STAGES.prod.value
+]
 ALLOWED_PLATFORM_TYPES = constants.PLATFORM_PARAMETER_ALLOWED_PLATFORM_TYPES
 ALLOWED_BROWSER_TYPES = constants.PLATFORM_PARAMETER_ALLOWED_BROWSER_TYPES
 ALLOWED_APP_VERSION_FLAVORS = (
@@ -287,10 +290,10 @@ class PlatformParameterFilter(python_utils.OBJECT):
 
         if self._type == 'server_mode':
             for _, mode in self._conditions:
-                if not any([
+                if not any(
                         mode == server_mode
                         for server_mode in ALLOWED_SERVER_MODES
-                ]):
+                ):
                     raise utils.ValidationError(
                         'Invalid server mode \'%s\', must be one of %s.' % (
                             mode, ALLOWED_SERVER_MODES))
@@ -726,8 +729,10 @@ class PlatformParameter(python_utils.OBJECT):
             raise utils.ValidationError(
                 'Data type of feature flags must be bool, got \'%s\' '
                 'instead.' % self._data_type)
-        if not any([self._feature_stage == feature_stage
-                    for feature_stage in ALLOWED_FEATURE_STAGES]):
+        if not any(
+                self._feature_stage == feature_stage
+                for feature_stage in ALLOWED_FEATURE_STAGES
+        ):
             raise utils.ValidationError(
                 'Invalid feature stage, got \'%s\', expected one of %s.' % (
                     self._feature_stage, ALLOWED_FEATURE_STAGES))

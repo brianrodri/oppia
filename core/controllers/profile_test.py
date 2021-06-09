@@ -33,8 +33,6 @@ from core.tests import test_utils
 import feconf
 import utils
 
-import webtest
-
 (user_models,) = models.Registry.import_models([models.NAMES.user])
 
 
@@ -167,7 +165,6 @@ class UserContributionsTests(test_utils.GenericTestBase):
         self.save_new_valid_exploration(
             self.EXP_ID_1, user_a_id, end_state_name='End')
         rights_manager.publish_exploration(user_a, self.EXP_ID_1)
-        self.process_and_flush_pending_mapreduce_tasks()
 
         response_dict = self.get_json(
             '/profilehandler/data/%s' % self.USERNAME_A)

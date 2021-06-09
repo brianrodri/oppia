@@ -55,6 +55,7 @@ def commit(unused_bucket_name, filepath, raw_bytes, mimetype):
     """Commit bytes to the relevant file.
 
     Args:
+        unused_bucket_name: str. Unused name of the GCS bucket.
         filepath: str. The path to the relevant file.
         raw_bytes: bytes|str. The content to be stored in the file.
         mimetype: str. The content-type of the file.
@@ -81,7 +82,7 @@ def copy(unused_bucket_name, source_assets_path, dest_assets_path):
         unused_bucket_name: str. Unused name of the GCS bucket.
         source_assets_path: str. The path to the source entity's assets
             folder.
-        filepath: str. The path to the relevant file within the entity's
+        dest_assets_path: str. The path to the relevant file within the entity's
             assets folder.
     """
     src_blob = CLIENT.get_blob(source_assets_path)

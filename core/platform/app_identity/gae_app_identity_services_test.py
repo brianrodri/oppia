@@ -32,7 +32,6 @@ class GaeAppIdentityServicesTests(test_utils.GenericTestBase):
             self.assertEqual(
                 gae_app_identity_services.get_application_id(), 'some_id')
 
-
     def test_get_default_gcs_bucket_name(self):
         with self.swap(os, 'getenv', lambda _: 'some_id'):
             self.assertEqual(

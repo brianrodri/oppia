@@ -32,7 +32,6 @@ from core.domain import stats_services
 from core.domain import suggestion_services
 from core.domain import taskqueue_services
 from core.domain import wipeout_service
-import python_utils
 
 
 class UnsentFeedbackEmailHandler(base.BaseHandler):

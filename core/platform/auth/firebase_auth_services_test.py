@@ -881,13 +881,13 @@ class SuperAdminPrivilegesTests(FirebaseAuthServicesTestBase):
     def test_raises_error_when_user_does_not_exist(self):
         auth_models.UserAuthDetailsModel(id='uid', firebase_auth_id=None).put()
 
-        self.assertRaisesRegexp(
-            ValueError, 'user_id=uid has no Firebase account',
-            lambda: firebase_auth_services.grant_super_admin_privileges('uid'))
+        with self.assertRaisesRegexp(
+                ValueError, 'user_id=uid has no Firebase account'):
+            firebase_auth_services.grant_super_admin_privileges('uid')
 
-        self.assertRaisesRegexp(
-            ValueError, 'user_id=uid has no Firebase account',
-            lambda: firebase_auth_services.revoke_super_admin_privileges('uid'))
+        with self.assertRaisesRegexp(
+                ValueError, 'user_id=uid has no Firebase account'):
+            firebase_auth_services.revoke_super_admin_privileges('uid')
 
     def test_grant_super_admin_privileges_revokes_session_cookies(self):
         id_token = self.firebase_sdk_stub.create_user('aid')
@@ -901,10 +901,9 @@ class SuperAdminPrivilegesTests(FirebaseAuthServicesTestBase):
 
         firebase_auth_services.grant_super_admin_privileges('uid')
 
-        self.assertRaisesRegexp(
-            firebase_auth.RevokedSessionCookieError, 'invalid',
-            lambda: firebase_auth.verify_session_cookie(
-                cookie, check_revoked=True))
+        with self.assertRaisesRegexp(
+                firebase_auth.RevokedSessionCookieError, 'invalid'):
+            firebase_auth.verify_session_cookie(cookie, check_revoked=True)
 
     def test_revoke_super_admin_privileges_revokes_session_cookies(self):
         id_token = self.firebase_sdk_stub.create_user('aid')
@@ -918,10 +917,9 @@ class SuperAdminPrivilegesTests(FirebaseAuthServicesTestBase):
 
         firebase_auth_services.revoke_super_admin_privileges('uid')
 
-        self.assertRaisesRegexp(
-            firebase_auth.RevokedSessionCookieError, 'invalid',
-            lambda: firebase_auth.verify_session_cookie(
-                cookie, check_revoked=True))
+        with self.assertRaisesRegexp(
+                firebase_auth.RevokedSessionCookieError, 'invalid'):
+            firebase_auth.verify_session_cookie(cookie, check_revoked=True)
 
 
 class EstablishAuthSessionTests(FirebaseAuthServicesTestBase):
@@ -954,9 +952,9 @@ class EstablishAuthSessionTests(FirebaseAuthServicesTestBase):
         req = self.create_request()
         res = self.create_response()
 
-        self.assertRaisesRegexp(
-            firebase_auth.InvalidIdTokenError, 'missing id_token',
-            lambda: firebase_auth_services.establish_auth_session(req, res))
+        with self.assertRaisesRegexp(
+                firebase_auth.InvalidIdTokenError, 'missing id_token'):
+            firebase_auth_services.establish_auth_session(req, res)
 
         self.assertEqual(res.headers.get_all('Set-Cookie'), [])
 
@@ -1016,11 +1014,10 @@ class GetAuthClaimsFromRequestTests(FirebaseAuthServicesTestBase):
             firebase_auth, 'verify_session_cookie',
             error=firebase_auth.ExpiredSessionCookieError('uh-oh', None))
 
-        with always_raise_expired_session_cookie_error:
-            self.assertRaisesRegexp(
-                auth_domain.StaleAuthSessionError, 'expired',
-                lambda: firebase_auth_services.get_auth_claims_from_request(
-                    self.create_request(session_cookie=cookie)))
+        with always_raise_expired_session_cookie_error, self.assertRaisesRegexp(
+                    auth_domain.StaleAuthSessionError, 'expired'):
+                firebase_auth_services.get_auth_claims_from_request(
+                    self.create_request(session_cookie=cookie))
 
     def test_raises_stale_auth_session_error_when_cookie_is_revoked(self):
         cookie = firebase_auth.create_session_cookie(

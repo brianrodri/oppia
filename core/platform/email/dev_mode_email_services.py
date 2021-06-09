@@ -70,7 +70,8 @@ def send_email_to_recipients(
          (recipient_email,) for recipient_email in recipient_emails[:3]])
     if len(recipient_emails) > 3:
         recipient_email_list_str += (
-            '... Total: ' + str(len(recipient_emails)) + ' emails.')
+            '... Total: %s emails.' % (
+                python_utils.UNICODE(len(recipient_emails))))
 
     # Show the first 3 emails in bcc email list.
     if bcc:
@@ -79,7 +80,7 @@ def send_email_to_recipients(
              (bcc_email,) for bcc_email in bcc[:3]])
         if len(bcc) > 3:
             bcc_email_list_str += (
-                '... Total: ' + str(len(bcc)) + ' emails.')
+                '... Total: %s emails.' % python_utils.UNICODE(len(bcc)))
 
     msg = (
         """

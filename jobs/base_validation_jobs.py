@@ -31,7 +31,6 @@ from jobs.types import base_validation_errors
 import python_utils
 
 import apache_beam as beam
-from apache_beam.io.gcp.datastore.v1new import datastoreio
 
 datastore_services = models.Registry.import_datastore_services()
 

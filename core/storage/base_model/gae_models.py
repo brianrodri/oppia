@@ -264,8 +264,8 @@ class BaseModel(datastore_services.Model):
             entities.insert(index, None)
 
         if not include_deleted:
-            for i in python_utils.RANGE(len(entities)):
-                if entities[i] and entities[i].deleted:
+            for i, entity in enumerate(entities):
+                if entity and entity.deleted:
                     entities[i] = None
         return entities
 

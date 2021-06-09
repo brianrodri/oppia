@@ -130,6 +130,7 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
         self.emulator.reset()
 
         self.assertEqual(
-            list(cloud_storage_emulator.REDIS_CLIENT.scan_iter('namespace:*')),
+            list(cloud_storage_emulator.REDIS_CLIENT.scan_iter(
+                match='namespace:*')),
             []
         )

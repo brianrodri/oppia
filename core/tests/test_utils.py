@@ -331,7 +331,7 @@ class ElasticSearchStub(python_utils.OBJECT):
         """
         if index_name not in self._DB:
             raise self._generate_index_not_found_error(index_name)
-        return any([d['id'] == doc_id for d in self._DB[index_name]])
+        return any(d['id'] == doc_id for d in self._DB[index_name])
 
     def mock_delete(self, index_name, doc_id):
         """Deletes a document from an index in the mock database. Does nothing
@@ -478,7 +478,7 @@ class ElasticSearchStub(python_utils.OBJECT):
                         words = []
                         for s in strs:
                             words += s.split(' ')
-                        if all([value in words for value in values]):
+                        if all(value in words for value in values):
                             filtered_docs.append(doc)
             result_docs = filtered_docs
 
@@ -1277,19 +1277,36 @@ class TestBase(unittest.TestCase):
             'self.assertRaises should not be used in these tests. Please use '
             'self.assertRaisesRegexp instead.')
 
-    def assertRaisesRegexp(  # pylint: disable=keyword-arg-before-vararg
-            self, expected_exception, expected_regexp, callable_obj=None,
-            *args, **kwargs):
-        if not expected_regexp:
+    def assertRaisesRegexp(  # pylint: disable=invalid-name
+            self, expected_exception, expected_regex, *args, **kwargs):
+        """Asserts that the message in a raised exception matches a regex.
+        This is a wrapper around assertRaisesRegex in unittest that enforces
+        strong regex.
+
+        Args:
+            expected_exception: Exception class expected to be raised.
+            expected_regex: Regex (re.Pattern object or string) expected
+                    to be found in error message.
+                    callable_obj
+            args: Function to be called and extra positional args.
+            kwargs: Extra kwargs.
+        """
+        if not expected_regex:
             raise Exception(
                 'Please provide a sufficiently strong regexp string to '
                 'validate that the correct error is being raised.')
 
         return super(TestBase, self).assertRaisesRegex(
-            expected_exception, expected_regexp,
-            callable_obj=callable_obj, *args, **kwargs)
+            expected_exception, expected_regex, *args, **kwargs)
 
-    def assertItemsEqual(self, *args, **kwargs):
+    def assertItemsEqual(self, *args, **kwargs):  # pylint: disable=invalid-name
+        """An unordered sequence comparison asserting that the same elements,
+        regardless of order. If the same element occurs more than once,
+        it verifies that the elements occur the same number of times.
+
+        Returns:
+            bool. Whether the items are equal.
+        """
         return super().assertCountEqual(*args, **kwargs)
 
     def assert_matches_regexps(self, items, regexps, full_match=False):
@@ -1314,7 +1331,7 @@ class TestBase(unittest.TestCase):
         differences = [
             '~ [i=%d]:\t%r does not match: %r' % (i, item, regexp)
             for i, (regexp, item) in enumerate(python_utils.ZIP(regexps, items))
-            if get_match(regexp, item, re.DOTALL) is None
+            if get_match(regexp, item, flags=re.DOTALL) is None
         ]
         if len(items) < len(regexps):
             extra_regexps = regexps[len(items):]
@@ -1462,7 +1479,7 @@ class AppEngineTestBase(TestBase):
         """
         for task in tasks:
             if task.url == '/_ah/queue/deferred':
-                print(task)
+                python_utils.PRINT(task)
             else:
                 # All other tasks will be for MapReduce or taskqueue.
                 params = task.payload or ''
@@ -1479,23 +1496,6 @@ class AppEngineTestBase(TestBase):
 
                 if response.status_code != 200:
                     raise RuntimeError('MapReduce task failed: %r' % task)
-
-    def process_and_flush_pending_mapreduce_tasks(self, queue_name=None):
-        """Runs and flushes pending MapReduce tasks. If queue_name is None, does
-        so for all queues; otherwise, this only runs and flushes tasks for the
-        specified queue.
-
-        For more information on taskqueue_stub, see:
-        https://code.google.com/p/googleappengine/source/browse/trunk/python/google/appengine/api/taskqueue/taskqueue_stub.py
-        """
-        queue_names = (
-            self._get_all_queue_names() if queue_name is None else [queue_name])
-
-        get_enqueued_tasks = lambda: []
-
-        # Loops until get_enqueued_tasks() returns an empty list.
-        for tasks in iter(get_enqueued_tasks, []):
-            self._execute_mapreduce_tasks(tasks)
 
     def run_but_do_not_flush_pending_mapreduce_tasks(self):
         """"Runs, but does not flush, the pending MapReduce tasks."""
@@ -3272,7 +3272,6 @@ class AuditJobsTestBase(GenericTestBase):
         self.assertEqual(
             self.count_jobs_in_mapreduce_taskqueue(
                 taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-        self.process_and_flush_pending_mapreduce_tasks()
         self.process_and_flush_pending_tasks()
         actual_output = self.job_class.get_output(job_id)
 

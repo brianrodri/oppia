@@ -458,11 +458,14 @@ class TestUtilsTests(test_utils.GenericTestBase):
         obj = mock.Mock()
         obj.func = lambda: python_utils.divide(1, 0)
 
-        self.assertRaisesRegexp(
-            ZeroDivisionError, 'integer division or modulo by zero', obj.func)
+        with self.assertRaisesRegexp(
+            ZeroDivisionError, 'integer division or modulo by zero'
+        ):
+            obj.func()
 
         with self.swap_to_always_raise(obj, 'func', error=ValueError('abc')):
-            self.assertRaisesRegexp(ValueError, 'abc', obj.func)
+            with self.assertRaisesRegexp(ValueError, 'abc'):
+                obj.func()
 
     def test_swap_with_check_on_method_called(self):
         def mock_getcwd():
@@ -584,7 +587,8 @@ class TestUtilsTests(test_utils.GenericTestBase):
         with self.assertRaisesRegexp(
             NotImplementedError,
             'self.assertRaises should not be used in these tests. Please use '
-            'self.assertRaisesRegexp instead.'):
+            'self.assertRaisesRegexp instead.'
+        ):
             self.assertRaises(Exception, mock_exception_func)
 
     def test_assert_raises_regexp_with_empty_string(self):
@@ -594,7 +598,8 @@ class TestUtilsTests(test_utils.GenericTestBase):
         with self.assertRaisesRegexp(
             Exception,
             'Please provide a sufficiently strong regexp string to '
-            'validate that the correct error is being raised.'):
+            'validate that the correct error is being raised.'
+        ):
             self.assertRaisesRegexp(Exception, '', mock_exception_func)
 
 

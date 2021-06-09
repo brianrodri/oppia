@@ -1417,7 +1417,7 @@ class Voiceover(python_utils.OBJECT):
                 'Expected audio filename to be a string, received %s' %
                 self.filename)
         dot_index = self.filename.rfind('.')
-        if dot_index == -1 or dot_index == 0:
+        if dot_index in (-1, 0):
             raise utils.ValidationError(
                 'Invalid audio filename: %s' % self.filename)
         extension = self.filename[dot_index + 1:]
@@ -2043,7 +2043,7 @@ class RuleSpec(python_utils.OBJECT):
             raise utils.ValidationError(
                 'Expected inputs to be a dict, received %s' % self.inputs)
         input_key_set = set(self.inputs.keys())
-        param_names_set = set([rp[0] for rp in rule_params_list])
+        param_names_set = set(rp[0] for rp in rule_params_list)
         leftover_input_keys = input_key_set - param_names_set
         leftover_param_names = param_names_set - input_key_set
 
@@ -2542,9 +2542,9 @@ class State(python_utils.OBJECT):
                 bool. Whether all RTE tags in the html are whitelisted.
             """
             component_name_prefix = 'oppia-noninteractive-'
-            component_names = set([
+            component_names = set(
                 component['id'].replace(component_name_prefix, '')
-                for component in html_cleaner.get_rte_components(html)])
+                for component in html_cleaner.get_rte_components(html))
             return any(component_names.difference(
                 android_validation_constants.VALID_RTE_COMPONENTS))
 

@@ -306,5 +306,3 @@ def _get_beam_order_from_ndb_order(orders):
         tuple(str). The equivalent Apache Beam order.
     """
     return tuple('%s%s' % ('-' if o.reverse else '', o.name) for o in orders)
-
-

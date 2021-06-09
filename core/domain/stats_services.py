@@ -797,8 +797,8 @@ def get_visualizations_info(exp_id, state_name, interaction_id):
     visualizations = interaction_registry.Registry.get_interaction_by_id(
         interaction_id).answer_visualizations
 
-    calculation_ids = set([
-        visualization.calculation_id for visualization in visualizations])
+    calculation_ids = set(
+        visualization.calculation_id for visualization in visualizations)
 
     calculation_ids_to_outputs = {}
     for calculation_id in calculation_ids:

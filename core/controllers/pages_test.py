@@ -19,7 +19,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 from core.tests import test_utils
 import feconf
-import python_utils
 
 
 class NoninteractivePagesTests(test_utils.GenericTestBase):

@@ -130,7 +130,7 @@ class EmailTests(test_utils.GenericTestBase):
                 'from': ['a@a.com'],
                 'h:Reply-To': ['abc'],
                 'text': ['plaintext_body 😂'],
-                'bcc': ["['c@c.com', 'd@d.com']"],
+                'bcc': ['[\'c@c.com\', \'d@d.com\']'],
                 'recipient_variables': [
                     {'b@b.com': {'id': 1, 'first': 'Bob'}}
                 ],
@@ -166,7 +166,7 @@ class EmailTests(test_utils.GenericTestBase):
                 'from': ['a@a.com'],
                 'text': ['plaintext_body 😂'],
                 'recipient_variables': [{}],
-                'to': ["['b@b.com', 'c@c.com', 'd@d.com']"],
+                'to': ['[\'b@b.com\', \'c@c.com\', \'d@d.com\']'],
                 'html': ['Hi abc,<br> 😂'],
                 'subject': ['Hola 😂 - invitation to collaborate']
             },
@@ -224,7 +224,7 @@ class EmailTests(test_utils.GenericTestBase):
                 'from': ['a@a.com'],
                 'h:Reply-To': ['abc'],
                 'text': ['plaintext_body 😂'],
-                'bcc': ["['c@c.com', 'd@d.com']"],
+                'bcc': ['[\'c@c.com\', \'d@d.com\']'],
                 'recipient_variables': [
                     {'b@b.com': {'id': 1, 'first': 'Bob'}}
                 ],

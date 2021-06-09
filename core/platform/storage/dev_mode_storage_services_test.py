@@ -99,5 +99,3 @@ class DevModeStorageServicesTests(test_utils.TestBase):
             dev_mode_storage_services.listdir('bucket', '/file')
         ]
         self.assertItemsEqual(blob_data, [b'data1', b'data2'])
-
-

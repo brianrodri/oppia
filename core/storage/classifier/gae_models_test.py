@@ -153,7 +153,6 @@ class ClassifierTrainingJobModelUnitTests(test_utils.GenericTestBase):
                 classifier_models.ClassifierTrainingJobModel.
                 query_new_and_pending_training_jobs(0))
 
-            print(training_jobs)
             self.assertEqual(len(training_jobs), 2)
             self.assertEqual(training_jobs[0].algorithm_id, 'TextClassifier')
             self.assertEqual(training_jobs[0].interaction_id, 'TextInput')

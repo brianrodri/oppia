@@ -116,7 +116,6 @@ disable=consider-using-ternary,
         fixme,
         inconsistent-return-statements,
         len-as-condition,
-        missing-raises-doc,
         multiple-constructor-doc,
         no-else-return,
         no-member,
@@ -139,7 +138,12 @@ disable=consider-using-ternary,
         deprecated-method,
         useless-object-inheritance,
         import-outside-toplevel,
-        raise-missing-from
+        raise-missing-from,
+        no-else-raise,
+        missing-raises-doc,
+        unnecessary-pass,
+        no-else-continue,
+        no-else-break
 
 [REPORTS]
 

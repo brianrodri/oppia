@@ -39,6 +39,7 @@ CLOUD_NDB_REDIS_CLIENT = redis.StrictRedis(
     db=feconf.CLOUD_NDB_REDIS_DB
 )
 
+
 def get_memory_cache_stats():
     """Returns a memory profile of the redis cache. Visit
     https://redis.io/commands/memory-stats for more details on what exactly is

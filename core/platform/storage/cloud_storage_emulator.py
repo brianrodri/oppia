@@ -112,7 +112,17 @@ class CloudStorageEmulator(python_utils.OBJECT):
         """Init CloudStorageEmulator."""
         self.namespace = ''
 
-    def _get_key(self, filepath=''):
+    def _get_key(self, filepath):
+        """Get redis key for filepath. The key is the filepath prepended
+        with namespace and ':'.
+
+        Args:
+            filepath: st. Path to do the file we want to get key for.
+
+        Returns:
+            str. Filepath prepended by the current namespace.
+
+        """
         return '%s:%s' % (self.namespace, filepath)
 
     def get_blob(self, filepath):
@@ -135,7 +145,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
             blob: Blob. The blob to upload.
         """
         if not REDIS_CLIENT.set(self._get_key(filepath), pickle.dumps(blob)):
-            raise Exception("Blob wasn't set.")
+            raise Exception('Blob was not set.')
 
     def delete_blob(self, filepath):
         """Delete blob by the filepath.
@@ -156,7 +166,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
             self._get_key(filepath),
             pickle.dumps(Blob.create_copy(blob, filepath)))
 
-    def list_blobs(self, prefix):
+    def list_blobs(self, *, prefix):
         """Get blobs whose filepaths start with prefix.
 
         Args:
@@ -166,7 +176,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
             list(Blob). The list of blobs whose filepaths start with prefix.
         """
         matching_filepaths = (
-            REDIS_CLIENT.scan_iter('%s*' % self._get_key(prefix)))
+            REDIS_CLIENT.scan_iter(match='%s*' % self._get_key(prefix)))
         return [
             pickle.loads(blob_bytes) for blob_bytes
             in REDIS_CLIENT.mget(matching_filepaths)
@@ -174,6 +184,5 @@ class CloudStorageEmulator(python_utils.OBJECT):
 
     def reset(self):
         """Reset the emulator and remove all blobs."""
-        print(self._get_key())
-        for key in REDIS_CLIENT.scan_iter('%s*' % self._get_key()):
+        for key in REDIS_CLIENT.scan_iter(match='%s*' % self._get_key('')):
             REDIS_CLIENT.delete(key)

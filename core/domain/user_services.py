@@ -1867,10 +1867,7 @@ def is_at_least_moderator(user_id):
         bool. True if user is atleast a moderator, False otherwise.
     """
     user_role = get_user_role_from_id(user_id)
-    if (user_role == feconf.ROLE_ID_MODERATOR or
-            user_role == feconf.ROLE_ID_ADMIN):
-        return True
-    return False
+    return user_role in (feconf.ROLE_ID_MODERATOR, feconf.ROLE_ID_ADMIN)
 
 
 def is_admin(user_id):
@@ -1883,9 +1880,7 @@ def is_admin(user_id):
         bool. True if user is an admin, False otherwise.
     """
     user_role = get_user_role_from_id(user_id)
-    if user_role == feconf.ROLE_ID_ADMIN:
-        return True
-    return False
+    return user_role == feconf.ROLE_ID_ADMIN
 
 
 def is_topic_manager(user_id):
@@ -1898,9 +1893,7 @@ def is_topic_manager(user_id):
         bool. Whether the user is a topic manager.
     """
     user_role = get_user_role_from_id(user_id)
-    if user_role == feconf.ROLE_ID_TOPIC_MANAGER:
-        return True
-    return False
+    return user_role == feconf.ROLE_ID_TOPIC_MANAGER
 
 
 def can_review_translation_suggestions(user_id, language_code=None):

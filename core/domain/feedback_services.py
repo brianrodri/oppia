@@ -590,7 +590,7 @@ def get_next_page_of_all_feedback_messages(
     return (messages_on_page, next_urlsafe_start_cursor, more)
 
 
-def get_thread_analytics_multi(exploration_ids):
+def get_thread_analytics_multi(unused_exploration_ids):
     """Fetches all FeedbackAnalytics, for all the given exploration ids.
 
     A FeedbackAnalytics contains the exploration id the analytics belongs to,

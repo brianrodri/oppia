@@ -67,7 +67,7 @@ class ExplorationOpportunitySummaryModelUnitTest(test_utils.GenericTestBase):
             base_models.DELETION_POLICY.NOT_APPLICABLE)
 
     def test_get_all_translation_opportunities(self):
-        results, cursor, more = (
+        results, cursor, _ = (
             opportunity_models.ExplorationOpportunitySummaryModel
             .get_all_translation_opportunities(5, None, 'hi'))
         self.assertEqual(len(results), 2)
@@ -84,7 +84,7 @@ class ExplorationOpportunitySummaryModelUnitTest(test_utils.GenericTestBase):
         self.assertTrue(more)
         self.assertTrue(isinstance(cursor, python_utils.BASESTRING))
 
-        results, new_cursor, more = (
+        results, new_cursor, _ = (
             opportunity_models.ExplorationOpportunitySummaryModel
             .get_all_translation_opportunities(1, cursor, 'hi'))
         self.assertEqual(len(results), 1)
@@ -92,7 +92,7 @@ class ExplorationOpportunitySummaryModelUnitTest(test_utils.GenericTestBase):
         self.assertTrue(isinstance(new_cursor, python_utils.BASESTRING))
 
     def test_get_all_voiceover_opportunities(self):
-        results, cursor, more = (
+        results, cursor, _ = (
             opportunity_models.ExplorationOpportunitySummaryModel
             .get_all_voiceover_opportunities(5, None, 'en'))
         self.assertEqual(len(results), 2)
@@ -173,7 +173,7 @@ class SkillOpportunityModelTest(test_utils.GenericTestBase):
             base_models.DELETION_POLICY.NOT_APPLICABLE)
 
     def test_get_skill_opportunities(self):
-        results, cursor, more = (
+        results, cursor, _ = (
             opportunity_models.SkillOpportunityModel
             .get_skill_opportunities(5, None))
         self.assertEqual(len(results), 2)
@@ -190,7 +190,7 @@ class SkillOpportunityModelTest(test_utils.GenericTestBase):
         self.assertTrue(more)
         self.assertTrue(isinstance(cursor, python_utils.BASESTRING))
 
-        results, cursor, more = (
+        results, cursor, _ = (
             opportunity_models.SkillOpportunityModel
             .get_skill_opportunities(1, cursor))
         self.assertEqual(len(results), 1)

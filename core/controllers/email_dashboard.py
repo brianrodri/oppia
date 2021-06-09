@@ -45,7 +45,7 @@ def _generate_user_query_dicts(user_queries):
         list(dict(str, str)). List of data dicts for the user queries.
     """
     submitters_settings = user_services.get_users_settings(
-        list(set([model.submitter_id for model in user_queries])))
+        list(set(model.submitter_id for model in user_queries)))
     user_id_to_username = {
         submitter.user_id: submitter.username
         for submitter in submitters_settings

@@ -92,27 +92,17 @@ class UserFacingExceptions(python_utils.OBJECT):
     class NotLoggedInException(Exception):
         """Error class for users that are not logged in (error code 401)."""
 
-        pass
-
     class InvalidInputException(Exception):
         """Error class for invalid input on the user side (error code 400)."""
-
-        pass
 
     class UnauthorizedUserException(Exception):
         """Error class for unauthorized access."""
 
-        pass
-
     class PageNotFoundException(Exception):
         """Error class for a page not found error (error code 404)."""
 
-        pass
-
     class InternalErrorException(Exception):
         """Error class for an internal server side error (error code 500)."""
-
-        pass
 
     class TemporaryMaintenanceException(Exception):
         """Error class for when the server is currently down for temporary
@@ -307,7 +297,6 @@ class BaseHandler(webapp2.RequestHandler):
         self._render_exception(
             404, {
                 'error': 'Could not find the page %s.' % self.request.uri})
-        return
 
     def post(self, *args):  # pylint: disable=unused-argument
         """Base method to handle POST requests.
@@ -355,15 +344,18 @@ class BaseHandler(webapp2.RequestHandler):
         """Prepares downloadable content to be sent to the client.
 
         Args:
-            values: dict. The key-value pairs to include in the response.
+            values: bytes. The data of the downloadable file.
             filename: str. The name of the file to be rendered.
             content_type: str. The type of file to be rendered.
         """
         self.response.headers['Content-Type'] = content_type
-        self.response.headers[
-            'Content-Disposition'] = str('attachment; filename=%s' % filename)
+        self.response.headers['Content-Disposition'] = (
+            python_utils.UNICODE('attachment; filename=%s' % filename))
         self.response.charset = 'utf-8'
-        super(webapp2.Response, self.response).write(values)
+        # We use this super in order to bypass the write method
+        # in webapp2.Response, since webapp2.Response doesn't support writing
+        # bytes.
+        super(webapp2.Response, self.response).write(values)  # pylint: disable=bad-super-call
 
     def render_template(self, filepath, iframe_restriction='DENY'):
         """Prepares an HTML response to be sent to the client.
@@ -389,8 +381,8 @@ class BaseHandler(webapp2.RequestHandler):
 
         if iframe_restriction is not None:
             if iframe_restriction in ['SAMEORIGIN', 'DENY']:
-                self.response.headers[
-                    'X-Frame-Options'] = str(iframe_restriction)
+                self.response.headers['X-Frame-Options'] = (
+                    python_utils.UNICODE(iframe_restriction))
             else:
                 raise Exception(
                     'Invalid X-Frame-Options: %s' % iframe_restriction)
@@ -421,8 +413,8 @@ class BaseHandler(webapp2.RequestHandler):
                 self.render_template(
                     'error-page-%s.mainpage.html' % values['status_code'])
         else:
-            if return_type != feconf.HANDLER_TYPE_JSON and (
-                    return_type != feconf.HANDLER_TYPE_DOWNLOADABLE):
+            if return_type not in (
+                    feconf.HANDLER_TYPE_JSON, feconf.HANDLER_TYPE_DOWNLOADABLE):
                 logging.warning(
                     'Not a recognized return type: defaulting to render JSON.')
             self.render_json(values)
@@ -496,26 +488,31 @@ class BaseHandler(webapp2.RequestHandler):
 
         if isinstance(exception, self.UnauthorizedUserException):
             self.error(401)
-            self._render_exception(401, {'error': str(exception)})
+            self._render_exception(
+                401, {'error': python_utils.UNICODE(exception)})
             return
 
         if isinstance(exception, self.InvalidInputException):
             self.error(400)
-            self._render_exception(400, {'error': str(exception)})
+            self._render_exception(
+                400, {'error': python_utils.UNICODE(exception)})
             return
 
         if isinstance(exception, self.InternalErrorException):
             self.error(500)
-            self._render_exception(500, {'error': str(exception)})
+            self._render_exception(
+                500, {'error': python_utils.UNICODE(exception)})
             return
 
         if isinstance(exception, self.TemporaryMaintenanceException):
             self.error(503)
-            self._render_exception(503, {'error': str(exception)})
+            self._render_exception(
+                503, {'error': python_utils.UNICODE(exception)})
             return
 
         self.error(500)
-        self._render_exception(500, {'error': str(exception)})
+        self._render_exception(
+            500, {'error': python_utils.UNICODE(exception)})
 
     InternalErrorException = UserFacingExceptions.InternalErrorException
     InvalidInputException = UserFacingExceptions.InvalidInputException
@@ -573,7 +570,7 @@ class CsrfTokenManager(python_utils.OBJECT):
             user_id = cls._USER_ID_DEFAULT
 
         # Round time to seconds.
-        issued_on = str(int(issued_on))
+        issued_on = python_utils.UNICODE(int(issued_on))
 
         digester = hmac.new(python_utils.convert_to_bytes(CSRF_SECRET.value))
         digester.update(python_utils.convert_to_bytes(user_id))

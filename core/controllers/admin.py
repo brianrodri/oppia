@@ -204,9 +204,13 @@ class AdminHandler(base.BaseHandler):
                     raise self.InvalidInputException(
                         'commit_message should be string, received \'%s\'.' % (
                             commit_message))
-                elif (not isinstance(new_rule_dicts, list) or not all(
-                        [isinstance(rule_dict, dict)
-                         for rule_dict in new_rule_dicts])):
+                elif (
+                        not isinstance(new_rule_dicts, list) or
+                        not all(
+                            isinstance(rule_dict, dict)
+                            for rule_dict in new_rule_dicts
+                        )
+                ):
                     raise self.InvalidInputException(
                         'new_rules should be a list of dicts, received'
                         ' \'%s\'.' % new_rule_dicts)
@@ -243,7 +247,8 @@ class AdminHandler(base.BaseHandler):
                 (self.user_id, exploration_id))
             exp_services.load_demo(python_utils.UNICODE(exploration_id))
             rights_manager.release_ownership_of_exploration(
-                user_services.get_system_user(), python_utils.UNICODE(exploration_id))
+                user_services.get_system_user(),
+                python_utils.UNICODE(exploration_id))
         else:
             raise Exception('Cannot reload an exploration in production.')
 
@@ -705,20 +710,6 @@ class AdminSuperAdminPrivilegesHandler(base.BaseHandler):
         self.render_json(self.values)
 
 
-class AdminJobOutputHandler(base.BaseHandler):
-    """Retrieves job output to show on the admin page."""
-
-    GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
-
-    @acl_decorators.can_access_admin_page
-    def get(self):
-        """Handles GET requests."""
-        job_id = self.request.get('job_id')
-        self.render_json({
-            'output': ''
-        })
-
-
 class AdminTopicsCsvFileDownloader(base.BaseHandler):
     """Retrieves topic similarity data for download."""
 
@@ -726,8 +717,11 @@ class AdminTopicsCsvFileDownloader(base.BaseHandler):
 
     @acl_decorators.can_access_admin_page
     def get(self):
+        topic_similarities = (
+            recommendations_services.get_topic_similarities_as_csv()
+        )
         self.render_downloadable_file(
-            recommendations_services.get_topic_similarities_as_csv().encode('utf-8'),
+            topic_similarities.encode('utf-8'),
             'topic_similarities.csv', 'text/csv')
 
 

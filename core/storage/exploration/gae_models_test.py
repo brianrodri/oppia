@@ -532,7 +532,7 @@ class ExplorationCommitLogEntryModelUnitTest(test_utils.GenericTestBase):
         private_commit.put()
         public_commit.update_timestamps()
         public_commit.put()
-        results, _, more = (
+        results, _, _ = (
             exp_models.ExplorationCommitLogEntryModel
             .get_all_non_private_commits(2, None, max_age=None))
         self.assertEqual(len(results), 1)
@@ -540,12 +540,12 @@ class ExplorationCommitLogEntryModelUnitTest(test_utils.GenericTestBase):
         with self.assertRaisesRegexp(
             Exception,
             'max_age must be a datetime.timedelta instance or None.'):
-            results, _, more = (
+            results, _, _ = (
                 exp_models.ExplorationCommitLogEntryModel
                 .get_all_non_private_commits(2, None, max_age=1))
 
         max_age = datetime.timedelta(hours=1)
-        results, _, more = (
+        results, _, _ = (
             exp_models.ExplorationCommitLogEntryModel
             .get_all_non_private_commits(2, None, max_age=max_age))
         self.assertEqual(len(results), 1)

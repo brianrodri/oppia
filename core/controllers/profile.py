@@ -35,7 +35,6 @@ from core.domain import user_domain
 from core.domain import user_services
 from core.domain import wipeout_service
 import feconf
-import python_utils
 import utils
 
 

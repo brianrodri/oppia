@@ -500,7 +500,7 @@ class CollectionCommitLogEntryModelUnitTest(test_utils.GenericTestBase):
         private_commit.put()
         public_commit.update_timestamps()
         public_commit.put()
-        results, _, more = (
+        results, _, _ = (
             collection_models.CollectionCommitLogEntryModel
             .get_all_non_private_commits(2, None, max_age=None))
         self.assertEqual('collection-b-0', results[0].id)
@@ -533,7 +533,7 @@ class CollectionCommitLogEntryModelUnitTest(test_utils.GenericTestBase):
         public_commit.put()
 
         max_age = datetime.timedelta(hours=1)
-        results, _, more = (
+        results, _, _ = (
             collection_models.CollectionCommitLogEntryModel
             .get_all_non_private_commits(2, None, max_age=max_age))
         self.assertEqual(len(results), 1)

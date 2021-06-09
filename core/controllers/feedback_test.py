@@ -25,7 +25,6 @@ from core.domain import feedback_services
 from core.domain import rights_manager
 from core.domain import state_domain
 from core.domain import suggestion_services
-from core.domain import taskqueue_services
 from core.domain import topic_fetchers
 from core.domain import user_services
 from core.platform import models
@@ -44,7 +43,6 @@ EXPECTED_THREAD_KEYS = [
 EXPECTED_MESSAGE_KEYS = [
     'author_username', 'created_on_msecs', 'entity_type', 'message_id',
     'entity_id', 'text', 'updated_status', 'updated_subject']
-
 
 
 class FeedbackThreadPermissionsTests(test_utils.GenericTestBase):

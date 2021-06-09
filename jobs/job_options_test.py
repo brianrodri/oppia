@@ -23,7 +23,6 @@ import re
 
 from core.tests import test_utils
 from jobs import job_options
-import python_utils
 
 
 class JobOptionsTests(test_utils.TestBase):
@@ -39,6 +38,7 @@ class JobOptionsTests(test_utils.TestBase):
         self.assertIs(options.namespace, 'abc')
 
     def test_unsupported_values(self):
-        self.assertRaisesRegexp(
+        with self.assertRaisesRegexp(
             ValueError, re.escape('Unsupported option(s): a, b'),
-            lambda: job_options.JobOptions(a=1, b=2))
+        ):
+            job_options.JobOptions(a=1, b=2)

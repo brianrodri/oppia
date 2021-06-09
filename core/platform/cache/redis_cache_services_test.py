@@ -145,4 +145,4 @@ class RedisCacheServicesUnitTests(test_utils.TestBase):
             elements = lines[0].split()
             self.assertEqual(len(elements), 2)
             self.assertEqual(
-                elements[1], str(feconf.REDISPORT))
+                elements[1], python_utils.UNICODE(feconf.REDISPORT))

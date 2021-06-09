@@ -47,7 +47,7 @@ def is_exploration_available_for_contribution(exp_id):
     model = opportunity_models.ExplorationOpportunitySummaryModel.get(
         exp_id, strict=False)
 
-    return True if model is not None else False
+    return model is not None
 
 
 def get_exploration_opportunity_summary_from_model(model):
@@ -68,8 +68,8 @@ def get_exploration_opportunity_summary_from_model(model):
         model.incomplete_translation_language_codes +
         model.language_codes_needing_voice_artists +
         model.language_codes_with_assigned_voice_artists)
-    supported_language_codes = set([language['id'] for language in (
-        constants.SUPPORTED_AUDIO_LANGUAGES)])
+    supported_language_codes = set(
+        language['id'] for language in constants.SUPPORTED_AUDIO_LANGUAGES)
     missing_language_codes = list(
         supported_language_codes - set_of_all_languages)
     if missing_language_codes:
@@ -141,8 +141,8 @@ def _create_exploration_opportunity_summary(topic, story, exploration):
         object.
     """
 
-    audio_language_codes = set([
-        language['id'] for language in constants.SUPPORTED_AUDIO_LANGUAGES])
+    audio_language_codes = set(
+        language['id'] for language in constants.SUPPORTED_AUDIO_LANGUAGES)
 
     complete_translation_languages = set(
         exploration.get_languages_with_complete_translation())

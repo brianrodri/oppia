@@ -96,8 +96,9 @@ class TaskqueueDomainServicesUnitTests(test_utils.TestBase):
         correct_payload = {
             'user_id': '1'
         }
-        correct_url = feconf.TASK_URL_FEEDBACK_MESSAGE_EMAILS,
+        correct_url = feconf.TASK_URL_FEEDBACK_MESSAGE_EMAILS
         correct_queue_name = taskqueue_services.QUEUE_NAME_EMAILS
+
         def mock_create_http_task(
                 queue_name, url, payload=None, scheduled_for=None,
                 task_name=None):

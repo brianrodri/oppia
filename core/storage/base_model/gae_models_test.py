@@ -102,12 +102,12 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
     def test_generic_query_put_get_and_delete_operations(self):
         model = base_models.BaseModel()
 
-        all_models = [m for m in base_models.BaseModel.get_all()]
+        all_models = base_models.BaseModel.get_all()
         self.assertEqual(len(all_models), 0)
 
         model.update_timestamps()
         model.put()
-        all_models = [m for m in base_models.BaseModel.get_all()]
+        all_models = base_models.BaseModel.get_all()
         self.assertEqual(len(all_models), 1)
         self.assertEqual(all_models[0], model)
 
@@ -115,7 +115,7 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
         self.assertEqual(model, base_models.BaseModel.get(model_id))
 
         model.delete()
-        all_models = [m for m in base_models.BaseModel.get_all()]
+        all_models = base_models.BaseModel.get_all()
         self.assertEqual(len(all_models), 0)
         with self.assertRaisesRegexp(
             base_models.BaseModel.EntityNotFoundError,

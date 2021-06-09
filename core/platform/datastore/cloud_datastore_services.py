@@ -34,6 +34,7 @@ Model = ndb.Model
 Key = ndb.Key
 Property = ndb.Property
 Query = ndb.Query
+RedisCache = ndb.RedisCache
 
 BooleanProperty = ndb.BooleanProperty
 DateProperty = ndb.DateProperty
@@ -46,6 +47,12 @@ CLIENT = ndb.Client()
 
 
 def get_ndb_context(**kwargs):
+    """Get the context of the Cloud NDB. This context need to be entered in
+    order to do any Cloud NDB operations.
+
+    Returns:
+        ndb.context.Context. Cloud NDB context.
+    """
     context = ndb.get_context(raise_context_error=False)
     return (
         CLIENT.context(**kwargs) if context is None else
@@ -282,11 +289,11 @@ def mock_datetime_for_datastore(mocked_now):
     class MockDatetimeType(type(datetime.datetime)):
         """Pretends to be a datetime.datetime object."""
 
-        def __instancecheck__(cls, other):
+        def __instancecheck__(self, other):
             """Validates whether the given instance is a datetime instance."""
             return isinstance(other, old_datetime_type)
 
-    class MockDatetime( # pylint: disable=inherit-non-class
+    class MockDatetime( # pylint: disable=inherit-non-class, invalid-metaclass
             python_utils.with_metaclass(MockDatetimeType, old_datetime_type)):
         """Always returns mocked_now as the current time."""
 

@@ -28,6 +28,7 @@ def isfile(bucket_name, filepath):
     """Checks if the file with the given filepath exists in the GCS.
 
     Args:
+        bucket_name: str. The name of the GCS bucket.
         filepath: str. The path to the relevant file within the entity's
             assets folder.
 
@@ -41,6 +42,7 @@ def get(bucket_name, filepath):
     """Gets a file as an unencoded stream of raw bytes.
 
     Args:
+        bucket_name: str. The name of the GCS bucket.
         filepath: str. The path to the relevant file within the entity's
             assets folder.
 
@@ -57,6 +59,7 @@ def commit(bucket_name, filepath, raw_bytes, mimetype):
     """Commit raw_bytes to the relevant file in the entity's assets folder.
 
     Args:
+        bucket_name: str. The name of the GCS bucket.
         filepath: str. The path to the relevant file within the entity's
             assets folder.
         raw_bytes: str. The content to be stored in the file.
@@ -70,6 +73,7 @@ def delete(bucket_name, filepath):
     """Deletes a file and the metadata associated with it.
 
     Args:
+        bucket_name: str. The name of the GCS bucket.
         filepath: str. The path to the relevant file within the entity's
             assets folder.
     """
@@ -81,9 +85,10 @@ def copy(bucket_name, source_assets_path, dest_assets_path):
     """Copy images from source_path.
 
     Args:
+        bucket_name: str. The name of the GCS bucket.
         source_assets_path: str. The path to the source entity's assets
             folder.
-        filepath: str. The path to the relevant file within the entity's
+        dest_assets_path: str. The path to the relevant file within the entity's
             assets folder.
     """
     src_blob = CLIENT.get_bucket(bucket_name).get_blob(source_assets_path)
@@ -95,6 +100,7 @@ def listdir(bucket_name, dir_name):
     """Lists all files in a directory.
 
     Args:
+        bucket_name: str. The name of the GCS bucket.
         dir_name: str. The directory whose files should be listed. This
             should not start with '/' or end with '/'.
 

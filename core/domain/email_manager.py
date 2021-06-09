@@ -40,6 +40,7 @@ import utils
 transaction_services = models.Registry.import_transaction_services()
 app_identity_services = models.Registry.import_app_identity_services()
 
+
 def log_new_error(*args, **kwargs):
     """Logs an error message (This is a stub for logging.error(), so that the
     latter can be swapped out in tests).

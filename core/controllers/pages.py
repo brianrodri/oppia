@@ -20,7 +20,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 from core.controllers import acl_decorators
 from core.controllers import base
 import feconf
-import python_utils
 
 
 class ForumRedirectPage(base.BaseHandler):

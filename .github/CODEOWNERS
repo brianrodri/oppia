@@ -235,7 +235,6 @@
 /cron.yaml @nithusha21
 /index.yaml @vojtechjelinek
 /queue.yaml @vojtechjelinek
-/main_taskqueue.py @vojtechjelinek
 
 
 # Global components and filters.
@@ -451,14 +450,11 @@
 /jobs/ @brianrodri
 /core/controllers/cron*.py @nithusha21
 /core/domain/cron_services*.py @nithusha21
-/main_cron.py @nithusha21
 /main.py @DubeySandeep @nithusha21
 /feconf.py @DubeySandeep @nithusha21 @seanlip
 /constants*.py @nithusha21
 /assets/constants.ts @nithusha21
 /core/controllers/tasks*.py @aks681
-/core/domain/audit_validators*.py @vojtechjelinek
-/core/domain/base_model_validators*.py @vojtechjelinek
 /core/domain/beam_job*.py @brianrodri
 /core/domain/email*.py @aks681
 /core/domain/image_service*.py @DubeySandeep
@@ -515,6 +511,7 @@
 
 # Release team.
 /scripts/release_scripts/ @DubeySandeep
+/.gcloudignore @vojtechjelinek @nithusha21
 
 
 # Rich text editor team.

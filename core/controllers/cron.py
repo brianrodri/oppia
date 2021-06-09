@@ -17,8 +17,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import logging
-
 from core.controllers import acl_decorators
 from core.controllers import base
 from core.domain import config_domain
@@ -27,7 +25,6 @@ from core.domain import email_manager
 from core.domain import suggestion_services
 from core.domain import user_services
 import feconf
-import utils
 
 TWENTY_FIVE_HOURS_IN_MSECS = 25 * 60 * 60 * 1000
 MAX_JOBS_TO_REPORT_ON = 50

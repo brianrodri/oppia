@@ -192,7 +192,6 @@ URLS = [
         r'/adminsuperadminhandler', admin.AdminSuperAdminPrivilegesHandler),
     get_redirect_route(
         r'/memorycacheadminhandler', admin.MemoryCacheAdminHandler),
-    get_redirect_route(r'/adminjoboutput', admin.AdminJobOutputHandler),
     get_redirect_route(
         r'/admintopicscsvdownloadhandler',
         admin.AdminTopicsCsvFileDownloader),
@@ -882,7 +881,8 @@ class NdbWsgiMiddleware:
         self.wsgi_app = wsgi_app
 
     def __call__(self, environ, start_response):
-        global_cache = ndb.RedisCache(cache_services.CLOUD_NDB_REDIS_CLIENT)
+        global_cache = datastore_services.RedisCache(
+            cache_services.CLOUD_NDB_REDIS_CLIENT)
         with datastore_services.get_ndb_context(global_cache=global_cache):
             return self.wsgi_app(environ, start_response)
 

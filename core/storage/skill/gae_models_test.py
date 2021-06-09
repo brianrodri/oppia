@@ -96,7 +96,8 @@ class SkillSummaryModelUnitTest(test_utils.GenericTestBase):
             skill_model_created_on=datetime.datetime.utcnow()
         ).put()
 
-        skill_summaries, next_cursor, more = (skill_models.SkillSummaryModel.fetch_page(1, None, None))
+        skill_summaries, next_cursor, more = (
+            skill_models.SkillSummaryModel.fetch_page(1, None, None))
         self.assertEqual(skill_summaries[0].id, 'skill_id2')
         self.assertTrue(more)
         self.assertTrue(isinstance(next_cursor, python_utils.BASESTRING))

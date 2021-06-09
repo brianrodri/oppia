@@ -881,7 +881,7 @@ class MemoryCacheServicesStub(python_utils.OBJECT):
         """
         return caching_domain.MemoryCacheStats(0, 0, len(self._CACHE_DICT))
 
-    def flush_cache(self):
+    def flush_caches(self):
         """Wipes the cache dictionary clean."""
         self._CACHE_DICT.clear()
 
@@ -1826,7 +1826,7 @@ title: Title
                 defaultTestResult() method) and used instead.
         """
         memory_cache_services_stub = MemoryCacheServicesStub()
-        memory_cache_services_stub.flush_cache()
+        memory_cache_services_stub.flush_caches()
         es_stub = ElasticSearchStub()
         es_stub.reset()
 
@@ -1851,8 +1851,8 @@ title: Title
                 elastic_search_services.ES, 'search',
                 es_stub.mock_search))
             stack.enter_context(self.swap(
-                memory_cache_services, 'flush_cache',
-                memory_cache_services_stub.flush_cache))
+                memory_cache_services, 'flush_caches',
+                memory_cache_services_stub.flush_caches))
             stack.enter_context(self.swap(
                 memory_cache_services, 'get_multi',
                 memory_cache_services_stub.get_multi))

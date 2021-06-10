@@ -165,12 +165,16 @@ def tokenize(expression):
             # operation to be performed is multiplication and insert a '*' sign
             # to explicitly denote the operation. For eg. 'ab+x' would be
             # transformed into 'a*b+x'.
-            if ((
-                    token.category in _CLOSING_CATEGORIES or
-                    token.text in _CLOSING_PARENS) and
+            if (
                     (
-                        token.category in _OPENING_CATEGORIES or
-                        token.text in _OPENING_PARENS)):
+                        token.category in _CLOSING_CATEGORIES or
+                        token.text in _CLOSING_PARENS
+                    ) and
+                    (
+                        token_list[i + 1].category in _OPENING_CATEGORIES or
+                        token_list[i + 1].text in _OPENING_PARENS
+                    )
+            ):
                 final_token_list.append(Token('*'))
 
     return final_token_list
@@ -621,3 +625,6 @@ def is_valid_expression(expression):
     except Exception:
         return False
     return True
+
+if __name__ == '__main__':
+    is_valid_expression('pi*r^2')

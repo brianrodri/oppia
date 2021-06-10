@@ -225,7 +225,7 @@ class CachingServicesUnitTests(test_utils.GenericTestBase):
                 [exploration_id]
             ).get(exploration_id))
 
-        caching_services.flush_memory_cache()
+        caching_services.flush_memory_caches()
 
         self.assertEqual(
             caching_services.get_multi(

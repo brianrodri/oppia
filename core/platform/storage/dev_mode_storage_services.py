@@ -101,4 +101,4 @@ def listdir(unused_bucket_name, dir_name):
     Returns:
         list(str). A lexicographically-sorted list of filenames.
     """
-    return CLIENT.list_blobs(prefix=dir_name)
+    return CLIENT.list_blobs(dir_name)

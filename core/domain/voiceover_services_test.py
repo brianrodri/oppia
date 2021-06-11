@@ -332,7 +332,7 @@ class VoiceoverApplicationServicesUnitTests(test_utils.GenericTestBase):
             user_voiceover_applications[0].status,
             suggestion_models.STATUS_IN_REVIEW)
 
-        opportunities, _, more = (
+        opportunities, _, _ = (
             opportunity_services.get_voiceover_opportunities('en', None))
         self.assertEqual(len(opportunities), 1)
 
@@ -348,7 +348,7 @@ class VoiceoverApplicationServicesUnitTests(test_utils.GenericTestBase):
             user_voiceover_applications[0].status,
             suggestion_models.STATUS_REJECTED)
 
-        opportunities, _, more = (
+        opportunities, _, _ = (
             opportunity_services.get_voiceover_opportunities('en', None))
         self.assertEqual(len(opportunities), 1)
 

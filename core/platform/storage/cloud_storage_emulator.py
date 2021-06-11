@@ -34,6 +34,7 @@ REDIS_CLIENT = redis.StrictRedis(
 
 
 class Blob(python_utils.OBJECT):
+    """Object for storing the file data."""
 
     def __init__(self, name, data, content_type):
         """Initialize blob.
@@ -166,7 +167,7 @@ class CloudStorageEmulator(python_utils.OBJECT):
             self._get_key(filepath),
             pickle.dumps(Blob.create_copy(blob, filepath)))
 
-    def list_blobs(self, *, prefix):
+    def list_blobs(self, prefix):
         """Get blobs whose filepaths start with prefix.
 
         Args:

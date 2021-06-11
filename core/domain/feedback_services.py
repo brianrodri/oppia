@@ -598,7 +598,7 @@ def get_thread_analytics_multi(unused_exploration_ids):
     exist for the exploration.
 
     Args:
-        exploration_ids: list(str). A list of exploration ids.
+        unused_exploration_ids: list(str). A list of exploration ids.
 
     Returns:
         list(FeedbackAnalytics). Analytics in the the same order as the input

@@ -1015,9 +1015,10 @@ class GetAuthClaimsFromRequestTests(FirebaseAuthServicesTestBase):
             error=firebase_auth.ExpiredSessionCookieError('uh-oh', None))
 
         with always_raise_expired_session_cookie_error, self.assertRaisesRegexp(
-                    auth_domain.StaleAuthSessionError, 'expired'):
-                firebase_auth_services.get_auth_claims_from_request(
-                    self.create_request(session_cookie=cookie))
+                auth_domain.StaleAuthSessionError, 'expired'
+        ):
+            firebase_auth_services.get_auth_claims_from_request(
+                self.create_request(session_cookie=cookie))
 
     def test_raises_stale_auth_session_error_when_cookie_is_revoked(self):
         cookie = firebase_auth.create_session_cookie(

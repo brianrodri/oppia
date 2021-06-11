@@ -68,7 +68,6 @@ from core.platform import models
 from core.platform.auth import firebase_auth_services
 import feconf
 
-from google.cloud import ndb
 import webapp2
 from webapp2_extras import routes
 
@@ -874,6 +873,7 @@ URLS.extend((
 
 # 404 error handler (Needs to be at the end of the URLS list).
 URLS.append(get_redirect_route(r'/<:.*>', base.Error404Handler))
+
 
 class NdbWsgiMiddleware:
     """Wraps the WSGI application into the NDB client context."""

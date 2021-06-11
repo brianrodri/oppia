@@ -124,7 +124,7 @@ class ClassifierTrainingJobModelUnitTests(test_utils.GenericTestBase):
                 'state_name2', feconf.TRAINING_JOB_STATUS_NEW, 1)
             classifier_models.ClassifierTrainingJobModel.create(
                 'TextClassifier', 'TextInput', 'exp_id02', 2,
-                next_scheduled_check_time  + datetime.timedelta(seconds=1),
+                next_scheduled_check_time + datetime.timedelta(seconds=1),
                 [{'answer_group_index': 1, 'answers': ['a1', 'a2']}],
                 'state_name2', feconf.TRAINING_JOB_STATUS_PENDING, 1)
             classifier_models.ClassifierTrainingJobModel.create(

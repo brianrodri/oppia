@@ -625,6 +625,3 @@ def is_valid_expression(expression):
     except Exception:
         return False
     return True
-
-if __name__ == '__main__':
-    is_valid_expression('pi*r^2')

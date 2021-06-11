@@ -118,12 +118,12 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
         cloud_storage_emulator.REDIS_CLIENT.set(
             'namespace:/different/path.png', pickle.dumps(self.blob3))
         self.assertItemsEqual(
-            self.emulator.list_blobs(prefix='/'),
+            self.emulator.list_blobs('/'),
             [self.blob1, self.blob2, self.blob3])
         self.assertItemsEqual(
-            self.emulator.list_blobs(prefix='/file'), [self.blob1, self.blob2])
+            self.emulator.list_blobs('/file'), [self.blob1, self.blob2])
         self.assertItemsEqual(
-            self.emulator.list_blobs(prefix='/different'), [self.blob3])
+            self.emulator.list_blobs('/different'), [self.blob3])
 
     def test_reset(self):
         cloud_storage_emulator.REDIS_CLIENT.set(

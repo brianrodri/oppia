@@ -26,7 +26,6 @@ import re
 from constants import constants
 from core.domain import auth_domain
 from core.domain import param_domain
-from core.domain import taskqueue_services
 from core.platform import models
 from core.tests import test_utils
 import python_utils

@@ -198,14 +198,14 @@ class SkillOpportunityModelTest(test_utils.GenericTestBase):
         self.assertTrue(isinstance(cursor, python_utils.BASESTRING))
 
     def test_delete_all_skill_opportunities(self):
-        results, _, more = (
+        results, _, _ = (
             opportunity_models.SkillOpportunityModel.get_skill_opportunities(
                 1, None))
         self.assertEqual(len(results), 1)
 
         opportunity_models.SkillOpportunityModel.delete_all()
 
-        results, _, more = (
+        results, _, _ = (
             opportunity_models.SkillOpportunityModel.get_skill_opportunities(
                 1, None))
         self.assertEqual(len(results), 0)

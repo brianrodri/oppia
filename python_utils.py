@@ -378,7 +378,7 @@ def url_encode(query, doseq=False):
         import urllib.parse as urlparse
     except ImportError:
         import urllib as urlparse
-    return urlparse.urlencode(query, doseq)
+    return urlparse.urlencode(query, doseq=doseq)
 
 
 def url_retrieve(source_url, filename=None):
@@ -417,7 +417,7 @@ def url_open(source_url):
     Returns:
         urlopen. The 'urlopen' object.
     """
-    context = ssl.create_default_context(cafile=certifi.where())
+    context = ssl.create_default_context(cafile=certifi.where())  # pylint: disable=arg-name-for-non-keyword-arg
     try:
         import urllib.request as urlrequest
     except ImportError:

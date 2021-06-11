@@ -1287,7 +1287,6 @@ class TestBase(unittest.TestCase):
             expected_exception: Exception class expected to be raised.
             expected_regex: Regex (re.Pattern object or string) expected
                     to be found in error message.
-                    callable_obj
             args: Function to be called and extra positional args.
             kwargs: Extra kwargs.
         """
@@ -1458,51 +1457,6 @@ class AppEngineTestBase(TestBase):
         """
         return self._platform_taskqueue_services_stub.get_pending_tasks(
             queue_name=queue_name)
-
-    def count_jobs_in_mapreduce_taskqueue(self, queue_name):
-        """Counts the jobs in the given MapReduce taskqueue."""
-        return len(self.get_pending_mapreduce_tasks(queue_name=queue_name))
-
-    def get_pending_mapreduce_tasks(self, queue_name=None):
-        """Returns the jobs in the given MapReduce taskqueue. If queue_name is
-        None, defaults to returning the jobs in all available queues.
-        """
-        queue_names = None if queue_name is None else [queue_name]
-        return []
-
-    def _execute_mapreduce_tasks(self, tasks):
-        """Execute MapReduce queued tasks.
-
-        Args:
-            tasks: list(google.appengine.api.taskqueue.taskqueue.Task). The
-                queued tasks.
-        """
-        for task in tasks:
-            if task.url == '/_ah/queue/deferred':
-                python_utils.PRINT(task)
-            else:
-                # All other tasks will be for MapReduce or taskqueue.
-                params = task.payload or ''
-                headers = {
-                    'Content-Length': python_utils.UNICODE(len(params)).encode()
-                }
-                headers.update(
-                    (key, python_utils.UNICODE(val).encode())
-                    for key, val in task.headers.items())
-
-                response = self.testapp.post(
-                    task.url, params=params, headers=headers,
-                    expect_errors=True)
-
-                if response.status_code != 200:
-                    raise RuntimeError('MapReduce task failed: %r' % task)
-
-    def run_but_do_not_flush_pending_mapreduce_tasks(self):
-        """"Runs, but does not flush, the pending MapReduce tasks."""
-        queue_names = self._get_all_queue_names()
-        tasks = []
-
-        self._execute_mapreduce_tasks(tasks)
 
 
 class GenericTestBase(AppEngineTestBase):
@@ -3248,58 +3202,6 @@ class LinterTestBase(GenericTestBase):
         """
         failed_count = sum(msg.startswith('FAILED') for msg in stdout)
         self.assertEqual(failed_count, expected_failed_count)
-
-
-class AuditJobsTestBase(GenericTestBase):
-    """Base class for audit jobs tests."""
-
-    def run_job_and_check_output(
-            self, expected_output, sort=False, literal_eval=False):
-        """Helper function to run job and compare output.
-
-        Args:
-            expected_output: list(*). The expected result of the job.
-            sort: bool. Whether to sort the outputs before comparison.
-            literal_eval: bool. Whether to use ast.literal_eval before
-                comparison.
-        """
-        self.process_and_flush_pending_tasks()
-        job_id = self.job_class.create_new()
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-        self.job_class.enqueue(job_id)
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-        self.process_and_flush_pending_tasks()
-        actual_output = self.job_class.get_output(job_id)
-
-        if literal_eval:
-            actual_output_dict = {}
-            expected_output_dict = {}
-
-            for item in (ast.literal_eval(value) for value in actual_output):
-                value = item[1]
-                if isinstance(value, list):
-                    value = sorted(value)
-                actual_output_dict[item[0]] = value
-
-            for item in (ast.literal_eval(value) for value in expected_output):
-                value = item[1]
-                if isinstance(value, list):
-                    value = sorted(value)
-                expected_output_dict[item[0]] = value
-
-            self.assertItemsEqual(actual_output_dict, expected_output_dict)
-
-            for key in actual_output_dict:
-                self.assertEqual(
-                    actual_output_dict[key], expected_output_dict[key])
-        elif sort:
-            self.assertEqual(sorted(actual_output), sorted(expected_output))
-        else:
-            self.assertEqual(actual_output, expected_output)
 
 
 class EmailMessageMock(python_utils.OBJECT):

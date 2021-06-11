@@ -74,7 +74,6 @@ def check_if_on_ci():
     Returns: bool. Whether we are running on a CI server.
     """
     for info in CI_INFO.values():
-        print(info)
         ci_identifier = info['env']['identifier']
         if os.getenv(ci_identifier):
             return True

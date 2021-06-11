@@ -539,8 +539,8 @@ class SchemaValidationUnitTests(test_utils.GenericTestBase):
                     }
                 },
                 re.escape(
-                    'Received invalid_mode which is not in the allowed range of '
-                    'choices: [\'none\', \'python\', \'coffeescript\']'
+                    'Received invalid_mode which is not in the allowed range '
+                    'of choices: [\'none\', \'python\', \'coffeescript\']'
                 )
             )
         ]

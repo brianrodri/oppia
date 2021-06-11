@@ -209,6 +209,9 @@ def _get_linters_for_file_extension(file_extension_to_lint, name_space, files):
 
     Args:
         file_extension_to_lint: str. The file extension to be linted.
+        name_space: multiprocessing.Namespace. Namespace in which to execute
+            this function.
+        files:
 
     Returns:
         (CustomLintChecks, ThirdPartyLintChecks). A 2-tuple containing objects

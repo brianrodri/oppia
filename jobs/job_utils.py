@@ -20,8 +20,6 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import datetime
-import itertools
-import operator
 
 from core.platform import models
 import feconf
@@ -284,9 +282,9 @@ def _get_beam_filters_from_ndb_filter_node(filter_node):
         are: (property name, comparison operator, property value).
     """
     if isinstance(filter_node, ndb_query.ConjunctionNode):
-        nodes = [n for n in filter_node] # pylint: disable=protected-access
+        nodes = list(filter_node)  # pylint: disable=protected-access
     elif isinstance(filter_node, ndb_query.FilterNode):
-        nodes = [filter_node] # pylint: disable=protected-access
+        nodes = [filter_node]  # pylint: disable=protected-access
     else:
         raise TypeError(
             '`!=`, `IN`, and `OR` are forbidden filters. To emulate their '

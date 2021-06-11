@@ -19,7 +19,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import ast
 import collections
 import contextlib
 import copy
@@ -54,7 +53,6 @@ from core.domain import story_domain
 from core.domain import story_services
 from core.domain import subtopic_page_domain
 from core.domain import subtopic_page_services
-from core.domain import taskqueue_services
 from core.domain import topic_domain
 from core.domain import topic_services
 from core.domain import user_services
@@ -1284,11 +1282,15 @@ class TestBase(unittest.TestCase):
         strong regex.
 
         Args:
-            expected_exception: Exception class expected to be raised.
-            expected_regex: Regex (re.Pattern object or string) expected
-                    to be found in error message.
+            expected_exception: Exception. Exception class expected
+                to be raised.
+            expected_regex: re.Pattern|str. Regex expected to be found in
+                error message.
             args: Function to be called and extra positional args.
             kwargs: Extra kwargs.
+
+        Returns:
+            bool. Whether the code raised exception in the expected format.
         """
         if not expected_regex:
             raise Exception(
@@ -2038,7 +2040,7 @@ title: Title
 
         Args:
             skip_prefix: str. Path prefix that should be skipped when collecting
-            the files.
+                the files.
 
         Returns:
             list(str). A list of Python files.

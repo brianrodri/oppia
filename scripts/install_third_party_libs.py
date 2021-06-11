@@ -44,7 +44,7 @@ for package_name, version_number, target_path in PREREQUISITES:
     uextention_text = ['--user', '--prefix=', '--system']
     current_process = subprocess.Popen(
         command_text, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output_stderr = current_process.communicate()[1]
+    output_stderr = current_process.communicate()[1]  # pylint: disable=invalid-name
     if b'can\'t combine user with prefix' in output_stderr:
         subprocess.check_call(command_text + uextention_text)
 
@@ -180,7 +180,7 @@ def compile_protobuf_files(proto_files_paths):
         if p.suffix == '.py':
             common.inplace_replace_file(
                 p.absolute(),
-                '^import (\w*_pb2 as)', r'from proto_files import \1')
+                r'^import (\w*_pb2 as)', r'from proto_files import \1')
 
 
 def ensure_pip_library_is_installed(package, version, path):

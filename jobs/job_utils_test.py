@@ -22,15 +22,14 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 import datetime
 import unittest
 
-unittest.util._MAX_LENGTH = 10000
-
 from core.platform import models
 from core.tests import test_utils
 import feconf
 from jobs import job_utils
-import python_utils
 
 from apache_beam.io.gcp.datastore.v1new import types as beam_datastore_types
+
+unittest.util._MAX_LENGTH = 10000
 
 (base_models,) = models.Registry.import_models([models.NAMES.base_model])
 
@@ -191,7 +190,7 @@ class BeamEntityToAndFromModelTests(test_utils.TestBase):
             FooModel(id='abc', project=feconf.OPPIA_PROJECT_ID, prop='123'),
             job_utils.get_ndb_model_from_beam_entity(beam_entity))
 
-    def test_get_model_from_beam_entity(self):
+    def test_get_model_from_beam_entity_with_time(self):
         utcnow = datetime.datetime.utcnow()
 
         beam_entity = beam_datastore_types.Entity(

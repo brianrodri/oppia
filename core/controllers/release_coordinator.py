@@ -17,7 +17,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-from core import jobs
 from core import jobs_registry
 from core.controllers import acl_decorators
 from core.controllers import base
@@ -43,54 +42,15 @@ class JobsHandler(base.BaseHandler):
     @acl_decorators.can_run_any_job
     def get(self):
         """Handles GET requests."""
-        recent_job_data = jobs.get_data_for_recent_jobs()
-        unfinished_job_data = jobs.get_data_for_unfinished_jobs()
-
-        for job in unfinished_job_data:
-            job['can_be_canceled'] = job['is_cancelable'] and any([
-                klass.__name__ == job['job_type']
-                for klass in (
-                    jobs_registry.ONE_OFF_JOB_MANAGERS + (
-                        jobs_registry.AUDIT_JOB_MANAGERS))])
-
-        queued_or_running_job_types = set([
-            job['job_type'] for job in unfinished_job_data])
-        one_off_job_status_summaries = [{
-            'job_type': klass.__name__,
-            'is_queued_or_running': (
-                klass.__name__ in queued_or_running_job_types)
-        } for klass in jobs_registry.ONE_OFF_JOB_MANAGERS]
-        audit_job_status_summaries = [{
-            'job_type': klass.__name__,
-            'is_queued_or_running': (
-                klass.__name__ in queued_or_running_job_types)
-        } for klass in jobs_registry.AUDIT_JOB_MANAGERS]
-
-        continuous_computations_data = jobs.get_continuous_computations_info(
-            jobs_registry.ALL_CONTINUOUS_COMPUTATION_MANAGERS)
-        for computation in continuous_computations_data:
-            if computation['last_started_msec']:
-                computation['human_readable_last_started'] = (
-                    utils.get_human_readable_time_string(
-                        computation['last_started_msec']))
-            if computation['last_stopped_msec']:
-                computation['human_readable_last_stopped'] = (
-                    utils.get_human_readable_time_string(
-                        computation['last_stopped_msec']))
-            if computation['last_finished_msec']:
-                computation['human_readable_last_finished'] = (
-                    utils.get_human_readable_time_string(
-                        computation['last_finished_msec']))
-
         self.render_json({
-            'continuous_computations_data': continuous_computations_data,
+            'continuous_computations_data': [],
             'human_readable_current_time': (
                 utils.get_human_readable_time_string(
                     utils.get_current_time_in_millisecs())),
-            'one_off_job_status_summaries': one_off_job_status_summaries,
-            'audit_job_status_summaries': audit_job_status_summaries,
-            'recent_job_data': recent_job_data,
-            'unfinished_job_data': unfinished_job_data,
+            'one_off_job_status_summaries': [],
+            'audit_job_status_summaries': [],
+            'recent_job_data': [],
+            'unfinished_job_data': [],
         })
 
     @acl_decorators.can_run_any_job
@@ -138,9 +98,8 @@ class JobOutputHandler(base.BaseHandler):
     @acl_decorators.can_run_any_job
     def get(self):
         """Handles GET requests."""
-        job_id = self.request.get('job_id')
         self.render_json({
-            'output': jobs.get_job_output(job_id)
+            'output': ''
         })
 
 
@@ -160,5 +119,5 @@ class MemoryCacheHandler(base.BaseHandler):
 
     @acl_decorators.can_manage_memcache
     def delete(self):
-        caching_services.flush_memory_cache()
+        caching_services.flush_memory_caches()
         self.render_json({})

@@ -19,6 +19,7 @@
 
 var dragAndDropScript = require('html-dnd').code;
 var action = require('../protractor_utils/action.js');
+var forms = require('./forms.js');
 var general = require('../protractor_utils/general.js');
 var waitFor = require('./waitFor.js');
 var workflow = require('../protractor_utils/workflow.js');
@@ -256,23 +257,20 @@ var TopicEditorPage = function() {
 
     await action.sendKeys(
       'Create new url fragment', newSubtopicUrlFragmentField, urlFragment);
-    await workflow.submitImage(
-      topicThumbnailButton, thumbnailContainer, imgPath, false);
+
     var subtopicPageContentButton = element(by.css(
       '.protractor-test-show-schema-editor'));
     await action.click(
       'Edit subtopic htm content button', subtopicPageContentButton);
-    var pageEditor = element(by.css(
-      '.protractor-test-create-subtopic-page-content'));
-    await waitFor.visibilityOf(
-      pageEditor, 'Subtopic html editor takes too long to appear');
-    var pageEditorInput = pageEditor.element(by.css('.oppia-rte'));
+    var subtopicDescriptionEditor = element(by.css(
+      '.protractor-test-subtopic-description-editor'));
+    var richTextEditor = await forms.RichTextEditor(subtopicDescriptionEditor);
+    await richTextEditor.appendPlainText(htmlContent);
+    await workflow.submitImage(
+      topicThumbnailButton, thumbnailContainer, imgPath, false);
+
     await action.click(
-      'Page Editor Input', pageEditorInput);
-    await action.sendKeys(
-      'Page Editor Input', pageEditorInput, htmlContent);
-    await action.click(
-      'Confrim Subtopic Creation Button', confirmSubtopicCreationButton);
+      'Confirm subtopic creation button', confirmSubtopicCreationButton);
     await waitFor.invisibilityOf(
       element(by.css('.protractor-test-new-subtopic-editor')),
       'Create subtopic modal taking too long to disappear.');

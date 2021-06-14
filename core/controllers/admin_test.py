@@ -52,11 +52,11 @@ import python_utils
 import utils
 
 (
-    audit_models, exp_models, job_models,
-    opportunity_models, user_models
+    audit_models, exp_models, opportunity_models,
+    user_models
 ) = models.Registry.import_models([
-    models.NAMES.audit, models.NAMES.exploration, models.NAMES.job,
-    models.NAMES.opportunity, models.NAMES.user
+    models.NAMES.audit, models.NAMES.exploration, models.NAMES.opportunity,
+    models.NAMES.user
 ])
 
 BOTH_MODERATOR_AND_ADMIN_EMAIL = 'moderator.and.admin@example.com'
@@ -91,6 +91,19 @@ class AdminIntegrationTest(test_utils.GenericTestBase):
         self.login(self.ADMIN_EMAIL, is_super_admin=True)
         self.get_html_response('/admin')
         self.logout()
+
+    def test_promo_bar_configuration_not_present_to_admin(self):
+        """Test that promo bar configuration is not presentd in admin page."""
+        self.login(self.ADMIN_EMAIL, is_super_admin=True)
+
+        response_dict = self.get_json('/adminhandler')
+        response_config_properties = response_dict['config_properties']
+
+        self.assertIn(
+            'featured_translation_languages', response_config_properties)
+
+        self.assertNotIn('promo_bar_enabled', response_config_properties)
+        self.assertNotIn('promo_bar_message', response_config_properties)
 
     def test_change_configuration_property(self):
         """Test that configuration properties can be changed."""
@@ -2230,39 +2243,6 @@ class ContributionRightsDataHandlerTest(test_utils.GenericTestBase):
 
         self.assertEqual(response['error'], 'Missing username param')
         self.logout()
-
-
-class MemoryCacheAdminHandlerTest(test_utils.GenericTestBase):
-    """Tests MemoryCacheAdminHandler."""
-
-    def setUp(self):
-        super(MemoryCacheAdminHandlerTest, self).setUp()
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
-
-    def test_get_memory_cache_data(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        response = self.get_json(
-            '/memorycacheadminhandler')
-        self.assertEqual(
-            response['total_allocation'], 0)
-        self.assertEqual(
-            response['peak_allocation'], 0)
-        self.assertEqual(response['total_keys_stored'], 1)
-
-    def test_flush_memory_cache(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-
-        response = self.get_json(
-            '/memorycacheadminhandler')
-        self.assertEqual(response['total_keys_stored'], 1)
-
-        csrf_token = self.get_new_csrf_token()
-        self.post_json(
-            '/memorycacheadminhandler', {}, csrf_token=csrf_token)
-
-        response = self.get_json(
-            '/memorycacheadminhandler')
-        self.assertEqual(response['total_keys_stored'], 0)
 
 
 class NumberOfDeletionRequestsHandlerTest(test_utils.GenericTestBase):

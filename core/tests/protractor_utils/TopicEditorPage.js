@@ -264,10 +264,15 @@ var TopicEditorPage = function() {
       'Edit subtopic htm content button', subtopicPageContentButton);
     var pageEditor = element(by.css(
       '.protractor-test-create-subtopic-page-content'));
-    await action.click('Subtopic html editor', pageEditor);
-    await action.sendKeys('Page editor input', pageEditorInput);
+    await waitFor.visibilityOf(
+      pageEditor, 'Subtopic html editor takes too long to appear');
+    var pageEditorInput = pageEditor.element(by.css('.oppia-rte'));
     await action.click(
-      'Confirm subtopic creation button', confirmSubtopicCreationButton);
+      'Page Editor Input', pageEditorInput);
+    await action.sendKeys(
+      'Page Editor Input', pageEditorInput, htmlContent);
+    await action.click(
+      'Confrim Subtopic Creation Button', confirmSubtopicCreationButton);
     await waitFor.invisibilityOf(
       element(by.css('.protractor-test-new-subtopic-editor')),
       'Create subtopic modal taking too long to disappear.');

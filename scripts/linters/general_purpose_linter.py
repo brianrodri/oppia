@@ -575,16 +575,14 @@ class GeneralPurposeLinter(python_utils.OBJECT):
         file_content = self.file_cache.readlines(filepath)
         for index, regexp_to_check in enumerate(
                 pattern_list):
-            if (any([filepath.endswith(
+            if (any(filepath.endswith(
                     allowed_type) for allowed_type in (
-                        regexp_to_check['included_types'])]) and (
-                            not any([
+                        regexp_to_check['included_types'])) and (
+                            not any(
                                 filepath.endswith(
                                     pattern) for pattern in (
-                                        regexp_to_check[
-                                            'excluded_files'] +
-                                        regexp_to_check[
-                                            'excluded_dirs'])]))):
+                                        regexp_to_check['excluded_files'] +
+                                        regexp_to_check['excluded_dirs'])))):
                 pattern_found_list.append(index)
                 for line in file_content:
                     if regexp_to_check['regexp'].search(line):

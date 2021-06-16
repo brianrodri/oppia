@@ -19,15 +19,15 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-
 import html
 import json
 import logging
 
-import bleach
-import bs4
 from core.domain import rte_component_registry
 import python_utils
+
+import bleach
+import bs4
 
 
 def filter_a(tag, name, value):

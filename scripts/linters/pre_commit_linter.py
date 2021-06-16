@@ -211,7 +211,7 @@ def _get_linters_for_file_extension(file_extension_to_lint, name_space, files):
         file_extension_to_lint: str. The file extension to be linted.
         name_space: multiprocessing.Namespace. Namespace in which to execute
             this function.
-        files:
+        files: dict(str, list(str)). The mapping of filetypes to list of files.
 
     Returns:
         (CustomLintChecks, ThirdPartyLintChecks). A 2-tuple containing objects
@@ -223,8 +223,7 @@ def _get_linters_for_file_extension(file_extension_to_lint, name_space, files):
     custom_linters = []
     third_party_linters = []
 
-    file_extension_type_js_ts = file_extension_to_lint == 'js' or (
-        file_extension_to_lint == 'ts')
+    file_extension_type_js_ts = file_extension_to_lint in ('js', 'ts')
 
     if file_extension_type_js_ts:
         general_files_to_lint = files['.js'] + files['.ts']
@@ -290,7 +289,7 @@ def _get_changed_filepaths():
         'git', 'diff', '--cached', '--name-only',
         '--diff-filter=ACM']).splitlines()
     all_changed_filepaths = unstaged_files + staged_files
-    return [filepath for filepath in all_changed_filepaths]
+    return all_changed_filepaths[:]
 
 
 def _get_all_files_in_directory(dir_path, excluded_glob_patterns):
@@ -310,10 +309,10 @@ def _get_all_files_in_directory(dir_path, excluded_glob_patterns):
     for _dir, _, files in os.walk(dir_path):
         for file_name in files:
             filepath = os.path.relpath(
-                os.path.join(_dir, file_name), os.getcwd())
-            if not any([
+                os.path.join(_dir, file_name), start=os.getcwd())
+            if not any(
                     fnmatch.fnmatch(filepath, gp) for gp in
-                    excluded_glob_patterns]):
+                    excluded_glob_patterns):
                 files_in_directory.append(filepath)
     return files_in_directory
 
@@ -358,6 +357,8 @@ def _get_filepaths_from_path(input_path, name_space=None):
 
     Args:
         input_path: str. Path to look for files under.
+        name_space: multiprocessing.Namespace. Namespace in which to execute
+            this function.
 
     Returns:
         list. Paths to lintable files.
@@ -387,6 +388,8 @@ def _get_filepaths_from_non_other_shard(shard, name_space=None):
 
     Args:
         shard: str. Shard name.
+        name_space: multiprocessing.Namespace. Namespace in which to execute
+            this function.
 
     Returns:
         list(str). Paths to lintable files.
@@ -442,6 +445,8 @@ def _get_all_filepaths(
             checked, ignored if input_path is specified.
         input_shard: str. Name of shard to lint. Ignored if either
             input_path or input_filenames are specified.
+        name_space: multiprocessing.Namespace. Namespace in which to execute
+            this function.
 
     Returns:
         list(str). The list of filepaths to be linted and checked.
@@ -632,7 +637,7 @@ def main(args=None):
     custom_linters = []
     third_party_linters = []
     for file_extension_type in file_extension_types:
-        if (file_extension_type == 'js' or file_extension_type == 'ts'):
+        if file_extension_type in ('js', 'ts'):
             if len(files['.js'] + files['.ts']) == 0:
                 continue
         elif (not file_extension_type == 'other' and not

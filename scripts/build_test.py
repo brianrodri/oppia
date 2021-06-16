@@ -34,8 +34,8 @@ import python_utils
 
 from . import build
 from . import common
-from . import servers
 from . import scripts_test_utils
+from . import servers
 
 TEST_DIR = os.path.join('core', 'tests', 'build', '')
 TEST_SOURCE_DIR = os.path.join('core', 'tests', 'build_sources')

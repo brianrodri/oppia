@@ -3127,8 +3127,8 @@ class DisallowedFunctionsCheckerTests(unittest.TestCase):
         (
             self.checker_test_object
             .checker.config.disallowed_functions_and_replacements_regex) = [
-                '.*example_func',
-                '.*\..*example_attr'
+                r'.*example_func',
+                r'.*\..*example_attr'
             ]
         self.checker_test_object.checker.open()
 

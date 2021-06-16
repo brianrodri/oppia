@@ -282,10 +282,11 @@ class RunE2ETestsTests(test_utils.GenericTestBase):
         run_e2e_tests.main(args=[])
 
     def test_work_with_non_ascii_chars(self):
-        def mock_managed_protractor_server(**unused_kwargs): # pylint: disable=unused-argument
+        def mock_managed_protractor_server(**unused_kwargs):  # pylint: disable=unused-argument
             return python_utils.nullcontext(
                 enter_result=scripts_test_utils.PopenStub(
-                    stdout='sample\n✓\noutput\n'.encode('utf-8'), alive=False))
+                    stdout='sample\n✓\noutput\n'.encode(encoding='utf-8'),
+                    alive=False))
 
         self.exit_stack.enter_context(self.swap_with_checks(
             run_e2e_tests, 'is_oppia_server_already_running', lambda *_: False))

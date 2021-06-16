@@ -268,8 +268,8 @@ def get_linters(files_to_lint, unused_file_cache):
 
     Args:
         files_to_lint: list(str). A list of filepaths to lint.
-        unused_file_cache: object(FileCache). Provides thread-safe access to cached
-            file content.
+        unused_file_cache: object(FileCache). Provides thread-safe access to
+            cached file content.
 
     Returns:
         tuple(PythonLintChecksManager, ThirdPartyPythonLintChecksManager). A

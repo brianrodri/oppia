@@ -804,7 +804,7 @@ class SchemaNormalizationUnitTests(test_utils.GenericTestBase):
         }
         mappings = [(1.2, 1.2), (3, 3.0), (-1, -1.0), ('1', 1.0)]
         invalid_values_with_error_messages = [
-            ([13],  re.escape('Could not convert list to float: [13]')),
+            ([13], re.escape('Could not convert list to float: [13]')),
             ('abc', 'Could not convert str to float: abc'),
             (None, 'Could not convert NoneType to float: None')]
         self.check_normalization(

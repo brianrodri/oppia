@@ -59,7 +59,6 @@ class PythonLintChecksManagerTests(test_utils.LinterTestBase):
     def test_unsorted_import_order(self):
         lint_task_report = python_linter.ThirdPartyPythonLintChecksManager(
             [INVALID_IMPORT_FILEPATH]).check_import_order()
-        print(lint_task_report.get_report())
         self.assert_same_list_elements([
             'FAILED  Import order check failed'], lint_task_report.get_report())
         self.assertEqual('Import order', lint_task_report.name)
@@ -85,7 +84,6 @@ class PythonLintChecksManagerTests(test_utils.LinterTestBase):
     def test_invalid_file_with_pylint_error(self):
         lint_task_report = python_linter.ThirdPartyPythonLintChecksManager(
             [INVALID_DOCSTRING_FILEPATH]).lint_py_files()
-        print(lint_task_report.trimmed_messages)
         self.assert_same_list_elements(
             ['W9025: Period is not used at the end of the docstring.'],
             lint_task_report.trimmed_messages)
@@ -158,7 +156,7 @@ class PythonLintChecksManagerTests(test_utils.LinterTestBase):
         self.assertTrue(lint_task_report.failed)
 
     def test_get_linters_with_success(self):
-        custom_linter, third_party_linter = python_linter.get_linters(
+        _, third_party_linter = python_linter.get_linters(
             [VALID_PY_FILEPATH], FILE_CACHE)
         self.assertTrue(
             isinstance(

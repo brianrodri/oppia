@@ -61,7 +61,7 @@ def read_from_node(node):
     Returns:
         list(str). The data read from the ast node.
     """
-    return list([line.decode('utf-8') for line in node.stream().readlines()])
+    return [line.decode('utf-8') for line in node.stream().readlines()]
 
 
 class ExplicitKeywordArgsChecker(checkers.BaseChecker):
@@ -276,8 +276,7 @@ class HangingIndentChecker(checkers.BaseChecker):
         for (token_type, token, (line_num, _), _, line) in tokens:
             # Check if token type is an operator and is either a
             # left parenthesis '(' or a right parenthesis ')'.
-            if token_type == tokenize.OP and (
-                    token == '(' or token == ')'):
+            if token_type == tokenize.OP and token in ('(', ')'):
                 line = line.strip()
 
                 # Exclude 'if', 'elif', 'while' statements.
@@ -608,8 +607,8 @@ class DocstringParameterChecker(checkers.BaseChecker):
             line = linecache.getline(node.root().file, line_number).strip()
             if line.startswith(('"""', '\'\'\'', '\'', '"')):
                 break
-            else:
-                line_number += 1
+
+            line_number += 1
 
         doc_length = len(node.doc.split('\n'))
         line_number += doc_length
@@ -1505,7 +1504,7 @@ class RestrictedImportChecker(checkers.BaseChecker):
     )
 
     def __init__(self, linter=None):
-        super(RestrictedImportChecker, self).__init__(linter)
+        super(RestrictedImportChecker, self).__init__(linter=linter)
         self._module_to_forbidden_imports = []
 
     def open(self):
@@ -1806,8 +1805,8 @@ class BlankLineBelowFileOverviewChecker(checkers.BaseChecker):
             line = linecache.getline(node.root().file, line_number).strip()
             if line.startswith(('\'', '"')):
                 break
-            else:
-                line_number += 1
+
+            line_number += 1
 
         doc_length = len(node.doc.split('\n'))
         line_number += doc_length
@@ -2034,7 +2033,7 @@ class DisallowedFunctionsChecker(checkers.BaseChecker):
         ),)
 
     def __init__(self, linter=None):
-        super(DisallowedFunctionsChecker, self).__init__(linter)
+        super(DisallowedFunctionsChecker, self).__init__(linter=linter)
         self.funcs_to_replace_str = {}
         self.funcs_to_remove_str = set()
         self.funcs_to_replace_regex = []

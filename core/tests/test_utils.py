@@ -1286,8 +1286,8 @@ class TestBase(unittest.TestCase):
                 to be raised.
             expected_regex: re.Pattern|str. Regex expected to be found in
                 error message.
-            args: Function to be called and extra positional args.
-            kwargs: Extra kwargs.
+            *args: list(*). Function to be called and extra positional args.
+            **kwargs: dict(str, Any). Extra kwargs.
 
         Returns:
             bool. Whether the code raised exception in the expected format.
@@ -2052,7 +2052,7 @@ title: Title
         for _dir, _, files in os.walk(current_dir):
             for file_name in files:
                 filepath = os.path.relpath(
-                    os.path.join(_dir, file_name), current_dir)
+                    os.path.join(_dir, file_name), start=current_dir)
                 if (
                         filepath.endswith('.py') and (
                             filepath.startswith('core/') or

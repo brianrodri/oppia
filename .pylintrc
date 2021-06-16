@@ -143,7 +143,9 @@ disable=consider-using-ternary,
         missing-raises-doc,
         unnecessary-pass,
         no-else-continue,
-        no-else-break
+        no-else-break,
+        non-explicit-keyword-args,
+        arg-name-for-non-keyword-arg
 
 [REPORTS]
 

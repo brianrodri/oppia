@@ -754,7 +754,7 @@ class CommonTests(test_utils.GenericTestBase):
     def test_fix_third_party_imports_correctly_sets_up_imports(self):
         common.fix_third_party_imports()
         # Asserts that imports from problematic modules do not error.
-        from google.cloud import tasks_v2 # pylint: disable=unused-variable
+        from google.cloud import tasks_v2  # pylint: disable=unused-import
 
     def test_swap_env_when_var_had_a_value(self):
         os.environ['ABC'] = 'Hard as Rocket Science'

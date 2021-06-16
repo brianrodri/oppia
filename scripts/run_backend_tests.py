@@ -68,10 +68,10 @@ from . import install_third_party_libs
 # libraries that use the builtins python module (e.g. build, python_utils).
 install_third_party_libs.main()
 
-import python_utils # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
-from . import common # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
-from . import concurrent_task_utils # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
-from . import servers
+import python_utils  # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
+from . import common  # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
+from . import concurrent_task_utils  # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
+from . import servers  # isort:skip  pylint: disable=wrong-import-position, wrong-import-order
 
 COVERAGE_DIR = os.path.join(
     os.getcwd(), os.pardir, 'oppia_tools',
@@ -202,7 +202,7 @@ def _get_all_test_targets_from_path(test_path=None, include_load_tests=True):
         """
         class_names = []
         test_target_path = os.path.relpath(
-            path, os.getcwd())[:-3].replace('/', '.')
+            path, start=os.getcwd())[:-3].replace('/', '.')
         python_module = importlib.import_module(test_target_path)
         for name, clazz in inspect.getmembers(
                 python_module, predicate=inspect.isclass):
@@ -218,7 +218,7 @@ def _get_all_test_targets_from_path(test_path=None, include_load_tests=True):
     excluded_dirs = [
         '.git', 'third_party', 'core/tests', 'node_modules', 'venv']
     for root in os.listdir(base_path):
-        if any([s in root for s in excluded_dirs]):
+        if any(s in root for s in excluded_dirs):
             continue
         if root.endswith('_test.py'):
             result = result + (
@@ -336,10 +336,7 @@ def main(args=None):
     if parsed_args.test_target and '/' in parsed_args.test_target:
         raise Exception('The delimiter in test_target should be a dot (.)')
 
-    # TODO(#11549): Move this to top of the file.
-    import contextlib2
-
-    with contextlib2.ExitStack() as stack:
+    with python_utils.ExitStack() as stack:
         stack.enter_context(servers.managed_cloud_datastore_emulator())
         stack.enter_context(servers.managed_redis_server())
         if parsed_args.test_target:
@@ -355,7 +352,8 @@ def main(args=None):
                     '---------------------------------------------------------')
                 python_utils.PRINT('')
                 time.sleep(3)
-                python_utils.PRINT('Redirecting to its corresponding test file...')
+                python_utils.PRINT(
+                    'Redirecting to its corresponding test file...')
                 all_test_targets = [parsed_args.test_target + '_test']
         elif parsed_args.test_shard:
             validation_error = _check_shards_match_tests(

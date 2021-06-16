@@ -17,7 +17,7 @@
 """Tests interface for storage model switching."""
 
 from __future__ import absolute_import  # pylint: disable=import-only-modules
-from __future__ import unicode_literals # pylint: disable=import-only-modules
+from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import re
 
@@ -140,7 +140,7 @@ class RegistryUnitTest(test_utils.TestBase):
 
     def test_import_models_recommendations(self):
         """Tests import_models function with recommendations option."""
-        from core.storage.recommendations import gae_models as recommendations_models  # isort:skip  # pylint: disable=line-too-long
+        from core.storage.recommendations import gae_models as recommendations_models  # isort:skip pylint: disable=line-too-long
         expected_recommendations_models = (recommendations_models,)
         self.assertEqual(
             expected_recommendations_models,
@@ -313,8 +313,7 @@ class RegistryUnitTest(test_utils.TestBase):
             self.assertEqual(
                 self.registry_instance.import_cloud_translate_services(),
                 cloud_translate_services)
-        from core.platform.cloud_translate import (
-            dev_mode_cloud_translate_services)
+        from core.platform.cloud_translate import dev_mode_cloud_translate_services  # isort:skip pylint: disable=line-too-long
         self.assertEqual(
             self.registry_instance.import_cloud_translate_services(),
             dev_mode_cloud_translate_services)

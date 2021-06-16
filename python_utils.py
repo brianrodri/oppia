@@ -84,14 +84,14 @@ def SimpleXMLRPCServer( # pylint: disable=invalid-name
         SimpleXMLRPCServer. The SimpleXMLRPCServer object.
     """
     try:
-        from xmlrpc.server import SimpleXMLRPCServer as impl # pylint: disable=import-only-modules
+        from xmlrpc.server import SimpleXMLRPCServer as impl  # pylint: disable=import-only-modules
     except ImportError:
-        from SimpleXMLRPCServer import SimpleXMLRPCServer as impl # pylint: disable=import-only-modules
+        from SimpleXMLRPCServer import SimpleXMLRPCServer as impl  # pylint: disable=import-only-modules
     if requestHandler is None:
         try:
-            from xmlrpc.server import SimpleXMLRPCRequestHandler # pylint: disable=import-only-modules
+            from xmlrpc.server import SimpleXMLRPCRequestHandler  # isort:skip pylint: disable=import-only-modules
         except ImportError:
-            from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler # pylint: disable=import-only-modules
+            from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler  # isort:skip pylint: disable=import-only-modules
         requestHandler = SimpleXMLRPCRequestHandler
     return impl(
         addr, requestHandler=requestHandler, logRequests=logRequests,
@@ -112,9 +112,9 @@ def redirect_stdout(new_target):
         redirect_stdout object.
     """
     try:
-        from contextlib import redirect_stdout as impl # pylint: disable=import-only-modules
+        from contextlib import redirect_stdout as impl  # pylint: disable=import-only-modules
     except ImportError:
-        from contextlib2 import redirect_stdout as impl # pylint: disable=import-only-modules
+        from contextlib2 import redirect_stdout as impl  # pylint: disable=import-only-modules
     return impl(new_target)
 
 
@@ -130,9 +130,9 @@ def nullcontext(enter_result=None):
         object.
     """
     try:
-        from contextlib import nullcontext as impl # pylint: disable=import-only-modules
+        from contextlib import nullcontext as impl  # pylint: disable=import-only-modules
     except ImportError:
-        from contextlib2 import nullcontext as impl # pylint: disable=import-only-modules
+        from contextlib2 import nullcontext as impl  # pylint: disable=import-only-modules
     return impl(enter_result=enter_result)
 
 
@@ -144,9 +144,9 @@ def ExitStack(): # pylint: disable=invalid-name
         contextlib.ExitStack or contextlib2.ExitStack. The ExitStack object.
     """
     try:
-        from contextlib import ExitStack as impl # pylint: disable=import-only-modules
+        from contextlib import ExitStack as impl  # pylint: disable=import-only-modules
     except ImportError:
-        from contextlib2 import ExitStack as impl # pylint: disable=import-only-modules
+        from contextlib2 import ExitStack as impl  # pylint: disable=import-only-modules
     return impl()
 
 
@@ -165,7 +165,7 @@ def string_io(buffer_value=''):
         from StringIO import StringIO  # pylint: disable=import-only-modules
     except ImportError:
         from io import StringIO  # pylint: disable=import-only-modules
-    return StringIO(buffer_value) # pylint: disable=disallowed-function-calls
+    return StringIO(buffer_value)  # pylint: disable=disallowed-function-calls
 
 
 def get_args_of_function_node(function_node, args_to_ignore):
@@ -232,7 +232,7 @@ def url_join(base_url, relative_url):
         import urllib.parse as urlparse
     except ImportError:
         import urlparse
-    return urlparse.urljoin(base_url, relative_url) # pylint: disable=disallowed-function-calls
+    return urlparse.urljoin(base_url, relative_url)  # pylint: disable=disallowed-function-calls
 
 
 def url_split(urlstring):
@@ -249,7 +249,7 @@ def url_split(urlstring):
         import urllib.parse as urlparse
     except ImportError:
         import urlparse
-    return urlparse.urlsplit(urlstring) # pylint: disable=disallowed-function-calls
+    return urlparse.urlsplit(urlstring)  # pylint: disable=disallowed-function-calls
 
 
 def url_parse(urlstring):
@@ -268,7 +268,7 @@ def url_parse(urlstring):
         import urllib.parse as urlparse
     except ImportError:
         import urlparse
-    return urlparse.urlparse(urlstring) # pylint: disable=disallowed-function-calls
+    return urlparse.urlparse(urlstring)  # pylint: disable=disallowed-function-calls
 
 
 def url_unsplit(url_parts):
@@ -286,7 +286,7 @@ def url_unsplit(url_parts):
         import urllib.parse as urlparse
     except ImportError:
         import urlparse
-    return urlparse.urlunsplit(url_parts) # pylint: disable=disallowed-function-calls
+    return urlparse.urlunsplit(url_parts)  # pylint: disable=disallowed-function-calls
 
 
 def parse_query_string(query_string):
@@ -305,7 +305,7 @@ def parse_query_string(query_string):
         import urllib.parse as urlparse
     except ImportError:
         import urlparse
-    return urlparse.parse_qs(query_string) # pylint: disable=disallowed-function-calls
+    return urlparse.parse_qs(query_string)  # pylint: disable=disallowed-function-calls
 
 
 def urllib_unquote(content):
@@ -397,6 +397,7 @@ def url_retrieve(source_url, filename=None):
         import urllib.request as urlrequest
     except ImportError:
         import urllib as urlrequest
+
         # Change the User-Agent to prevent servers from blocking requests.
         # See https://support.cloudflare.com/hc/en-us/articles/360029779472-Troubleshooting-Cloudflare-1XXX-errors#error1010. # pylint: disable=line-too-long
     urlrequest.URLopener.version = (
@@ -598,9 +599,10 @@ def create_enum(*sequential):
     """
     enum_values = dict(ZIP(sequential, sequential))
     try:
-        from enum import Enum # pylint: disable=import-only-modules
+        from enum import Enum  # pylint: disable=import-only-modules
+
         # The type() of argument 1 in Enum must be str, not unicode.
-        return Enum(str('Enum'), enum_values) # pylint: disable=disallowed-function-calls
+        return Enum(str('Enum'), enum_values)  # pylint: disable=disallowed-function-calls
     except ImportError:
         _enums = {}
         for name, value in enum_values.items():
@@ -610,26 +612,6 @@ def create_enum(*sequential):
             }
             _enums[name] = type('Enum', (), _value)
         return type('Enum', (), _enums)
-
-
-def zip_longest(*args, **kwargs):
-    """Creates an iterator that aggregates elements from each of the iterables.
-    If the iterables are of uneven length, missing values are
-    filled-in with fillvalue.
-
-    Args:
-        *args: list(*). Iterables that needs to be aggregated into an iterable.
-        **kwargs: dict. It contains fillvalue.
-
-    Returns:
-        iterable(iterable). A sequence of aggregates elements
-        from each of the iterables.
-    """
-    fillvalue = kwargs.get('fillvalue')
-    try:
-        return itertools.zip_longest(*args, fillvalue=fillvalue)
-    except AttributeError:
-        return itertools.izip_longest(*args, fillvalue=fillvalue)
 
 
 def zip_longest(*args, **kwargs):

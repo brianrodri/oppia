@@ -22,8 +22,10 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 try:
     import StringIO
 except ImportError:
-    from io import StringIO
+    from io import StringIO  # pylint: disable=import-only-modules
+
 import ast
+import builtins
 import io
 import sys
 import tempfile
@@ -32,9 +34,6 @@ import unittest
 from core.tests import test_utils
 from core.tests.data import unicode_and_str_handler
 import python_utils
-
-import builtins
-import future  # isort:skip
 
 
 class PythonUtilsTests(test_utils.GenericTestBase):
@@ -149,7 +148,7 @@ class PythonUtilsTests(test_utils.GenericTestBase):
         string2 = u'Лорем'
         self.assertEqual(
             python_utils.convert_to_bytes(string1),
-            string1.encode('utf-8')
+            string1.encode(encoding='utf-8')
         )
         self.assertEqual(
             python_utils.convert_to_bytes(string2),
@@ -185,8 +184,8 @@ class PythonUtilsTests(test_utils.GenericTestBase):
     def test_recursively_convert_to_str_with_dict(self):
         test_var_1_in_unicode = python_utils.UNICODE('test_var_1')
         test_var_2_in_unicode = python_utils.UNICODE('test_var_2')
-        test_var_3_in_bytes = test_var_1_in_unicode.encode('utf-8')
-        test_var_4_in_bytes = test_var_2_in_unicode.encode('utf-8')
+        test_var_3_in_bytes = test_var_1_in_unicode.encode(encoding='utf-8')
+        test_var_4_in_bytes = test_var_2_in_unicode.encode(encoding='utf-8')
         test_dict = {
             test_var_1_in_unicode: test_var_3_in_bytes,
             test_var_2_in_unicode: test_var_4_in_bytes
@@ -211,8 +210,12 @@ class PythonUtilsTests(test_utils.GenericTestBase):
     def test_recursively_convert_to_str_with_nested_structure(self):
         test_var_1_in_unicode = python_utils.UNICODE('test_var_1')
         test_list_1 = [
-            test_var_1_in_unicode, test_var_1_in_unicode.encode('utf-8'),
-            'test_var_2', b'test_var_3', {'test_var_4': b'test_var_5'}]
+            test_var_1_in_unicode,
+            test_var_1_in_unicode.encode(encoding='utf-8'),
+            'test_var_2',
+            b'test_var_3',
+            {'test_var_4': b'test_var_5'}
+        ]
         test_dict = {test_var_1_in_unicode: test_list_1}
         self.assertEqual(
             test_dict,

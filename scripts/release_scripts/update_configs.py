@@ -48,7 +48,7 @@ TERMS_PAGE_FOLDER_URL = (
     'https://github.com/oppia/oppia/commits/develop/core/'
     'templates/pages/terms-page')
 
-_PARSER = argparse.ArgumentParser(description="Updates configs.")
+_PARSER = argparse.ArgumentParser(description='Updates configs.')
 _PARSER.add_argument(
     '--release_dir_path',
     dest='release_dir_path',

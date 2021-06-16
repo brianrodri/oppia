@@ -19,7 +19,6 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import collections
 import contextlib
-import io
 import logging
 import os
 import re
@@ -800,7 +799,9 @@ class ManagedProcessTests(test_utils.TestBase):
                 ),
             ]))
         self.exit_stack.enter_context(self.swap_with_checks(
-            python_utils, 'url_open', lambda _: mock.Mock(read=lambda: b'4.5.6'),
+            python_utils,
+            'url_open',
+            lambda _: mock.Mock(read=lambda: b'4.5.6'),
             expected_args=[
                 (
                     'https://chromedriver.storage.googleapis.com'
@@ -902,7 +903,6 @@ class ManagedProcessTests(test_utils.TestBase):
             popen_calls[0].program_args,
             '%s %s start --versions.chrome 1.2.3 --quiet --standalone' % (
                 common.NODE_BIN_PATH, common.WEBDRIVER_MANAGER_BIN_PATH))
-        print('TEST')
 
     def test_managed_protractor_with_invalid_sharding_instances(self):
         popen_calls = self.exit_stack.enter_context(self.swap_popen())

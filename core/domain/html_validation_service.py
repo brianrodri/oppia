@@ -24,7 +24,6 @@ import logging
 import re
 import xml
 
-import bs4
 from constants import constants
 from core.domain import fs_domain
 from core.domain import fs_services
@@ -34,6 +33,8 @@ from extensions.rich_text_components import components
 import feconf
 import python_utils
 import utils
+
+import bs4
 
 
 def escape_html(unescaped_html_data):

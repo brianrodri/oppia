@@ -373,7 +373,7 @@ class JSONEncoderForHTML(json.JSONEncoder):
     """Encodes JSON that is safe to embed in HTML."""
 
     def encode(self, o):
-        chunks = self.iterencode(o, True)
+        chunks = self.iterencode(o, _one_shot=True)
         return ''.join(chunks) if self.ensure_ascii else u''.join(chunks)
 
     def iterencode(self, o, _one_shot=False):
@@ -424,7 +424,8 @@ def base64_from_int(value):
     Returns:
         *. Returns the base64 representation of the number passed.
     """
-    byte_value = b'[' + str(value).encode('utf-8') + b']'
+    byte_value = (
+        b'[' + python_utils.UNICODE(value).encode(encoding='utf-8') + b']')
     return base64.b64encode(byte_value).decode('utf-8')
 
 

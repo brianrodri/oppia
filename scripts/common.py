@@ -305,7 +305,7 @@ def open_new_tab_in_browser_if_possible(url):
 def get_remote_alias(remote_url):
     """Finds the correct alias for the given remote repository URL."""
     git_remote_output = subprocess.check_output(
-        ['git', 'remote', '-v']).decode('utf-8').split('\n')
+        ['git', 'remote', '-v']).decode(encoding='utf-8').split('\n')
     remote_alias = None
     for line in git_remote_output:
         if remote_url in line:

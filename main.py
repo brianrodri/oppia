@@ -171,6 +171,7 @@ def ui_access_wrapper(self, *args, **kwargs):
     """
     self.real_dispatch(*args, **kwargs)
 
+
 # Register the URLs with the classes responsible for handling them.
 URLS = [
     get_redirect_route(r'/_ah/warmup', WarmupPage),
@@ -884,6 +885,7 @@ URLS.append(get_redirect_route(r'/<:.*>', base.Error404Handler))
 
 class NdbWsgiMiddleware:
     """Wraps the WSGI application into the NDB client context."""
+
     def __init__(self, wsgi_app):
         self.wsgi_app = wsgi_app
 
@@ -892,6 +894,7 @@ class NdbWsgiMiddleware:
             cache_services.CLOUD_NDB_REDIS_CLIENT)
         with datastore_services.get_ndb_context(global_cache=global_cache):
             return self.wsgi_app(environ, start_response)
+
 
 app_without_context = webapp2.WSGIApplication(URLS, debug=feconf.DEBUG)
 app = NdbWsgiMiddleware(app_without_context)

@@ -22,12 +22,13 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 import os
 import re
 
-import bs4
 from core.domain import fs_domain
 from core.domain import html_validation_service
 from core.tests import test_utils
 import feconf
 import python_utils
+
+import bs4
 
 
 class ContentMigrationTests(test_utils.GenericTestBase):

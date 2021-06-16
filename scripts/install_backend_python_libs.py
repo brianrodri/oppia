@@ -26,10 +26,12 @@ import subprocess
 import sys
 
 import python_utils
-from . import common
 import utils
 
 import pkg_resources
+
+from . import common
+
 
 OPPIA_REQUIRED_PIP_VERSION = '20.3.4'
 GIT_DIRECT_URL_REQUIREMENT_PATTERN = (
@@ -298,16 +300,19 @@ def _rectify_third_party_directory(mismatches):
         if not directory_version:
             _install_library(
                 normalized_library_name,
-                str(requirements_version))
+                python_utils.UNICODE(requirements_version)
+            )
         # The currently installed library version is not equal to the required
         # 'requirements.txt' version.
         elif requirements_version != directory_version:
             _install_library(
                 normalized_library_name,
-                str(requirements_version))
+                python_utils.UNICODE(requirements_version)
+            )
             _remove_metadata(
                 normalized_library_name,
-                str(directory_version))
+                python_utils.UNICODE(directory_version)
+            )
 
 
 def _is_git_url_mismatch(mismatch_item):
@@ -424,7 +429,7 @@ def verify_pip_is_installed():
     """
     python_utils.PRINT('Checking if pip is installed on the local machine')
     try:
-        import pip
+        import pip  # pylint: disable=unused-import
     except ImportError as e:
         common.print_each_string_after_two_new_lines([
             'Pip is required to install Oppia dependencies, but pip wasn\'t '
@@ -470,7 +475,7 @@ def _run_pip_command(cmd_parts):
         subprocess.check_call(
             command + ['--user', '--prefix=', '--system'])
     else:
-        python_utils.PRINT(stderr.decode('utf-8'))
+        python_utils.PRINT(stderr.decode(encoding='utf-8'))
         python_utils.PRINT(
             'Refer to https://github.com/oppia/oppia/wiki/Troubleshooting')
         raise Exception('Error installing package')

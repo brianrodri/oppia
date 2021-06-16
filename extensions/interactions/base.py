@@ -160,7 +160,7 @@ class BaseInteraction(python_utils.OBJECT):
         """A set of answer calculation ids."""
         visualizations = self.answer_visualizations
         return set(
-            [visualization.calculation_id for visualization in visualizations])
+            visualization.calculation_id for visualization in visualizations)
 
     @property
     def dependency_ids(self):

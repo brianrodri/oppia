@@ -25,8 +25,8 @@ import logging
 from constants import constants
 import feconf
 
-from google.api_core import retry
 from google import auth
+from google.api_core import retry
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
 

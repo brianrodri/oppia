@@ -122,7 +122,6 @@ class CloudStorageEmulator(python_utils.OBJECT):
 
         Returns:
             str. Filepath prepended by the current namespace.
-
         """
         return '%s:%s' % (self.namespace, filepath)
 

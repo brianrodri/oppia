@@ -17,7 +17,6 @@
  */
 
 const { browser } = require('protractor');
-var action = require('../protractor_utils/action.js');
 var general = require('../protractor_utils/general.js');
 var users = require('../protractor_utils/users.js');
 var waitFor = require('../protractor_utils/waitFor.js');

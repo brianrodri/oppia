@@ -73,9 +73,9 @@ def run_lighthouse_puppeteer_script():
     else:
         python_utils.PRINT('Return code: %s' % process.returncode)
         python_utils.PRINT('OUTPUT:')
-        python_utils.PRINT(stdout)
+        python_utils.PRINT(stdout.decode('utf-8'))
         python_utils.PRINT('ERROR:')
-        python_utils.PRINT(stderr)
+        python_utils.PRINT(stderr.decode('utf-8'))
         python_utils.PRINT(
             'Puppeteer script failed. More details can be found above.')
         sys.exit(1)
@@ -92,7 +92,6 @@ def run_webpack_compilation():
         except subprocess.CalledProcessError as error:
             python_utils.PRINT(error.output)
             sys.exit(error.returncode)
-            return
         if os.path.isdir(webpack_bundles_dir_name):
             break
     if not os.path.isdir(webpack_bundles_dir_name):
@@ -147,9 +146,9 @@ def run_lighthouse_checks(lighthouse_mode):
     else:
         python_utils.PRINT('Return code: %s' % process.returncode)
         python_utils.PRINT('OUTPUT:')
-        python_utils.PRINT(stdout)
+        python_utils.PRINT(stdout.decode('utf-8'))
         python_utils.PRINT('ERROR:')
-        python_utils.PRINT(stderr)
+        python_utils.PRINT(stderr.decode('utf-8'))
         python_utils.PRINT(
             'Lighthouse checks failed. More details can be found above.')
         sys.exit(1)

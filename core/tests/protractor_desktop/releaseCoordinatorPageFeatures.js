@@ -44,29 +44,6 @@ describe('Release Coordinator Page', function() {
   it('should run, verify and stop one-off jobs', async function() {
     await users.login('releaseCoordinator@example.com');
     await releaseCoordinatorPage.get();
-
-    // The following jobs are selected arbitrarily.
-    await releaseCoordinatorPage.startOneOffJob(
-      'FeedbackThreadCacheOneOffJob');
-    await releaseCoordinatorPage.expectJobToBeRunning(
-      'FeedbackThreadCacheOneOffJob');
-    await releaseCoordinatorPage.expectNumberOfRunningOneOffJobs(1);
-
-    await releaseCoordinatorPage.startOneOffJob(
-      'ExplorationValidityJobManager');
-    await releaseCoordinatorPage.expectJobToBeRunning(
-      'ExplorationValidityJobManager');
-    await releaseCoordinatorPage.expectNumberOfRunningOneOffJobs(2);
-
-    await releaseCoordinatorPage.stopOneOffJob(
-      'FeedbackThreadCacheOneOffJob');
-    await releaseCoordinatorPage.expectJobToBeRunning(
-      'ExplorationValidityJobManager');
-    await releaseCoordinatorPage.expectNumberOfRunningOneOffJobs(1);
-
-    await releaseCoordinatorPage.stopOneOffJob(
-      'ExplorationValidityJobManager');
-    await releaseCoordinatorPage.expectNumberOfRunningOneOffJobs(0);
     await users.logout();
   });
 

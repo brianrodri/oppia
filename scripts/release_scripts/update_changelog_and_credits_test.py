@@ -263,8 +263,8 @@ class ChangelogAndCreditsUpdateTests(test_utils.GenericTestBase):
 
     def test_update_developer_names(self):
         with python_utils.open_file(
-            update_changelog_and_credits.ABOUT_PAGE_CONSTANTS_FILEPATH,
-            'r') as f:
+            update_changelog_and_credits.ABOUT_PAGE_CONSTANTS_FILEPATH, 'r'
+        ) as f:
             about_page_lines = f.readlines()
             start_index = about_page_lines.index(
                 update_changelog_and_credits.CREDITS_START_LINE) + 1
@@ -275,12 +275,12 @@ class ChangelogAndCreditsUpdateTests(test_utils.GenericTestBase):
         tmp_file = tempfile.NamedTemporaryFile()
         tmp_file.name = MOCK_ABOUT_PAGE_CONSTANTS_FILEPATH
         with python_utils.open_file(
-            MOCK_ABOUT_PAGE_CONSTANTS_FILEPATH, 'w') as f:
+            MOCK_ABOUT_PAGE_CONSTANTS_FILEPATH, 'w'
+        ) as f:
             for line in about_page_lines:
                 f.write(python_utils.UNICODE(line))
 
-        release_summary_lines = read_from_file(
-            MOCK_RELEASE_SUMMARY_FILEPATH)
+        release_summary_lines = read_from_file(MOCK_RELEASE_SUMMARY_FILEPATH)
         new_developer_names = update_changelog_and_credits.get_new_contributors(
             release_summary_lines, return_only_names=True)
 
@@ -306,6 +306,12 @@ class ChangelogAndCreditsUpdateTests(test_utils.GenericTestBase):
             actual_developer_names = about_page_lines[start_index:end_index]
 
             self.assertEqual(actual_developer_names, expected_developer_names)
+
+        tmp_file.close()
+        if os.path.isfile(MOCK_ABOUT_PAGE_CONSTANTS_FILEPATH):
+            # Occasionally this temp file is not deleted.
+            os.remove(MOCK_ABOUT_PAGE_CONSTANTS_FILEPATH)
+
 
     def test_missing_section_in_release_summary(self):
         release_summary_lines = read_from_file(MOCK_RELEASE_SUMMARY_FILEPATH)

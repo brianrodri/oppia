@@ -464,11 +464,16 @@ class CommonTests(test_utils.GenericTestBase):
 
             self.assertTrue(os.path.exists('temp_file'))
             temp_file.close()
+            if os.path.isfile('temp_file'):
+                # Occasionally this temp file is not deleted.
+                os.remove('temp_file')
 
         self.assertFalse(os.path.exists('temp_file'))
 
         with self.swap(subprocess, 'check_call', _mock_subprocess_check_call):
             common.install_npm_library('library_name', 'version', 'path')
+
+        self.assertFalse(os.path.exists('temp_file'))
 
     def test_ask_user_to_confirm(self):
         def mock_input():

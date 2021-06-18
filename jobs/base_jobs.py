@@ -87,7 +87,6 @@ class JobMetaclass(type):
         from third party linters to be enforced.
 
         Args:
-            cls: JobMetaclass. The metaclass.
             name: str. The name of the class.
             bases: tuple(type). The sequence of base classes for the new class.
             namespace: dict(str: *). The namespace of the class. This is where
@@ -109,9 +108,6 @@ class JobMetaclass(type):
     def get_all_jobs(cls):
         """Returns all jobs that have inherited from the JobBase class.
 
-        Args:
-            cls: JobMetaclass. The metaclass.
-
         Returns:
             list(class). The classes that have inherited from JobBase.
         """
@@ -121,9 +117,6 @@ class JobMetaclass(type):
     def get_all_job_names(cls):
         """Returns the names of all jobs that have inherited from the JobBase
         class.
-
-        Args:
-            cls: JobMetaclass. The metaclass.
 
         Returns:
             list(str). The names of all classes that hae inherited from JobBase.

@@ -79,7 +79,14 @@ class UpdateConfigsTests(test_utils.GenericTestBase):
         with url_open_swap, self.assertRaisesRegexp(
             Exception, 'Terms mainpage does not exist on Github.'
         ):
-            update_configs.main('test-release-dir')
+            update_configs.main(
+                args=[
+                    '--release_dir_path', 'test-release-dir',
+                    '--deploy_data_path', 'test-deploy-dir',
+                    '--personal_access_token', 'test-token',
+                    '--prompt_for_mailgun_and_terms_update'
+                ]
+            )
 
     def test_invalid_user_input(self):
         print_msgs = []
@@ -402,7 +409,14 @@ class UpdateConfigsTests(test_utils.GenericTestBase):
 
         with self.url_open_swap, check_updates_swap, add_mailgun_api_key_swap:
             with apply_changes_swap, verify_feconf_swap:
-                update_configs.main('test-release-dir')
+                update_configs.main(
+                    args=[
+                        '--release_dir_path', 'test-release-dir',
+                        '--deploy_data_path', 'test-deploy-dir',
+                        '--personal_access_token', 'test-token',
+                        '--prompt_for_mailgun_and_terms_update'
+                    ]
+                )
         self.assertEqual(check_function_calls, expected_check_function_calls)
 
     def test_function_calls_without_prompt_for_feconf_and_terms_update(self):
@@ -431,5 +445,11 @@ class UpdateConfigsTests(test_utils.GenericTestBase):
         verify_feconf_swap = self.swap(
             update_configs, 'verify_feconf', mock_verify_feconf)
         with apply_changes_swap, verify_feconf_swap:
-            update_configs.main('test-release-dir')
+            update_configs.main(
+                args=[
+                    '--release_dir_path', 'test-release-dir',
+                    '--deploy_data_path', 'test-deploy-dir',
+                    '--personal_access_token', 'test-token'
+                ]
+            )
         self.assertEqual(check_function_calls, expected_check_function_calls)

@@ -312,7 +312,6 @@ class ChangelogAndCreditsUpdateTests(test_utils.GenericTestBase):
             # Occasionally this temp file is not deleted.
             os.remove(MOCK_ABOUT_PAGE_CONSTANTS_FILEPATH)
 
-
     def test_missing_section_in_release_summary(self):
         release_summary_lines = read_from_file(MOCK_RELEASE_SUMMARY_FILEPATH)
         invalid_ordering = {

@@ -59,7 +59,7 @@ class DevModeStorageServicesTests(test_utils.TestBase):
         self.assertFalse(
             dev_mode_storage_services.isfile('bucket', '/file/path.png'))
 
-    def test_copy(self):
+    def test_copy_with_existing_source_blob_is_successful(self):
         dev_mode_storage_services.commit(
             'bucket', '/file/path.png', b'data', 'png')
         dev_mode_storage_services.copy(
@@ -71,6 +71,11 @@ class DevModeStorageServicesTests(test_utils.TestBase):
             dev_mode_storage_services.get('bucket', '/file/path.png'),
             dev_mode_storage_services.get('bucket', '/copy/path.png')
         )
+
+    def test_copywith_non_existing_source_blob_fails(self):
+        with self.assertRaisesRegexp(Exception, 'Source asset does not exist'):
+            dev_mode_storage_services.copy(
+                'bucket', '/file/path.png', '/copy/path.png')
 
     def test_listdir_with_slash_returns_all_blobs(self):
         dev_mode_storage_services.commit(

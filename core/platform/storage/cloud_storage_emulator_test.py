@@ -49,6 +49,15 @@ class BlobUnitTests(test_utils.TestBase):
             orig_blob.download_as_bytes(), copy_blob.download_as_bytes())
         self.assertEqual(orig_blob.content_type, copy_blob.content_type)
 
+    def test_compare_blob_and_int_is_false(self):
+        orig_blob = cloud_storage_emulator.Blob('name', 'string', 'png')
+        self.assertFalse(orig_blob == 1)
+
+    def test_repr(self):
+        orig_blob = cloud_storage_emulator.Blob('name', 'string', 'png')
+        self.assertEqual(
+            orig_blob.__repr__(), 'Blob(name=name, content_type=png)')
+
 
 class CloudStorageEmulatorUnitTests(test_utils.TestBase):
     """Tests for CloudStorageEmulator."""
@@ -84,6 +93,14 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
                     'namespace:/file/path.png')),
             self.blob1
         )
+
+
+    def test_upload_blob_failure(self):
+        with self.swap(
+            cloud_storage_emulator.REDIS_CLIENT, 'set', lambda _, _: False
+        ):
+            with self.assertRaisesRegexp(Exception, 'Blob was not set'):
+                self.emulator.upload_blob('/file/path.png', self.blob1)
 
     def test_delete_blob(self):
         cloud_storage_emulator.REDIS_CLIENT.set(

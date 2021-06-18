@@ -141,28 +141,6 @@ def delete_multi(keys):
     return ndb.delete_multi(keys)
 
 
-def transaction(callback):
-    """Run a callback in a transaction.
-
-    To pass arguments to a callback function, use a lambda, for example:
-
-    def my_callback(key, inc): do_something()
-    transaction(lambda: my_callback(Key(...), 1))
-
-    Args:
-        callback: callable. A function or tasklet to be called.
-
-    Returns:
-        *. Whatever callback() returns.
-
-    Raises:
-        Exception. Whatever callback() raises, or
-            datastore_errors.TransactionFailedError when the transaction failed.
-    """
-    return ndb.transaction(
-        callback, xg=True, propagation=ndb.TransactionOptions.ALLOWED)
-
-
 def query_everything(**kwargs):
     """Returns a query that targets every single entity in the datastore."""
     return ndb.Query(**kwargs)
@@ -249,16 +227,6 @@ def fetch_multiple_entities_by_ids_and_models(ids_and_models):
         start_index = start_index + len(entity_ids)
 
     return all_models_grouped_by_model_type
-
-
-def make_instantaneous_global_consistency_policy():
-    """Returns a policy that always gives the same sequence of consistency
-    decisions.
-
-    Returns:
-        datastore_stub_util.PseudoRandomHRConsistencyPolicy. The policy.
-    """
-    return 1.0
 
 
 @contextlib.contextmanager

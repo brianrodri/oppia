@@ -17,6 +17,7 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
+import io
 import os
 import re
 import subprocess
@@ -195,13 +196,16 @@ class CheckFrontEndCoverageTests(test_utils.GenericTestBase):
         )
 
         with self.exists_swap, self.open_file_swap, self.print_swap:
-            with not_fully_covered_files_swap:
-                with self.assertRaisesRegexp(
-                    SystemExit,
-                    re.escape(
-                        '\033[1mfile.ts\033[0m seems to be not completely '
-                        'tested. Make sure it\'s fully covered.\n')):
+            with not_fully_covered_files_swap, self.capture_logging() as logs:
+                with self.assertRaisesRegexp(SystemExit, '1'):
                     check_frontend_test_coverage.check_coverage_changes()
+                self.assertEqual(
+                    logs,
+                    [
+                        '\033[1mfile.ts\033[0m seems to be not completely '
+                        'tested. Make sure it\'s fully covered.'
+                    ]
+                )
 
     def test_check_coverage_changes_remove_file(self):
         self.lcov_items_list = (
@@ -218,10 +222,12 @@ class CheckFrontEndCoverageTests(test_utils.GenericTestBase):
         )
 
         with self.exists_swap, self.open_file_swap, self.print_swap:
-            with not_fully_covered_files_swap:
-                with self.assertRaisesRegexp(
-                    SystemExit,
-                    re.escape(
+            with not_fully_covered_files_swap, self.capture_logging() as logs:
+                with self.assertRaisesRegexp(SystemExit, '1'):
+                    check_frontend_test_coverage.check_coverage_changes()
+                self.assertEqual(
+                    logs,
+                    [
                         '\033[1mfile.ts\033[0m seems to be fully covered! '
                         'Before removing it manually from the denylist '
                         'in the file '
@@ -229,8 +235,9 @@ class CheckFrontEndCoverageTests(test_utils.GenericTestBase):
                         'make sure you\'ve followed the unit tests rules '
                         'correctly on: '
                         'https://github.com/oppia/oppia/wiki/Frontend-unit'
-                        '-tests-guide#rules\n')):
-                    check_frontend_test_coverage.check_coverage_changes()
+                        '-tests-guide#rules'
+                    ]
+                )
 
     def test_check_coverage_changes_when_renaming_file(self):
         self.lcov_items_list = (
@@ -247,10 +254,12 @@ class CheckFrontEndCoverageTests(test_utils.GenericTestBase):
         )
 
         with self.exists_swap, self.open_file_swap, self.print_swap:
-            with not_fully_covered_files_swap:
-                with self.assertRaisesRegexp(
-                    SystemExit,
-                    re.escape(
+            with not_fully_covered_files_swap, self.capture_logging() as logs:
+                with self.assertRaisesRegexp(SystemExit, '1'):
+                    check_frontend_test_coverage.check_coverage_changes()
+                self.assertEqual(
+                    logs,
+                    [
                         '\033[1mnewfilename.ts\033[0m seems to be not '
                         'completely tested. Make sure it\'s fully covered.\n'
                         '\033[1mfile.ts\033[0m is in the frontend test '
@@ -258,8 +267,9 @@ class CheckFrontEndCoverageTests(test_utils.GenericTestBase):
                         'you have renamed it, please make sure to remove the '
                         'old file name and add the new file name in the '
                         'denylist in the file scripts/'
-                        'check_frontend_test_coverage.py.\n')):
-                    check_frontend_test_coverage.check_coverage_changes()
+                        'check_frontend_test_coverage.py.'
+                    ]
+                )
 
     def test_fully_covered_filenames_is_sorted(self):
         self.lcov_items_list = (
@@ -293,8 +303,8 @@ class CheckFrontEndCoverageTests(test_utils.GenericTestBase):
         def mock_sys_exit(error_message): # pylint: disable=unused-argument
             check_function_calls['sys_exit_is_called'] = True
         sys_exit_swap = self.swap(sys, 'exit', mock_sys_exit)
-        with sys_exit_swap, self.exists_swap, self.open_file_swap, self.print_swap: # pylint: disable=line-too-long
-            with not_fully_covered_files_swap:
+        with sys_exit_swap, self.exists_swap, self.open_file_swap:
+            with self.print_swap, not_fully_covered_files_swap:
                 (
                     check_frontend_test_coverage
                     .check_not_fully_covered_filenames_list_is_sorted())
@@ -322,15 +332,19 @@ class CheckFrontEndCoverageTests(test_utils.GenericTestBase):
         )
 
         with self.exists_swap, self.open_file_swap, self.print_swap:
-            with not_fully_covered_files_swap:
-                with self.assertRaisesRegexp(
-                    SystemExit,
-                    re.escape(
-                        'The \033[1mNOT_FULLY_COVERED_FILENAMES\033[0m list '
-                        'must be kept in alphabetical order.')):
+            with not_fully_covered_files_swap, self.capture_logging() as logs:
+                with self.assertRaisesRegexp(SystemExit, '1'):
                     (
                         check_frontend_test_coverage
-                        .check_not_fully_covered_filenames_list_is_sorted())
+                        .check_not_fully_covered_filenames_list_is_sorted()
+                    )
+                self.assertEqual(
+                    logs,
+                    [
+                        'The \033[1mNOT_FULLY_COVERED_FILENAMES\033[0m list '
+                        'must be kept in alphabetical order.'
+                    ]
+                )
 
     def test_function_calls(self):
         self.lcov_items_list = (

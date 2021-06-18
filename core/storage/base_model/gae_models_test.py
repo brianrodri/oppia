@@ -103,20 +103,20 @@ class BaseModelUnitTests(test_utils.GenericTestBase):
         model = base_models.BaseModel()
 
         all_models = base_models.BaseModel.get_all()
-        self.assertEqual(len(all_models), 0)
+        self.assertEqual(all_models.count(), 0)
 
         model.update_timestamps()
         model.put()
         all_models = base_models.BaseModel.get_all()
-        self.assertEqual(len(all_models), 1)
-        self.assertEqual(all_models[0], model)
+        self.assertEqual(all_models.count(), 1)
+        self.assertEqual(all_models.get(), model)
 
-        model_id = all_models[0].id
+        model_id = all_models.get().id
         self.assertEqual(model, base_models.BaseModel.get(model_id))
 
         model.delete()
         all_models = base_models.BaseModel.get_all()
-        self.assertEqual(len(all_models), 0)
+        self.assertEqual(all_models.count(), 0)
         with self.assertRaisesRegexp(
             base_models.BaseModel.EntityNotFoundError,
             'Entity for class BaseModel with id 4 not found'

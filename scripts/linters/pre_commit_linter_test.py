@@ -188,6 +188,7 @@ class PreCommitLinterTests(test_utils.LinterTestBase):
                 with get_filenames_from_path_swap:
                     pre_commit_linter.main(
                         args=['--shard', pre_commit_linter.OTHER_SHARD_NAME])
+        print(self.linter_stdout)
         self.assertTrue(all_checks_passed(self.linter_stdout))
 
     def test_main_with_files_arg(self):
@@ -241,6 +242,7 @@ class PreCommitLinterTests(test_utils.LinterTestBase):
             with self.install_swap:
                 with get_all_files_swap:
                     pre_commit_linter.main(args=['--path=scripts/linters/'])
+        print(self.linter_stdout)
         self.assertTrue(all_checks_passed(self.linter_stdout))
 
     def test_main_with_only_check_file_extensions_arg(self):

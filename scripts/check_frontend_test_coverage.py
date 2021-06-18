@@ -18,6 +18,7 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import fnmatch
+import logging
 import os
 import re
 import sys
@@ -419,7 +420,7 @@ def check_not_fully_covered_filenames_list_is_sorted():
     """Check if NOT_FULLY_COVERED_FILENAMES list is in alphabetical order."""
     if NOT_FULLY_COVERED_FILENAMES != sorted(
             NOT_FULLY_COVERED_FILENAMES, key=lambda s: s.lower()):
-        python_utils.PRINT(
+        logging.error(
             'The \033[1mNOT_FULLY_COVERED_FILENAMES\033[0m list must be'
             ' kept in alphabetical order.')
         sys.exit(1)
@@ -483,7 +484,7 @@ def check_coverage_changes():
         python_utils.PRINT('------------------------------------')
         python_utils.PRINT('Frontend Coverage Checks Not Passed.')
         python_utils.PRINT('------------------------------------')
-        python_utils.PRINT(errors)
+        logging.error(errors)
         sys.exit(1)
     else:
         python_utils.PRINT('------------------------------------')

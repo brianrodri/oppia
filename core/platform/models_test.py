@@ -26,7 +26,6 @@ from core.platform import models
 from core.tests import test_utils
 import feconf
 
-from google import auth
 
 class RegistryUnitTest(test_utils.TestBase):
     """Tests the Registry class interface."""

@@ -421,6 +421,7 @@ class CommonTests(test_utils.GenericTestBase):
                 self.assertEqual(
                     os.stat(os.path.join(root, filename)).st_uid, os.getuid())
 
+        temp_file.close()
         shutil.rmtree(root_temp_dir)
 
     def test_print_each_string_after_two_new_lines(self):

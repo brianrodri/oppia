@@ -126,8 +126,7 @@ class BlogPostModelTest(test_utils.GenericTestBase):
         self.assertEqual(user_data, test_data)
 
     def test_export_data_nontrivial(self):
-        user_data = blog_models.BlogPostModel.export_data(
-            self.USER_ID),
+        user_data = blog_models.BlogPostModel.export_data(self.USER_ID)
         blog_post_id = 'blog_one'
         test_data = (
             {

@@ -1237,37 +1237,6 @@ class ExplorationStatsModel(base_models.BaseModel):
         exploration_stats_models = cls.get_multi(entity_ids)
         return exploration_stats_models
 
-    @classmethod
-    def save_multi(cls, exploration_stats_dicts):
-        """Creates/Updates multiple ExplorationStatsModel entries.
-
-        Args:
-            exploration_stats_dicts: list(dict). The list of dicts where each
-                dict represents the attributes of one ExplorationStatsModel
-                instance.
-        """
-        exploration_stats_models = []
-        for exploration_stats_dict in exploration_stats_dicts:
-            instance_id = cls.get_entity_id(
-                exploration_stats_dict['exp_id'],
-                exploration_stats_dict['exp_version'])
-            stats_instance = cls(
-                id=instance_id, exp_id=exploration_stats_dict['exp_id'],
-                exp_version=exploration_stats_dict['exp_version'],
-                num_starts_v1=exploration_stats_dict['num_starts_v1'],
-                num_starts_v2=exploration_stats_dict['num_starts_v2'],
-                num_actual_starts_v1=exploration_stats_dict[
-                    'num_actual_starts_v1'],
-                num_actual_starts_v2=exploration_stats_dict[
-                    'num_actual_starts_v2'],
-                num_completions_v1=exploration_stats_dict['num_completions_v1'],
-                num_completions_v2=exploration_stats_dict['num_completions_v2'],
-                state_stats_mapping=exploration_stats_dict[
-                    'state_stats_mapping'])
-            exploration_stats_models.append(stats_instance)
-        cls.update_timestamps_multi(exploration_stats_models)
-        cls.put_multi(exploration_stats_models)
-
     @staticmethod
     def get_model_association_to_user():
         """Model does not contain user data."""

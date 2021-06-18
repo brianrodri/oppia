@@ -107,7 +107,7 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
         self.emulator.delete_blob('/file/path.png')
 
         self.assertIsNone(
-            cloud_storage_emulator.REDIS_CLIENT.get('/file/path.png'))gae_models
+            cloud_storage_emulator.REDIS_CLIENT.get('/file/path.png'))
 
     def test_copy_blob(self):
         cloud_storage_emulator.REDIS_CLIENT.set(

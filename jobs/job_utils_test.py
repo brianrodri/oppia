@@ -20,7 +20,6 @@ from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import datetime
-import unittest
 
 from core.platform import models
 from core.tests import test_utils
@@ -28,8 +27,6 @@ import feconf
 from jobs import job_utils
 
 from apache_beam.io.gcp.datastore.v1new import types as beam_datastore_types
-
-unittest.util._MAX_LENGTH = 10000
 
 (base_models,) = models.Registry.import_models([models.NAMES.base_model])
 

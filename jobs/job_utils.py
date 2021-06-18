@@ -215,7 +215,7 @@ def get_ndb_key_from_beam_key(beam_key):
     Returns:
         datastore_services.Key. The NDB key.
     """
-    return datastore_services.Key._from_ds_key(beam_key.to_client_key())
+    return datastore_services.Key._from_ds_key(beam_key.to_client_key())  # pylint: disable=protected-access
 
 
 def get_beam_key_from_ndb_key(ndb_key):

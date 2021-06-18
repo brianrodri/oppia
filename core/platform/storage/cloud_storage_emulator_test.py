@@ -94,10 +94,9 @@ class CloudStorageEmulatorUnitTests(test_utils.TestBase):
             self.blob1
         )
 
-
     def test_upload_blob_failure(self):
         with self.swap(
-            cloud_storage_emulator.REDIS_CLIENT, 'set', lambda _, _: False
+            cloud_storage_emulator.REDIS_CLIENT, 'set', lambda _, __: False
         ):
             with self.assertRaisesRegexp(Exception, 'Blob was not set'):
                 self.emulator.upload_blob('/file/path.png', self.blob1)

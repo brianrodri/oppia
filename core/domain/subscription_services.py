@@ -19,11 +19,7 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import datetime
-
 from core.platform import models
-import python_utils
-import utils
 
 (user_models,) = models.Registry.import_models([
     models.NAMES.user
@@ -272,4 +268,3 @@ def get_collection_ids_subscribed_to(user_id):
     return (
         subscriptions_model.collection_ids
         if subscriptions_model else [])
-

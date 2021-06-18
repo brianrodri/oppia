@@ -259,7 +259,7 @@ class ValidateModelDomainObjectInstances(beam.DoFn):
             ModelDomainObjectValidateError. Error for domain object validation.
         """
         try:
-            domain_object = self._get_model_domain_object_instance(input_model)
+            domain_object = self._get_model_domain_object_instance(input_model)  # pylint: disable=assignment-from-none
             validation_type = self._get_domain_object_validation_type(
                 input_model)
             if domain_object is None:

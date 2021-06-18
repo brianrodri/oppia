@@ -1161,7 +1161,7 @@ class BuildTests(test_utils.GenericTestBase):
         @contextlib.contextmanager
         def mock_managed_webpack_compiler(config_path, max_old_space_size):
             self.assertEqual(config_path, build.WEBPACK_PROD_CONFIG)
-            self.assertEqual(max_old_space_size, 2400)
+            self.assertEqual(max_old_space_size, 4096)
             yield scripts_test_utils.PopenStub()
 
         with self.swap(

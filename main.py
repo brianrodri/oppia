@@ -501,9 +501,6 @@ URLS = MAPREDUCE_HANDLERS + [
     get_redirect_route(
         r'/release-coordinator', release_coordinator.ReleaseCoordinatorPage),
     get_redirect_route(
-        r'/joboutputhandler', release_coordinator.JobOutputHandler),
-    get_redirect_route(r'/jobshandler', release_coordinator.JobsHandler),
-    get_redirect_route(
         r'/memorycachehandler', release_coordinator.MemoryCacheHandler),
 
     get_redirect_route(

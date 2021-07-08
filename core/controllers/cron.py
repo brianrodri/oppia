@@ -22,7 +22,6 @@ import logging
 from core import jobs
 from core.controllers import acl_decorators
 from core.controllers import base
-from core.domain import activity_jobs_one_off
 from core.domain import config_domain
 from core.domain import cron_services
 from core.domain import email_manager
@@ -126,8 +125,9 @@ class CronActivitySearchRankHandler(base.BaseHandler):
     @acl_decorators.can_perform_cron_tasks
     def get(self):
         """Handles GET requests."""
-        activity_jobs_one_off.IndexAllActivitiesJobManager.enqueue(
-            activity_jobs_one_off.IndexAllActivitiesJobManager.create_new())
+        # TODO(#11475): Schedule the Apache Beam IndexAllActivitiesJob when
+        # we're in Python 3.
+        pass
 
 
 class CronMapreduceCleanupHandler(base.BaseHandler):

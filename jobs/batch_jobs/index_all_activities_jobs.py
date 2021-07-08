@@ -19,8 +19,8 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-from core.platform import models
 from core.domain import search_services
+from core.platform import models
 from jobs import base_jobs
 from jobs.io import ndb_io
 from jobs.types import job_run_result

@@ -19,17 +19,14 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import itertools
 import multiprocessing
 
-from core.domain import activity_jobs_one_off
 from core.domain import collection_domain
 from core.domain import collection_services
 from core.domain import exp_domain
 from core.domain import exp_services
 from core.domain import rights_manager
 from core.domain import search_services
-from core.domain import taskqueue_services
 from core.domain import user_services
 from core.platform import models
 from core.tests import test_utils
@@ -37,7 +34,6 @@ from jobs import job_test_utils
 from jobs.batch_jobs import index_all_activities_jobs
 from jobs.types import job_run_result
 import python_utils
-import utils
 
 platform_search_services = models.Registry.import_search_services()
 
@@ -78,8 +74,8 @@ class IndexAllActivitiesJobTests(
             rights_manager.publish_collection(self.owner, collection_id)
             multiprocessing_dict[collection_id] = False
 
-        def mock_index_activity_summaries(models):
-            for model in models:
+        def mock_index_activity_summaries(model_list):
+            for model in model_list:
                 multiprocessing_dict[model.id] = True
 
         swap_exp_indexer = self.swap(

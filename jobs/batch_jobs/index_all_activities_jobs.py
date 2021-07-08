@@ -36,7 +36,7 @@ class IndexAllActivitiesJob(base_jobs.JobBase):
 
     def run(self):
         exp_summary_query = exp_models.ExpSummaryModel.query(
-            exp_models.ExpSummaryModel.deleted == False)
+            exp_models.ExpSummaryModel.deleted == False) # pylint: disable=singleton-comparison
         exp_summary_models = (
             self.pipeline
             | 'Get all ExpSummaryModels' >> ndb_io.GetModels(
@@ -45,15 +45,15 @@ class IndexAllActivitiesJob(base_jobs.JobBase):
 
         collection_summary_query = (
             collection_models.CollectionSummaryModel.query(
-                collection_models.CollectionSummaryModel.deleted == False))
+                collection_models.CollectionSummaryModel.deleted == False)) # pylint: disable=singleton-comparison
         collection_summary_models = (
             self.pipeline
             | 'Get all CollectionSummaryModels' >> ndb_io.GetModels(
                 collection_summary_query, self.datastoreio_stub)
         )
 
-        exp_summary_models | beam.ParDo(IndexExplorationSummary())
-        collection_summary_models | beam.ParDo(IndexCollectionSummary())
+        _ = exp_summary_models | beam.ParDo(IndexExplorationSummary())
+        _ = collection_summary_models | beam.ParDo(IndexCollectionSummary())
 
         return (
             (exp_summary_models, collection_summary_models)
@@ -65,12 +65,14 @@ class IndexAllActivitiesJob(base_jobs.JobBase):
 
 
 class IndexExplorationSummary(beam.DoFn):
+    """Indexes an input ExpSummaryModel."""
 
     def process(self, exp_summary_model):
         search_services.index_exploration_summaries([exp_summary_model])
 
 
 class IndexCollectionSummary(beam.DoFn):
+    """Indexes an input CollectionSummaryModel."""
 
     def process(self, collection_summary_model):
         search_services.index_collection_summaries([collection_summary_model])

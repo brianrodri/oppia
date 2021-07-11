@@ -23,7 +23,6 @@ from constants import constants
 from core.domain import config_services
 from core.domain import email_manager
 from core.domain import exp_domain
-from core.domain import exp_services
 from core.domain import question_domain
 from core.domain import suggestion_services
 from core.domain import taskqueue_services
@@ -104,64 +103,6 @@ class CronJobTests(test_utils.GenericTestBase):
             self.get_html_response('/cron/explorations/search_rank')
 
         # TODO(#11475): Test that an Apache Beam job is scheduled.
-
-    def test_run_cron_to_hard_delete_models_marked_as_deleted(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        admin_user_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
-
-        completed_activities_model = user_models.CompletedActivitiesModel(
-            id=admin_user_id,
-            exploration_ids=[],
-            collection_ids=[],
-            story_ids=[],
-            learnt_topic_ids=[],
-            last_updated=datetime.datetime.utcnow() - self.NINE_WEEKS,
-            deleted=True
-        )
-        completed_activities_model.update_timestamps(
-            update_last_updated_time=False)
-        completed_activities_model.put()
-
-        with self.testapp_swap:
-            self.get_html_response('/cron/models/cleanup')
-
-        self.assertIsNone(
-            user_models.CompletedActivitiesModel.get_by_id(admin_user_id))
-
-    def test_run_cron_to_hard_delete_versioned_models_marked_as_deleted(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        admin_user_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
-
-        with self.mock_datetime_utcnow(
-            datetime.datetime.utcnow() - self.NINE_WEEKS):
-            self.save_new_default_exploration('exp_id', admin_user_id)
-            exp_services.delete_exploration(admin_user_id, 'exp_id')
-
-        self.assertIsNotNone(exp_models.ExplorationModel.get_by_id('exp_id'))
-
-        with self.testapp_swap:
-            self.get_html_response('/cron/models/cleanup')
-
-        self.assertIsNone(exp_models.ExplorationModel.get_by_id('exp_id'))
-
-    def test_run_cron_to_mark_old_models_as_deleted(self):
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        admin_user_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
-
-        user_query_model = user_models.UserQueryModel(
-            id='query_id',
-            user_ids=[],
-            submitter_id=admin_user_id,
-            query_status=feconf.USER_QUERY_STATUS_PROCESSING,
-            last_updated=datetime.datetime.utcnow() - self.FIVE_WEEKS
-        )
-        user_query_model.update_timestamps(update_last_updated_time=False)
-        user_query_model.put()
-
-        with self.testapp_swap:
-            self.get_html_response('/cron/models/cleanup')
-
-        self.assertTrue(user_query_model.get_by_id('query_id').deleted)
 
 
 class CronMailReviewersContributorDashboardSuggestionsHandlerTests(

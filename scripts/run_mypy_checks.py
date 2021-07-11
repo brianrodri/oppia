@@ -393,7 +393,6 @@ NOT_FULLY_COVERED_FILES = [
     'core/domain/wipeout_service_test.py',
     'core/jobs.py',
     'core/jobs_registry.py',
-    'core/jobs_test.py',
     'core/platform/app_identity/gae_app_identity_services.py',
     'core/platform/app_identity/gae_app_identity_services_test.py',
     'core/platform/auth/firebase_auth_services.py',

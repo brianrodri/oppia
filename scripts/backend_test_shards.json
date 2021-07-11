@@ -17,7 +17,6 @@
         "extensions.answer_summarizers.models_test",
         "core.controllers.question_editor_test",
         "core.controllers.profile_test",
-        "core.jobs_test",
         "core.controllers.concept_card_viewer_test",
         "core.controllers.story_editor_test",
         "core.controllers.subtopic_viewer_test",

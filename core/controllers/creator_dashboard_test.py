@@ -17,8 +17,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import datetime
-
 from constants import constants
 from core.controllers import creator_dashboard
 from core.domain import collection_services
@@ -32,8 +30,6 @@ from core.domain import rights_domain
 from core.domain import rights_manager
 from core.domain import subscription_services
 from core.domain import suggestion_services
-from core.domain import taskqueue_services
-from core.domain import user_jobs_one_off
 from core.domain import user_services
 from core.platform import models
 from core.tests import test_utils
@@ -141,18 +137,6 @@ class CreatorDashboardStatisticsTests(test_utils.GenericTestBase):
                 user_id, exp_id, ratings[ind])
         self.process_and_flush_pending_tasks()
 
-    def _run_one_off_job(self):
-        """Runs the one-off MapReduce job."""
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 0)
-        job_id = user_jobs_one_off.DashboardStatsOneOffJob.create_new()
-        user_jobs_one_off.DashboardStatsOneOffJob.enqueue(job_id)
-        self.assertEqual(
-            self.count_jobs_in_mapreduce_taskqueue(
-                taskqueue_services.QUEUE_NAME_ONE_OFF_JOBS), 1)
-        self.process_and_flush_pending_mapreduce_tasks()
-
     def test_stats_no_explorations(self):
         self.login(self.OWNER_EMAIL_1)
         response = self.get_json(feconf.CREATOR_DASHBOARD_DATA_URL)
@@ -200,64 +184,6 @@ class CreatorDashboardStatisticsTests(test_utils.GenericTestBase):
         self.assertIsNone(user_model.impact_score)
         self.assertEqual(user_model.num_ratings, 1)
         self.assertEqual(user_model.average_ratings, 4)
-        self.logout()
-
-    def test_one_play_and_rating_for_single_exploration(self):
-        exploration = self.save_new_default_exploration(
-            self.EXP_ID_1, self.owner_id_1, title=self.EXP_TITLE_1)
-
-        self.login(self.OWNER_EMAIL_1)
-        response = self.get_json(feconf.CREATOR_DASHBOARD_DATA_URL)
-        self.assertEqual(len(response['explorations_list']), 1)
-
-        exp_id = self.EXP_ID_1
-
-        exp_version = self.EXP_DEFAULT_VERSION
-        state = exploration.init_state_name
-
-        self._record_start(exp_id, exp_version, state)
-
-        self._rate_exploration(exp_id, [3])
-
-        def _mock_get_date_after_one_week():
-            """Returns the date of the next week."""
-            return (
-                (datetime.datetime.utcnow() + datetime.timedelta(7)).strftime(
-                    feconf.DASHBOARD_STATS_DATETIME_STRING_FORMAT))
-
-        # Test to see if last week stats get updated by setting the date to the
-        # next week.
-        with self.swap(
-            user_services, 'get_current_date_as_string',
-            _mock_get_date_after_one_week):
-            self._run_one_off_job()
-        response = self.get_json(feconf.CREATOR_DASHBOARD_DATA_URL)
-        self.assertEqual(
-            response['last_week_stats']
-            [_mock_get_date_after_one_week()]['average_ratings'], 3)
-
-        user_model = user_models.UserStatsModel.get(self.owner_id_1)
-        self.assertEqual(user_model.total_plays, 1)
-        # TODO(#11475): Calculate impact_score with an Apache Beam job.
-        self.assertIsNone(user_model.impact_score)
-        self.assertEqual(user_model.num_ratings, 1)
-        self.assertEqual(user_model.average_ratings, 3)
-
-        def _mock_get_last_week_dashboard_stats(user_id):
-            """Mocks 'get_last_week_dashboard_stats()' to return more than one
-            key-value pair.
-            """
-            return {
-                'date1': {user_id: 'stats1'}, 'date2': {user_id: 'stats2'}
-            }
-
-        # 'last_week_stats' is None if 'get_last_week_dashboard_stats()' returns
-        # more than one key-value pair.
-        with self.swap(
-            user_services, 'get_last_week_dashboard_stats',
-            _mock_get_last_week_dashboard_stats):
-            response = self.get_json(feconf.CREATOR_DASHBOARD_DATA_URL)
-            self.assertIsNone(response['last_week_stats'])
         self.logout()
 
     def test_multiple_plays_and_ratings_for_single_exploration(self):

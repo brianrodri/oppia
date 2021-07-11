@@ -21,7 +21,6 @@ from constants import constants
 from core.controllers import acl_decorators
 from core.controllers import base
 from core.domain import email_manager
-from core.domain import user_query_jobs_one_off
 from core.domain import user_query_services
 from core.domain import user_services
 import feconf
@@ -90,25 +89,7 @@ class EmailDashboardDataHandler(base.BaseHandler):
     @acl_decorators.can_manage_email_dashboard
     def post(self):
         """Post handler for query."""
-        data = self.payload['data']
-        kwargs = {key: data[key] for key in data if data[key] is not None}
-        self._validate(kwargs)
-
-        user_query_id = user_query_services.save_new_user_query(
-            self.user_id, kwargs)
-
-        # Start MR job in background.
-        job_id = user_query_jobs_one_off.UserQueryOneOffJob.create_new()
-        params = {'query_id': user_query_id}
-        user_query_jobs_one_off.UserQueryOneOffJob.enqueue(
-            job_id, additional_job_params=params)
-
-        user_query = (
-            user_query_services.get_user_query(user_query_id, strict=True))
-        data = {
-            'query': _generate_user_query_dicts([user_query])[0]
-        }
-        self.render_json(data)
+        self.render_json({'query': []})
 
     def _validate(self, data):
         """Validator for data obtained from frontend."""

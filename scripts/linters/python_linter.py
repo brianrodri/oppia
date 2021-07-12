@@ -19,7 +19,6 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-import io
 import os
 import re
 import sys
@@ -263,8 +262,7 @@ class ThirdPartyPythonLintChecksManager(python_utils.OBJECT):
 
 
 def get_linters(files_to_lint, unused_file_cache):
-    """Creates PythonLintChecksManager and ThirdPartyPythonLintChecksManager
-        objects and return them.
+    """Creates ThirdPartyPythonLintChecksManager and returns it.
 
     Args:
         files_to_lint: list(str). A list of filepaths to lint.
@@ -272,9 +270,7 @@ def get_linters(files_to_lint, unused_file_cache):
             cached file content.
 
     Returns:
-        tuple(PythonLintChecksManager, ThirdPartyPythonLintChecksManager). A
-        2-tuple of custom and third_party linter objects.
+        tuple(None, ThirdPartyPythonLintChecksManager). A 2-tuple of None and
+        third_party linter objects.
     """
-
-    third_party_linter = ThirdPartyPythonLintChecksManager(files_to_lint)
-    return None, third_party_linter
+    return None, ThirdPartyPythonLintChecksManager(files_to_lint)

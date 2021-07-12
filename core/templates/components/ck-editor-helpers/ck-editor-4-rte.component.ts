@@ -21,7 +21,7 @@ import { downgradeComponent } from '@angular/upgrade/static';
 import { AppConstants } from 'app.constants';
 import { OppiaAngularRootComponent } from 'components/oppia-angular-root.component';
 import { ContextService } from 'services/context.service';
-import { CkEditorCopyContentService } from './ck-editor-copy-content-service';
+import { CkEditorCopyContentService } from './ck-editor-copy-content.service';
 
 interface UiConfig {
   (): UiConfig;
@@ -35,7 +35,7 @@ interface UiConfig {
   selector: 'ck-editor-4-rte',
   template: '<div><div></div>' +
             '<div contenteditable="true" ' +
-            'class="oppia-rte-resizer oppia-rte">' +
+            'class="oppia-rte-resizer oppia-rte protractor-test-rte">' +
             '</div></div>',
   styleUrls: []
 })

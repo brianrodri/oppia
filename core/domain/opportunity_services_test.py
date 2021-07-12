@@ -43,9 +43,10 @@ import feconf
 import python_utils
 
 (
-    feedback_models, opportunity_models, suggestion_models
+    feedback_models, opportunity_models, story_models, suggestion_models
 ) = models.Registry.import_models([
-    models.NAMES.feedback, models.NAMES.opportunity, models.NAMES.suggestion
+    models.NAMES.feedback, models.NAMES.opportunity, models.NAMES.story,
+    models.NAMES.suggestion
 ])
 
 
@@ -104,7 +105,7 @@ class OpportunityServicesIntegrationTest(test_utils.GenericTestBase):
         topic.subtopics = [
             topic_domain.Subtopic(
                 1, 'Title', ['skill_id_1'], 'image.svg',
-                constants.ALLOWED_THUMBNAIL_BG_COLORS['subtopic'][0],
+                constants.ALLOWED_THUMBNAIL_BG_COLORS['subtopic'][0], 21131,
                 'dummy-subtopic-url')]
         topic.next_subtopic_id = 2
         subtopic_page = (
@@ -784,7 +785,7 @@ class OpportunityServicesUnitTest(test_utils.GenericTestBase):
         topic.subtopics = [
             topic_domain.Subtopic(
                 1, 'Title', ['skill_id_1'], 'image.svg',
-                constants.ALLOWED_THUMBNAIL_BG_COLORS['subtopic'][0],
+                constants.ALLOWED_THUMBNAIL_BG_COLORS['subtopic'][0], 21131,
                 'dummy-subtopic-url')]
         topic.next_subtopic_id = 2
         topic_services.save_new_topic(self.owner_id, topic)
@@ -916,3 +917,12 @@ class OpportunityServicesUnitTest(test_utils.GenericTestBase):
                 'exp_2', strict=False
             )
         )
+
+    def test_regenerate_opportunities_related_to_topic_when_story_deleted(self):
+        story_models.StoryModel.delete_by_id(self.STORY_ID)
+
+        self.assertRaisesRegexp(
+            Exception, 'Failed to regenerate opportunities',
+            lambda: (
+                opportunity_services.regenerate_opportunities_related_to_topic(
+                    self.TOPIC_ID)))

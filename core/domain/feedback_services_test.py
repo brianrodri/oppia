@@ -255,6 +255,438 @@ class FeedbackDeletionUnitTests(test_utils.GenericTestBase):
                 self.thread_2_id))
 
 
+class FeedbackThreadUnitTests(test_utils.GenericTestBase):
+
+    EXP_ID_1 = 'eid1'
+    EXP_ID_2 = 'eid2'
+    EXP_ID_3 = 'eid3'
+    THREAD_ID = 'thread_id'
+
+    EXPECTED_THREAD_DICT = {
+        'status': u'open',
+        'summary': None,
+        'original_author_username': None,
+        'subject': u'a subject'
+    }
+    EXPECTED_THREAD_DICT_VIEWER = {
+        'status': u'open',
+        'summary': None,
+        'original_author_username': None,
+        'subject': u'a subject second'
+    }
+
+    USER_EMAIL = 'user@example.com'
+    USER_USERNAME = 'user'
+
+    def setUp(self):
+        super(FeedbackThreadUnitTests, self).setUp()
+
+        self.signup(self.VIEWER_EMAIL, self.VIEWER_USERNAME)
+        self.signup(self.USER_EMAIL, self.USER_USERNAME)
+        self.signup(self.OWNER_EMAIL, self.OWNER_USERNAME)
+        self.owner_id = self.get_user_id_from_email(self.OWNER_EMAIL)
+        self.user_id = self.get_user_id_from_email(self.USER_EMAIL)
+        self.viewer_id = self.get_user_id_from_email(self.VIEWER_EMAIL)
+
+        self.save_new_valid_exploration(
+            self.EXP_ID_1, self.owner_id, title='Bridges in England',
+            category='Architecture', language_code='en')
+        self.save_new_valid_exploration(
+            self.EXP_ID_2, self.owner_id, title='Sillat Suomi',
+            category='Architecture', language_code='fi')
+        self.save_new_valid_exploration(
+            self.EXP_ID_3, self.owner_id, title='Leaning tower of Pisa',
+            category='Architecture', language_code='fi')
+
+    def _get_all_messages_read(self, user_id, thread_id):
+        """Returns the list of the ids of all the messages corresponding to the
+        given thread id read by the user.
+        """
+        feedback_thread_user_model = (
+            feedback_models.GeneralFeedbackThreadUserModel.get(
+                user_id, thread_id))
+
+        return (
+            feedback_thread_user_model.message_ids_read_by_user if
+            feedback_thread_user_model else [])
+
+    def test_get_threads_single_exploration(self):
+        threads = feedback_services.get_threads('exploration', self.EXP_ID_1)
+        self.assertEqual(len(threads), 0)
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+        threads = feedback_services.get_threads('exploration', self.EXP_ID_1)
+        self.assertEqual(1, len(threads))
+        self.assertDictContainsSubset(
+            self.EXPECTED_THREAD_DICT, threads[0].to_dict())
+
+    def test_get_all_threads(self):
+        # Create an anonymous feedback thread.
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+
+        threads = feedback_services.get_all_threads(
+            'exploration', self.EXP_ID_1, False)
+        self.assertEqual(1, len(threads))
+        self.assertDictContainsSubset(
+            self.EXPECTED_THREAD_DICT, threads[0].to_dict())
+
+        self.EXPECTED_THREAD_DICT_VIEWER['original_author_username'] = (
+            self.VIEWER_USERNAME)
+
+        # Viewer creates feedback thread.
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, self.viewer_id,
+            self.EXPECTED_THREAD_DICT_VIEWER['subject'], 'not used here')
+
+        threads = feedback_services.get_all_threads(
+            'exploration', self.EXP_ID_1, False)
+        self.assertEqual(2, len(threads))
+        self.assertDictContainsSubset(
+            self.EXPECTED_THREAD_DICT_VIEWER, threads[0].to_dict())
+
+    def test_get_total_open_threads_for_single_exploration(self):
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+
+        threads = feedback_services.get_all_threads(
+            'exploration', self.EXP_ID_1, False)
+        self.assertEqual(1, len(threads))
+
+        self.assertEqual(feedback_services.get_total_open_threads(
+            feedback_services.get_thread_analytics_multi(
+                [self.EXP_ID_1])), 1)
+
+    def test_get_total_open_threads_for_multiple_explorations(self):
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_2, None,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+
+        threads_exp_1 = feedback_services.get_all_threads(
+            'exploration', self.EXP_ID_1, False)
+        self.assertEqual(1, len(threads_exp_1))
+        threads_exp_2 = feedback_services.get_all_threads(
+            'exploration', self.EXP_ID_2, False)
+        self.assertEqual(1, len(threads_exp_2))
+
+        feedback_services.create_message(
+            threads_exp_1[0].id, self.user_id,
+            feedback_models.STATUS_CHOICES_FIXED, None,
+            'feedback message not used here')
+
+        self.assertEqual(len(feedback_services.get_closed_threads(
+            'exploration', self.EXP_ID_1, False)), 1)
+
+        self.assertEqual(feedback_services.get_total_open_threads(
+            feedback_services.get_thread_analytics_multi(
+                [self.EXP_ID_1, self.EXP_ID_2])), 1)
+
+    def test_get_thread_summaries(self):
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, self.user_id,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_2, self.user_id,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+
+        # The message count parameter is missing for this thread. The thread
+        # summaries function should account for this and function
+        # flawlessly.
+        thread_3 = feedback_models.GeneralFeedbackThreadModel(
+            id='exploration.' + self.EXP_ID_3 + '.' + self.THREAD_ID,
+            entity_type='exploration', entity_id=self.EXP_ID_3,
+            original_author_id=self.user_id, subject='Feedback',
+            status=feedback_models.STATUS_CHOICES_OPEN, message_count=0,
+            has_suggestion=False)
+        thread_3.update_timestamps()
+        thread_3.put()
+        feedback_services.create_message(
+            'exploration.' + self.EXP_ID_3 + '.' + self.THREAD_ID,
+            self.user_id, None, None, 'not used here')
+
+        thread_ids = subscription_services.get_all_threads_subscribed_to(
+            self.user_id)
+        thread_ids.append('exploration.' + self.EXP_ID_3 + '.' + self.THREAD_ID)
+        thread_summaries, number_of_unread_threads = (
+            feedback_services.get_exp_thread_summaries(
+                self.user_id, thread_ids))
+        exploration_titles = (
+            ['Bridges in England', 'Sillat Suomi', 'Leaning tower of Pisa'])
+
+        # Fetch the threads.
+        threads = []
+        threads.append(feedback_services.get_thread(thread_ids[0]))
+        threads.append(feedback_services.get_thread(thread_ids[1]))
+        threads.append(feedback_services.get_thread(
+            'exploration.' + self.EXP_ID_3 + '.' + self.THREAD_ID))
+        # Check if the number of unread messages match.
+        self.assertEqual(number_of_unread_threads, 0)
+        for summary, thread, exploration_title in python_utils.ZIP(
+                thread_summaries, threads, exploration_titles):
+            self.assertEqual(summary.status, thread.status)
+            self.assertEqual(
+                summary.original_author_id, thread.original_author_id)
+            self.assertEqual(summary.last_updated, thread.last_updated)
+            self.assertEqual(summary.last_message_text, 'not used here')
+            self.assertEqual(summary.total_message_count, 1)
+            self.assertTrue(summary.last_message_is_read)
+            self.assertFalse(summary.second_last_message_is_read)
+            self.assertEqual(
+                summary.author_last_message,
+                user_services.get_username(self.user_id))
+            self.assertIsNone(summary.author_second_last_message)
+            self.assertEqual(summary.exploration_title, exploration_title)
+
+        feedback_services.create_message(
+            threads[0].id, self.owner_id, None, None, 'editor message')
+        _, number_of_unread_threads = (
+            feedback_services.get_exp_thread_summaries(
+                self.user_id, thread_ids))
+
+        # Check if the number of unread messages is equal to 1.
+        self.assertEqual(number_of_unread_threads, 1)
+
+    def test_get_thread_summaries_returns_correct_message_count(self):
+        thread_id_1 = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+        thread_id_2 = feedback_services.create_thread(
+            'exploration', self.EXP_ID_2, None,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+
+        thread_summaries, _ = feedback_services.get_exp_thread_summaries(
+            self.owner_id, [thread_id_1, thread_id_2])
+
+        self.assertEqual(len(thread_summaries), 2)
+        self.assertEqual(thread_summaries[0].total_message_count, 1)
+        self.assertEqual(thread_summaries[1].total_message_count, 1)
+
+    def test_get_thread_summaries_only_returns_threads_for_explorations(self):
+        exp_thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None, 'unused subject', 'unused text')
+        skill_thread_id = feedback_services.create_thread(
+            'skill', 'skillid1', None, 'unused subject', 'unused text')
+
+        thread_summaries, _ = feedback_services.get_exp_thread_summaries(
+            self.owner_id, [exp_thread_id, skill_thread_id])
+
+        self.assertEqual(len(thread_summaries), 1)
+        self.assertEqual(
+            thread_summaries[0].exploration_title, 'Bridges in England')
+
+    def test_update_messages_read_by_the_user(self):
+        feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, self.user_id,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+        threads = feedback_services.get_all_threads(
+            'exploration', self.EXP_ID_1, False)
+        thread_id = threads[0].id
+
+        messages = feedback_services.get_messages(thread_id)
+        message_ids = [message.message_id for message in messages]
+
+        # The viewer has not read in messages yet.
+        self.assertEqual(self._get_all_messages_read(
+            self.viewer_id, thread_id), [])
+
+        feedback_services.update_messages_read_by_the_user(
+            self.viewer_id, thread_id, message_ids)
+
+        # Check if the message is added to the read section of the viewer.
+        self.assertEqual(self._get_all_messages_read(
+            self.viewer_id, thread_id), message_ids)
+
+    def test_add_message_ids_to_read_by_list_adds_msgs_to_threads_in_order(
+            self):
+        """Tests that the message_ids are being added to the correct feedback
+        thread user model instances when when some of these models exist before
+        the method is called and some do not.
+        """
+        sample_message_ids = [1, 2, 3]
+        sample_thread_ids = [
+            'sample_thread_id_1', 'sample_thread_id_2',
+            'sample_thread_id_3'
+        ]
+        # The GeneralFeedbackThreadUserModel is created for the
+        # sample_thread_id_1 and sample_thread_id_3 thread ids.
+        feedback_models.GeneralFeedbackThreadUserModel.create(
+            self.user_id, sample_thread_ids[0])
+        feedback_models.GeneralFeedbackThreadUserModel.create(
+            self.user_id, sample_thread_ids[2])
+        # Assert that no messages are read for any of the threads yet.
+        for sample_thread_id in sample_thread_ids:
+            self.assertEqual(
+                self._get_all_messages_read(self.user_id, sample_thread_id),
+                [])
+        # Create a list of FullyQualifiedMessageIdentifier objects for the
+        # sample_message_ids and sample_thread_ids.
+        message_identifiers = []
+        for sample_thread_id, sample_message_id in python_utils.ZIP(
+                sample_thread_ids, sample_message_ids):
+            message_identifiers.append(
+                feedback_domain.FullyQualifiedMessageIdentifier(
+                    sample_thread_id, sample_message_id))
+
+        # In the add_message_ids_to_read_by_list method, the
+        # GeneralFeedbackUserModel is created for thread id
+        # sample_thread_id_2.
+        feedback_services.add_message_ids_to_read_by_list(
+            self.user_id, message_identifiers)
+
+        # Assert tht the message_ids were added to message_ids_read_by_user
+        # property of the corresponding thread.
+        for sample_thread_id, sample_message_id in python_utils.ZIP(
+                sample_thread_ids, sample_message_ids):
+            self.assertEqual(
+                self._get_all_messages_read(self.user_id, sample_thread_id),
+                [sample_message_id])
+
+    def test_only_exploration_threads_trigger_events(self):
+        exp_id = 'eid'
+        self.save_new_valid_exploration(exp_id, 'owner')
+
+        event_handler_call_counter_exploration = test_utils.CallCounter(
+            event_services.FeedbackThreadCreatedEventHandler.record)
+        with self.swap(
+            event_services.FeedbackThreadCreatedEventHandler, 'record',
+            event_handler_call_counter_exploration):
+            feedback_services.create_thread(
+                feconf.ENTITY_TYPE_EXPLORATION, exp_id,
+                None, 'a subject', 'some text')
+
+            self.assertEqual(
+                event_handler_call_counter_exploration.times_called, 1)
+
+        event_handler_call_counter_non_exploration = (
+            test_utils.CallCounter(
+                event_services.FeedbackThreadCreatedEventHandler.record))
+        with self.swap(
+            event_services.FeedbackThreadCreatedEventHandler, 'record',
+            event_handler_call_counter_non_exploration):
+            feedback_services.create_thread(
+                'topic', 'topic_id', None, 'a subject',
+                'some text')
+            self.assertEqual(
+                event_handler_call_counter_non_exploration.times_called, 0)
+
+    def test_create_message_increments_message_count(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, self.user_id,
+            self.EXPECTED_THREAD_DICT['subject'], 'not used here')
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.message_count, 1)
+        feedback_services.create_message(
+            thread_id, self.user_id,
+            feedback_models.STATUS_CHOICES_FIXED, None, 'editor message')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.message_count, 2)
+
+    def test_cache_update_after_create_thread_with_user_text(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, self.user_id, 'subject',
+            'initial text')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'initial text')
+        self.assertEqual(thread.last_nonempty_message_author_id, self.user_id)
+
+    def test_cache_update_after_create_thread_with_anon_text(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None, 'subject', 'initial text')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'initial text')
+        self.assertIsNone(thread.last_nonempty_message_author_id)
+
+    def test_cache_update_after_create_message_with_user_text(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None, 'subject', 'initial text')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'initial text')
+        self.assertIsNone(thread.last_nonempty_message_author_id)
+
+        feedback_services.create_message(
+            thread_id, self.user_id, feedback_models.STATUS_CHOICES_FIXED, None,
+            'anonymous text')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'anonymous text')
+        self.assertEqual(thread.last_nonempty_message_author_id, self.user_id)
+
+    def test_cache_update_after_create_message_with_anon_text(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, self.user_id, 'subject',
+            'initial text')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'initial text')
+        self.assertEqual(thread.last_nonempty_message_author_id, self.user_id)
+
+        feedback_services.create_message(
+            thread_id, None, feedback_models.STATUS_CHOICES_FIXED, None,
+            'anonymous text')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'anonymous text')
+        self.assertIsNone(thread.last_nonempty_message_author_id)
+
+    def test_no_cache_update_after_create_thread_with_empty_user_text(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, self.user_id, 'subject', None)
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertIsNone(thread.last_nonempty_message_text)
+        self.assertIsNone(thread.last_nonempty_message_author_id)
+
+    def test_no_cache_update_after_create_thread_with_empty_anon_text(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None, 'subject', None)
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertIsNone(thread.last_nonempty_message_text)
+        self.assertIsNone(thread.last_nonempty_message_author_id)
+
+    def test_no_cache_update_after_create_message_with_empty_user_text(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, None, 'subject', 'initial text')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'initial text')
+        self.assertIsNone(thread.last_nonempty_message_author_id)
+
+        feedback_services.create_message(
+            thread_id, self.user_id, feedback_models.STATUS_CHOICES_FIXED, None,
+            None)
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'initial text')
+        self.assertIsNone(thread.last_nonempty_message_author_id)
+
+    def test_no_cache_update_after_create_message_with_empty_anon_text(self):
+        thread_id = feedback_services.create_thread(
+            'exploration', self.EXP_ID_1, self.user_id, 'subject',
+            'initial text')
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'initial text')
+        self.assertEqual(thread.last_nonempty_message_author_id, self.user_id)
+
+        feedback_services.create_message(
+            thread_id, None, feedback_models.STATUS_CHOICES_FIXED, None, None)
+
+        thread = feedback_models.GeneralFeedbackThreadModel.get(thread_id)
+        self.assertEqual(thread.last_nonempty_message_text, 'initial text')
+        self.assertEqual(thread.last_nonempty_message_author_id, self.user_id)
+
+
 class EmailsTaskqueueTests(test_utils.GenericTestBase):
     """Tests for tasks in emails taskqueue."""
 
@@ -424,9 +856,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             # the email.
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
             model = feedback_models.UnsentFeedbackEmailModel.get(self.editor_id)
 
@@ -450,9 +879,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             # There are two jobs in the taskqueue: one for the realtime
             # event associated with creating a thread, and one for sending
             # the email.
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
@@ -493,12 +919,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
                 'exploration', self.exploration.id,
                 self.user_id_a, 'a subject', 'some text')
 
-            # Note: the job in the taskqueue represents the realtime
-            # event emitted by create_thread().
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
-            self.process_and_flush_pending_tasks()
             messages = self._get_sent_email_messages(
                 self.EDITOR_EMAIL)
             self.assertEqual(len(messages), 0)
@@ -513,12 +933,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
                 'exploration', self.exploration.id,
                 self.user_id_a, 'a subject', 'some text')
 
-            # Note: the job in the taskqueue represents the realtime
-            # event emitted by create_thread().
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
-            self.process_and_flush_pending_tasks()
             messages = self._get_sent_email_messages(
                 self.EDITOR_EMAIL)
             self.assertEqual(len(messages), 0)
@@ -529,12 +943,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
                 'exploration', self.exploration.id, None,
                 'a subject', 'some text')
 
-            # Note: the job in the taskqueue represents the realtime
-            # event emitted by create_thread().
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
-            self.process_and_flush_pending_tasks()
             messages = self._get_sent_email_messages(
                 self.EDITOR_EMAIL)
             self.assertEqual(len(messages), 0)
@@ -548,9 +956,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             # There are two jobs in the taskqueue: one for the realtime
             # event associated with creating a thread, and one for sending
             # the email.
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
@@ -575,12 +980,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
                 'exploration', self.exploration.id,
                 self.user_id_a, 'a subject', 'some text')
 
-            # Note: the job in the taskqueue represents the realtime
-            # event emitted by create_thread().
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
-            self.process_and_flush_pending_tasks()
             messages = self._get_sent_email_messages(
                 self.EDITOR_EMAIL)
             self.assertEqual(len(messages), 0)
@@ -591,12 +990,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
                 'exploration', self.exploration.id,
                 self.user_id_a, 'a subject', '')
 
-            # Note: the job in the taskqueue represents the realtime
-            # event emitted by create_thread().
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
-            self.process_and_flush_pending_tasks()
             messages = self._get_sent_email_messages(
                 self.EDITOR_EMAIL)
             self.assertEqual(len(messages), 0)
@@ -607,12 +1000,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
                 'exploration', self.exploration.id,
                 self.editor_id, 'a subject', 'A message')
 
-            # Note: the job in the taskqueue represents the realtime
-            # event emitted by create_thread().
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
-            self.process_and_flush_pending_tasks()
             messages = self._get_sent_email_messages(
                 self.EDITOR_EMAIL)
             self.assertEqual(len(messages), 0)
@@ -628,9 +1015,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
             self.process_and_flush_pending_tasks()
 
             threadlist = feedback_services.get_all_threads(
@@ -642,9 +1026,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 0)
             self.process_and_flush_pending_tasks()
 
     def test_that_email_is_sent_for_changing_status_of_thread(self):
@@ -658,9 +1039,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
             self.process_and_flush_pending_tasks()
 
             threadlist = feedback_services.get_all_threads(
@@ -676,9 +1054,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
             self.process_and_flush_pending_tasks()
 
     def test_that_email_is_sent_for_each_feedback_message(self):
@@ -695,9 +1070,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 1)
             self.process_and_flush_pending_tasks()
 
             feedback_services.create_message(
@@ -705,9 +1077,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 0)
             self.process_and_flush_pending_tasks()
 
             feedback_services.create_message(
@@ -715,9 +1084,6 @@ class FeedbackMessageEmailTests(test_utils.EmailTestBase):
             self.assertEqual(
                 self.count_jobs_in_taskqueue(
                     taskqueue_services.QUEUE_NAME_EMAILS), 1)
-            self.assertEqual(
-                self.count_jobs_in_taskqueue(
-                    taskqueue_services.QUEUE_NAME_EVENTS), 0)
             self.process_and_flush_pending_tasks()
 
 

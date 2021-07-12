@@ -40,7 +40,7 @@ export default {
   "ACTIVITY_TYPE_EXPLORATION": "exploration",
   "ACTIVITY_TYPE_COLLECTION": "collection",
   "ACTIVITY_TYPE_STORY": "story",
-  "ACTIVITY_TYPE_LEARN_TOPIC": "learn topic",
+  "ACTIVITY_TYPE_LEARN_TOPIC": "learntopic",
   "DISABLED_EXPLORATION_IDS": ["5"],
   "TESTING_CONSTANT": "test",
   "LIBRARY_TILE_WIDTH_PX": 208,
@@ -4817,6 +4817,10 @@ export default {
     "description": "français (French)",
     "direction": "ltr"
   }, {
+    "code": "lg",
+    "description": "Luganda (Ganda)",
+    "direction": "ltr"
+  }, {
     "code": "de",
     "description": "Deutsch (German)",
     "direction": "ltr"
@@ -4867,6 +4871,10 @@ export default {
   }, {
     "code": "lt",
     "description": "lietuvių (Lithuanian)",
+    "direction": "ltr"
+  }, {
+    "code": "mr",
+    "description": "मराठी (Marathi)",
     "direction": "ltr"
   }, {
     "code": "no",
@@ -5103,6 +5111,11 @@ export default {
     "relatedLanguages": ["fr"],
     "direction": "ltr"
   }, {
+    "id": "lg",
+    "description": "Ganda",
+    "relatedLanguages": ["lg"],
+    "direction": "ltr"
+  }, {
     "id": "de",
     "description": "German",
     "relatedLanguages": ["de"],
@@ -5171,6 +5184,11 @@ export default {
     "id": "lt",
     "description": "Lithuanian",
     "relatedLanguages": ["lt"],
+    "direction": "ltr"
+  }, {
+    "id": "mr",
+    "description": "Marathi",
+    "relatedLanguages": ["mr"],
     "direction": "ltr"
   }, {
     "id": "no",
@@ -5435,6 +5453,9 @@ export default {
   "CONTRIBUTION_RIGHT_CATEGORY_REVIEW_VOICEOVER": "voiceover",
   "CONTRIBUTION_RIGHT_CATEGORY_REVIEW_QUESTION": "question",
   "CONTRIBUTION_RIGHT_CATEGORY_SUBMIT_QUESTION": "submit_question",
+  "CONTRIBUTION_RIGHT_CATEGORIES": [
+    "translation", "voiceover", "question", "submit_question"
+  ],
 
   "ACTION_REMOVE_ALL_REVIEW_RIGHTS": "all",
   "ACTION_REMOVE_SPECIFIC_CONTRIBUTION_RIGHTS": "specific",
@@ -5447,6 +5468,8 @@ export default {
   "WHITELISTED_COLLECTION_IDS_FOR_SAVING_GUEST_PROGRESS": [],
 
   "FEEDBACK_SUBJECT_MAX_CHAR_LIMIT": 50,
+
+  "MAX_CURRENT_GOALS_COUNT": 5,
 
   "ACTIVITY_STATUS_PRIVATE": "private",
   "ACTIVITY_STATUS_PUBLIC": "public",
@@ -5501,6 +5524,8 @@ export default {
 
   "NUM_QUESTIONS_PER_PAGE": 10,
 
+  "BULK_EMAIL_SERVICE_SIGNUP_URL": "",
+
   // The default number of opportunities to show on the contributor dashboard
   // page.
   "OPPORTUNITIES_PAGE_SIZE": 10,
@@ -5526,6 +5551,8 @@ export default {
   "MAX_CHARS_IN_CHAPTER_TITLE": 36,
   "MAX_CHARS_IN_CHAPTER_DESCRIPTION": 152,
   "MAX_CHARS_IN_MISCONCEPTION_NAME": 100,
+  "MAX_CHARS_IN_BLOG_POST_TITLE": 40,
+  "MAX_CHARS_IN_BLOG_POST_SUMMARY": 240,
   // This represents the maximum number of characters in the URL fragment for
   // story in the story page URL. E.g.
   // in /learn/math/fractions/story/bakery/..., 'bakery' is the
@@ -5536,6 +5563,9 @@ export default {
   // in /learn/math/fractions/revision/place-values, 'place-values' is the
   // 'subtopic URL fragment'.
   "MAX_CHARS_IN_SUBTOPIC_URL_FRAGMENT": 25,
+  // This represents the maximum number of characters in the URL fragment for
+  // the blog post.
+  "MAX_CHARS_IN_BLOG_POST_URL_FRAGMENT": 65,
   // The recommended length for meta tag contents. Search engines will truncate
   // results greater than this limit.
   "MAX_CHARS_IN_META_TAG_CONTENT": 160,
@@ -5601,13 +5631,24 @@ export default {
   "FIREBASE_CONFIG_APP_ID": "",
   "FIREBASE_CONFIG_GOOGLE_CLIENT_ID": "",
 
+  "BEAM_JOBS_ARE_ENABLED": false,
+
   "ALLOW_YAML_FILE_UPLOAD": false,
 
   // A regular expression for tags.
   "TAG_REGEX": "^[a-z ]+$",
 
+  // A regular expression for allowed character in tags for blog post.
+  "BLOG_POST_TAG_REGEX": "^[a-zA-Z0-9 ]+$",
+
   // A regular expression for allowed characters in URL fragment fields.
   "VALID_URL_FRAGMENT_REGEX": "^[a-z]+(-[a-z]+)*$",
+
+  // A regular expression for allowed characters in Title field for Blog Post.
+  "VALID_BLOG_POST_TITLE_REGEX": "^[a-zA-Z0-9][a-zA-Z0-9 ]+(-[a-zA-Z0-9]+)*$",
+
+  // A regular expression for allowed characters in URL fragment for Blog Post.
+  "VALID_URL_BLOG_FRAGMENT_REGEX": "^[a-z0-9]+(-[a-z0-9]+)*$",
 
   // A regular expression for valid skill misconception id.
   "VALID_SKILL_MISCONCEPTION_ID_REGEX": "[A-Za-z0-9]{12}-[0-9]+",
@@ -5872,6 +5913,12 @@ export default {
     }
   ],
 
+  // When the site cookie policy was last updated in UNIX time milliseconds.
+  "COOKIE_POLICY_LAST_UPDATED_MSECS": 1624909164000,
+
   "DEV_MODE": true,
-  "EMULATOR_MODE": true
+  "EMULATOR_MODE": true,
+  "ASSET_TYPE_AUDIO": "audio",
+  "ASSET_TYPE_IMAGE": "image",
+  "ASSET_TYPE_THUMBNAIL": "thumbnail"
 } as const;

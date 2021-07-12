@@ -39,3 +39,5 @@ elasticsearch==7.10.0
 # server.
 PyYAML==5.4.1
 certifi==2021.5.30
+mailchimp3==3.0.14
+typing==3.7.4.3

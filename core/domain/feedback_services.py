@@ -605,7 +605,16 @@ def get_thread_analytics_multi(unused_exploration_ids):
         list. If an exploration id is invalid, the number of threads in the
         corresponding FeedbackAnalytics object will be zero.
     """
-    return []
+    feedback_thread_analytics_models = (
+        feedback_models.FeedbackAnalyticsModel.get_multi(exploration_ids))
+    return [
+        feedback_domain.FeedbackAnalytics(
+            feconf.ENTITY_TYPE_EXPLORATION, exp_id,
+            model.num_open_threads if model is not None else 0,
+            model.num_total_threads if model is not None else 0)
+        for exp_id, model in python_utils.ZIP(
+            exploration_ids, feedback_thread_analytics_models)
+    ]
 
 
 def get_thread_analytics(exploration_id):
@@ -617,7 +626,7 @@ def get_thread_analytics(exploration_id):
     Returns:
         FeedbackAnalytics. The feedback analytics of the given exploration.
     """
-    return feedback_domain.FeedbackAnalytics(exploration_id, None, 0, 0)
+    return get_thread_analytics_multi([exploration_id])[0]
 
 
 def get_total_open_threads(feedback_analytics_list):
@@ -1158,3 +1167,64 @@ def delete_exploration_feedback_analytics(exp_ids):
         if model is not None]
     feedback_models.FeedbackAnalyticsModel.delete_multi(
         feedback_analytics_models_to_be_deleted)
+
+
+def handle_new_thread_created(exp_id):
+    """Reacts to new threads added to an exploration.
+
+    Args:
+        exp_id: str. The exploration ID associated with the thread.
+    """
+    _increment_total_threads_count_transactional(exp_id)
+    _increment_open_threads_count_transactional(exp_id)
+
+
+def handle_thread_status_changed(exp_id, old_status, new_status):
+    """Reacts to changes in an exploration thread's status.
+
+    Args:
+        exp_id: str. The exploration ID associated with the thread.
+        old_status: str. The old status of the thread.
+        new_status: str. The updated status of the thread.
+    """
+    # Status changed from closed to open.
+    if (old_status != feedback_models.STATUS_CHOICES_OPEN and
+            new_status == feedback_models.STATUS_CHOICES_OPEN):
+        _increment_open_threads_count_transactional(exp_id)
+    # Status changed from open to closed.
+    elif (old_status == feedback_models.STATUS_CHOICES_OPEN and
+          new_status != feedback_models.STATUS_CHOICES_OPEN):
+        _decrement_open_threads_count_transactional(exp_id)
+
+
+@transaction_services.run_in_transaction_wrapper
+def _increment_open_threads_count_transactional(exp_id):
+    """Increments count of open threads by one."""
+    model = (
+        feedback_models.FeedbackAnalyticsModel.get(exp_id, strict=False) or
+        feedback_models.FeedbackAnalyticsModel(id=exp_id, num_open_threads=0))
+    model.num_open_threads = (model.num_open_threads or 0) + 1
+    model.update_timestamps()
+    model.put()
+
+
+@transaction_services.run_in_transaction_wrapper
+def _increment_total_threads_count_transactional(exp_id):
+    """Increments count of total threads by one."""
+    model = (
+        feedback_models.FeedbackAnalyticsModel.get(exp_id, strict=False) or
+        feedback_models.FeedbackAnalyticsModel(id=exp_id, num_total_threads=0))
+    model.num_total_threads = (model.num_total_threads or 0) + 1
+    model.update_timestamps()
+    model.put()
+
+
+@transaction_services.run_in_transaction_wrapper
+def _decrement_open_threads_count_transactional(exp_id):
+    """Decrements count of open threads by one."""
+    model = (
+        feedback_models.FeedbackAnalyticsModel.get(exp_id, strict=False) or
+        feedback_models.FeedbackAnalyticsModel(id=exp_id, num_open_threads=0))
+    model.num_open_threads = (model.num_open_threads or 1) - 1
+    model.update_timestamps()
+    model.put()

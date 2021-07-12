@@ -78,18 +78,19 @@ class ContributionOpportunitiesHandlerTest(test_utils.GenericTestBase):
         for exp in explorations:
             self.publish_exploration(self.owner_id, exp.id)
 
+        topic_id = '0'
         topic = topic_domain.Topic.create_default_topic(
-            '0', 'topic', 'abbrev', 'description')
+            topic_id, 'topic', 'abbrev', 'description')
         topic.thumbnail_filename = 'thumbnail.svg'
         topic.thumbnail_bg_color = '#C6DCDA'
         topic.subtopics = [
             topic_domain.Subtopic(
                 1, 'Title', ['skill_id_3'], 'image.svg',
-                constants.ALLOWED_THUMBNAIL_BG_COLORS['subtopic'][0],
+                constants.ALLOWED_THUMBNAIL_BG_COLORS['subtopic'][0], 21131,
                 'dummy-subtopic-three')]
         topic.next_subtopic_id = 2
         topic_services.save_new_topic(self.owner_id, topic)
-        topic_services.publish_topic('0', self.admin_id)
+        topic_services.publish_topic(topic_id, self.admin_id)
 
         self.skill_id_0 = 'skill_id_0'
         self.skill_id_1 = 'skill_id_1'
@@ -98,7 +99,17 @@ class ContributionOpportunitiesHandlerTest(test_utils.GenericTestBase):
             self.save_new_skill(
                 skill_id, self.admin_id, description='skill_description')
             topic_services.add_uncategorized_skill(
-                self.admin_id, '0', skill_id)
+                self.admin_id, topic_id, skill_id)
+
+        # Add skill opportunity topic to a classroom.
+        config_services.set_property(
+            self.admin_id, 'classroom_pages_data', [{
+                'name': 'math',
+                'url_fragment': 'math-one',
+                'topic_ids': [topic_id],
+                'course_details': '',
+                'topic_list_intro': ''
+            }])
 
         self.expected_skill_opportunity_dict_0 = {
             'id': self.skill_id_0,
@@ -190,6 +201,21 @@ class ContributionOpportunitiesHandlerTest(test_utils.GenericTestBase):
             response['opportunities'], [
                 self.expected_skill_opportunity_dict_0,
                 self.expected_skill_opportunity_dict_1])
+        self.assertTrue(
+            isinstance(response['next_cursor'], python_utils.BASESTRING))
+
+    def test_get_skill_opportunity_data_does_not_return_non_classroom_topics(
+            self):
+        config_services.revert_property(
+            self.admin_id, 'classroom_pages_data')
+
+        response = self.get_json(
+            '%s/skill' % feconf.CONTRIBUTOR_OPPORTUNITIES_DATA_URL,
+            params={})
+
+        self.assertEqual(
+            response['opportunities'], [])
+        self.assertFalse(response['more'])
         self.assertTrue(
             isinstance(response['next_cursor'], python_utils.BASESTRING))
 
@@ -359,7 +385,7 @@ class TranslatableTextHandlerTest(test_utils.GenericTestBase):
         topic.subtopics = [
             topic_domain.Subtopic(
                 1, 'Title', ['skill_id_1'], 'image.svg',
-                constants.ALLOWED_THUMBNAIL_BG_COLORS['subtopic'][0],
+                constants.ALLOWED_THUMBNAIL_BG_COLORS['subtopic'][0], 21131,
                 'dummy-subtopic-three')]
         topic.next_subtopic_id = 2
         topic_services.save_new_topic(self.owner_id, topic)
@@ -512,9 +538,13 @@ class MachineTranslationStateTextsHandlerTests(test_utils.GenericTestBase):
                 'content_ids': '["content"]',
                 'target_language_code': 'invalid_language_code'
             }, expected_status_int=400)
+
+        error_msg = (
+            'Schema validation for \'target_language_code\' failed: '
+            'Validation failed: is_supported_audio_language_code ({}) for '
+            'object invalid_language_code')
         self.assertEqual(
-            output['error'],
-            'Invalid target_language_code: invalid_language_code')
+            output['error'], error_msg)
 
     def test_handler_with_no_target_language_code_raises_exception(self):
         output = self.get_json(
@@ -523,9 +553,10 @@ class MachineTranslationStateTextsHandlerTests(test_utils.GenericTestBase):
                 'state_name': 'End State',
                 'content_ids': '["content"]',
             }, expected_status_int=400)
+
+        error_msg = 'Missing key in handler args: target_language_code.'
         self.assertEqual(
-            output['error'],
-            'Missing target_language_code')
+            output['error'], error_msg)
 
     def test_handler_with_invalid_exploration_id_returns_not_found(self):
         self.get_json(
@@ -543,9 +574,10 @@ class MachineTranslationStateTextsHandlerTests(test_utils.GenericTestBase):
                 'content_ids': '["content"]',
                 'target_language_code': 'es'
             }, expected_status_int=400)
+
+        error_msg = 'Missing key in handler args: exp_id.'
         self.assertEqual(
-            output['error'],
-            'Missing exp_id')
+            output['error'], error_msg)
 
     def test_handler_with_invalid_state_name_returns_not_found(self):
         self.get_json(
@@ -563,9 +595,10 @@ class MachineTranslationStateTextsHandlerTests(test_utils.GenericTestBase):
                 'content_ids': '["content"]',
                 'target_language_code': 'es'
             }, expected_status_int=400)
+
+        error_msg = 'Missing key in handler args: state_name.'
         self.assertEqual(
-            output['error'],
-            'Missing state_name')
+            output['error'], error_msg)
 
     def test_handler_with_invalid_content_ids_returns_none(self):
         exp_services.update_exploration(
@@ -631,9 +664,10 @@ class MachineTranslationStateTextsHandlerTests(test_utils.GenericTestBase):
                 'target_language_code': 'en'
             }, expected_status_int=400
         )
+
+        error_msg = 'Missing key in handler args: content_ids.'
         self.assertEqual(
-            output['error'],
-            'Improperly formatted content_ids: ')
+            output['error'], error_msg)
 
     def test_handler_with_valid_input_returns_translation(self):
         exp_services.update_exploration(

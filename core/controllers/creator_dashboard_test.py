@@ -39,21 +39,6 @@ import feconf
          models.NAMES.feedback]))
 
 
-class OldNotificationsDashboardRedirectPageTest(test_utils.GenericTestBase):
-    """Test for redirecting the old notifications dashboard page URL
-    to the new one.
-    """
-
-    def test_old_notifications_dashboard_page_url(self):
-        """Test to validate that the old notifications dashboard page url
-        redirects to the new one.
-        """
-        response = self.get_html_response(
-            '/notifications_dashboard', expected_status_int=301)
-        self.assertEqual(
-            'http://localhost/notifications', response.headers['location'])
-
-
 class OldContributorDashboardRedirectPageTest(test_utils.GenericTestBase):
     """Test for redirecting the old contributor dashboard page URL
     to the new one.
@@ -91,29 +76,7 @@ class HomePageTests(test_utils.GenericTestBase):
         """Test the logged-out version of the home page."""
         response = self.get_html_response('/')
         self.assertEqual(response.status_int, 200)
-        self.assertIn('</splash-page>', response)
-
-    def test_notifications_dashboard_redirects_for_logged_out_users(self):
-        """Test the logged-out view of the notifications dashboard."""
-        response = self.get_html_response(
-            '/notifications', expected_status_int=302)
-        # This should redirect to the login page.
-        self.assertIn('login', response.headers['location'])
-        self.assertIn('notifications', response.headers['location'])
-
-        self.login('reader@example.com')
-        self.get_html_response(
-            '/notifications', expected_status_int=302)
-        # This should redirect the user to complete signup.
-        self.logout()
-
-    def test_logged_in_notifications_dashboard(self):
-        """Test the logged-in view of the notifications dashboard."""
-        self.signup(self.EDITOR_EMAIL, self.EDITOR_USERNAME)
-
-        self.login(self.EDITOR_EMAIL)
-        self.get_html_response('/notifications')
-        self.logout()
+        self.assertIn('</oppia-splash-page-root>', response)
 
 
 class CreatorDashboardHandlerTests(test_utils.GenericTestBase):

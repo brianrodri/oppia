@@ -467,6 +467,10 @@
 /core/controllers/cron*.py @nithusha21
 /core/domain/cron_services*.py @nithusha21
 /main.py @DubeySandeep @nithusha21
+/main_cron.py @DubeySandeep @nithusha21
+/main_taskqueue.py @DubeySandeep @nithusha21
+/appengine_config.py @DubeySandeep @nithusha21
+/appengine_config_test.py @DubeySandeep @nithusha21
 /feconf.py @DubeySandeep @nithusha21 @seanlip
 /constants*.py @nithusha21
 /assets/constants.ts @nithusha21

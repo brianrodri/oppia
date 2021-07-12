@@ -17,12 +17,8 @@
 from __future__ import absolute_import  # pylint: disable=import-only-modules
 from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
-from core.platform import models
 from core.tests import test_utils
 import feconf
-
-(exp_models, job_models,) = models.Registry.import_models(
-    [models.NAMES.exploration, models.NAMES.job])
 
 
 class ReleaseCoordinatorPageTest(test_utils.GenericTestBase):
@@ -54,60 +50,6 @@ class ReleaseCoordinatorPageTest(test_utils.GenericTestBase):
         response = self.get_html_response('/release-coordinator')
         response.mustcontain(
             '<oppia-release-coordinator-page></oppia-release-coordinator-page>')
-        self.logout()
-
-
-class JobsHandlerTest(test_utils.GenericTestBase):
-    """Test for the JobsHandler."""
-
-    def setUp(self):
-        super(JobsHandlerTest, self).setUp()
-        self.signup(feconf.ADMIN_EMAIL_ADDRESS, 'testsuper')
-        self.signup(self.ADMIN_EMAIL, self.ADMIN_USERNAME)
-        self.signup(
-            self.RELEASE_COORDINATOR_EMAIL, self.RELEASE_COORDINATOR_USERNAME)
-        self.admin_id = self.get_user_id_from_email(self.ADMIN_EMAIL)
-
-        self.set_user_role(
-            self.RELEASE_COORDINATOR_USERNAME,
-            feconf.ROLE_ID_RELEASE_COORDINATOR)
-
-    def test_only_release_coordinator_allowed_to_use_jobs_handler(self):
-        # Guest user.
-        self.get_json('/jobshandler', expected_status_int=401)
-
-        # Login as a non-admin.
-        self.login(self.EDITOR_EMAIL)
-        self.get_json('/jobshandler', expected_status_int=401)
-        self.logout()
-
-        # Login as an admin.
-        self.login(self.ADMIN_EMAIL, is_super_admin=True)
-        self.get_json('/jobshandler', expected_status_int=401)
-        self.logout()
-
-        # Login as a release coordinator.
-        self.login(self.RELEASE_COORDINATOR_EMAIL)
-        response = self.get_json('/jobshandler')
-        self.assertItemsEqual(list(response), [
-            'human_readable_current_time',
-            'one_off_job_status_summaries', 'audit_job_status_summaries',
-            'recent_job_data', 'unfinished_job_data'])
-        self.logout()
-
-    def test_handler_with_invalid_action_raise_400(self):
-        self.login(self.RELEASE_COORDINATOR_EMAIL)
-
-        self.get_json('/jobshandler')
-        csrf_token = self.get_new_csrf_token()
-
-        response = self.post_json(
-            '/jobshandler', {
-                'action': 'invalid_action'
-            }, csrf_token=csrf_token, expected_status_int=400)
-
-        self.assertEqual(response['error'], 'Invalid action: invalid_action')
-
         self.logout()
 
 

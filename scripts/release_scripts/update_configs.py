@@ -259,9 +259,7 @@ def add_mailchimp_api_key(release_feconf_path):
             f.write(line)
 
 
-def main(
-        release_dir_path, deploy_data_path, personal_access_token,
-        prompt_for_mailgun_and_terms_update):
+def main(args=None):
     """Updates the files corresponding to LOCAL_FECONF_PATH and
     LOCAL_CONSTANTS_PATH after doing the prerequisite checks.
     """

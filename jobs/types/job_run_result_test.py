@@ -44,12 +44,12 @@ class JobRunResultTests(test_utils.TestBase):
 
     def test_as_stdout_using_repr(self):
         run_result = job_run_result.JobRunResult.as_stdout('abc', use_repr=True)
-        self.assertEqual(run_result.stdout, 'u\'abc\'')
+        self.assertEqual(run_result.stdout, '\'abc\'')
         self.assertEqual(run_result.stderr, '')
 
     def test_as_stderr_using_repr(self):
         run_result = job_run_result.JobRunResult.as_stderr('abc', use_repr=True)
-        self.assertEqual(run_result.stderr, 'u\'abc\'')
+        self.assertEqual(run_result.stderr, '\'abc\'')
         self.assertEqual(run_result.stdout, '')
 
     def test_empty_result_raises_value_error(self):

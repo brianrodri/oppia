@@ -191,7 +191,9 @@
         "core.domain.learner_progress_services_test",
         "core.domain.config_services_test",
         "core.domain.subtopic_page_services_test",
-        "core.domain.calculation_registry_test",
+        "core.domain.calculation_registry_test"
+    ],
+    "8": [
         "core.domain.question_fetchers_test",
         "core.domain.exp_domain_test",
         "core.domain.customization_args_util_test",

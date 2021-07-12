@@ -565,8 +565,12 @@ class UpdateConfigsTests(test_utils.GenericTestBase):
             with apply_changes_swap, verify_feconf_swap:
                 with add_mailchimp_api_key_swap:
                     update_configs.main(
-                        'test-release-dir', 'test-deploy-dir', 'test-token',
-                        True)
+                        args=[
+                            '--release_dir_path', 'test-release-dir',
+                            '--deploy_data_path', 'test-deploy-dir',
+                            '--personal_access_token', 'test-token',
+                            '--prompt_for_mailgun_and_terms_update',
+                        ])
         self.assertEqual(check_function_calls, expected_check_function_calls)
 
     def test_function_calls_without_prompt_for_feconf_and_terms_update(self):

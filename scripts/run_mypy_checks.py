@@ -593,8 +593,6 @@ NOT_FULLY_COVERED_FILES = [
     'jobs/io/job_io_test.py',
     'jobs/io/ndb_io.py',
     'jobs/io/ndb_io_test.py',
-    'jobs/io/stub_io.py',
-    'jobs/io/stub_io_test.py',
     'jobs/job_options.py',
     'jobs/job_options_test.py',
     'jobs/job_test_utils.py',

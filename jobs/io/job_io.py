@@ -36,18 +36,15 @@ class PutResults(beam.PTransform):
 
     _MAX_RESULT_INSTANCES_PER_MODEL = 1000
 
-    def __init__(self, job_id, datastoreio_stub, label=None):
+    def __init__(self, job_id, label=None):
         """Initializes the GetModels PTransform.
 
         Args:
             job_id: str. The Oppia ID associated with the current pipeline.
-            datastoreio_stub: stub_io.DatastoreioStub. The stub responsible for
-                handling datastoreio operations.
             label: str|None. The label of the PTransform.
         """
         super(PutResults, self).__init__(label=label)
         self.job_id = job_id
-        self.datastoreio_stub = datastoreio_stub
 
     def expand(self, results):
         """Writes the given job results to the NDB datastore."""
@@ -62,7 +59,7 @@ class PutResults(beam.PTransform):
             | beam.Values()
             | beam.FlatMap(job_run_result.JobRunResult.accumulate)
             | beam.Map(self.create_beam_job_run_result_model)
-            | ndb_io.PutModels(self.datastoreio_stub)
+            | ndb_io.PutModels()
         )
 
     def create_beam_job_run_result_model(self, result):

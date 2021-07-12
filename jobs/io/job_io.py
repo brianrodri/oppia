@@ -28,6 +28,8 @@ import apache_beam as beam
 
 (beam_job_models,) = models.Registry.import_models([models.NAMES.beam_job])
 
+datastore_services = models.Registry.import_datastore_services()
+
 
 @beam.typehints.with_input_types(job_run_result.JobRunResult)
 @beam.typehints.with_output_types(beam.pvalue.PDone)
@@ -46,10 +48,10 @@ class PutResults(beam.PTransform):
         super(PutResults, self).__init__(label=label)
         self.job_id = job_id
 
-    def expand(self, results):
+    def expand(self, result_pcoll):
         """Writes the given job results to the NDB datastore."""
         return (
-            results
+            result_pcoll
             # NOTE: Pylint is wrong. WithKeys() is a decorated function with a
             # different signature than the one it's defined with.
             | beam.WithKeys(None) # pylint: disable=no-value-for-parameter
@@ -58,18 +60,22 @@ class PutResults(beam.PTransform):
             | beam.GroupIntoBatches(self._MAX_RESULT_INSTANCES_PER_MODEL)
             | beam.Values()
             | beam.FlatMap(job_run_result.JobRunResult.accumulate)
-            | beam.Map(self.create_beam_job_run_result_model)
+            | beam.Map(
+                self.create_beam_job_run_result_model,
+                result_pcoll.pipeline.options.namespace)
             | ndb_io.PutModels()
         )
 
-    def create_beam_job_run_result_model(self, result):
+    def create_beam_job_run_result_model(self, result, namespace):
         """Returns an NDB model for storing the given JobRunResult.
 
         Args:
             result: job_run_result.JobRunResult. The result.
+            namespace: str. The namespace in which models should be created.
 
         Returns:
             BeamJobRunResultModel. The NDB model.
         """
-        return beam_job_services.create_beam_job_run_result_model(
-            self.job_id, result.stdout, result.stderr)
+        with datastore_services.get_ndb_context(namespace=namespace):
+            return beam_job_services.create_beam_job_run_result_model(
+                self.job_id, result.stdout, result.stderr)

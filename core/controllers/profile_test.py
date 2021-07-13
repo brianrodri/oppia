@@ -19,11 +19,11 @@ from __future__ import unicode_literals  # pylint: disable=import-only-modules
 
 import datetime
 import io
+import logging
 import re
 import zipfile
 
 from constants import constants
-from core.domain import email_manager
 from core.domain import exp_domain
 from core.domain import exp_services
 from core.domain import rights_manager
@@ -479,7 +479,7 @@ class EmailPreferencesTests(test_utils.GenericTestBase):
         self.get_html_response(feconf.SIGNUP_URL + '?return_url=/')
         csrf_token = self.get_new_csrf_token()
 
-        def _mock_true_function(*unused):
+        def _mock_true_function(*_):
             """Mock function that returns True.
 
             Returns:

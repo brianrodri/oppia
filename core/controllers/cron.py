@@ -35,6 +35,7 @@ class CronModelsCleanupHandler(base.BaseHandler):
     specific types of models as deleted.
     """
 
+    GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
     URL_PATH_ARGS_SCHEMAS = {}
     HANDLER_ARGS_SCHEMAS = {'GET': {}}
 
@@ -58,6 +59,7 @@ class CronMailReviewersContributorDashboardSuggestionsHandler(
     Dashboard that need review.
     """
 
+    GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
     URL_PATH_ARGS_SCHEMAS = {}
     HANDLER_ARGS_SCHEMAS = {'GET': {}}
 
@@ -92,6 +94,7 @@ class CronMailAdminContributorDashboardBottlenecksHandler(
     longer reviewer turnaround time on the Contributor Dashboard.
     """
 
+    GET_HANDLER_ERROR_RETURN_TYPE = feconf.HANDLER_TYPE_JSON
     URL_PATH_ARGS_SCHEMAS = {}
     HANDLER_ARGS_SCHEMAS = {'GET': {}}
 

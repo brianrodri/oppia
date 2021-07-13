@@ -1015,7 +1015,8 @@ class CheckAllHandlersHaveDecoratorTests(test_utils.GenericTestBase):
         self.assertGreater(len(handlers_checked), 0)
 
         for (name, method, handler_is_decorated) in handlers_checked:
-            self.assertTrue(handler_is_decorated)
+            with self.subTest('%s.%s' % (name, method)):
+                self.assertTrue(handler_is_decorated)
 
 
 class GetItemsEscapedCharactersTests(test_utils.GenericTestBase):
@@ -1091,7 +1092,7 @@ class ControllerClassNameTests(test_utils.GenericTestBase):
                     # of this class ends with 'Page'' - doesn't apply.
                     # It is only called from the bulk email provider via a
                     # webhook to update Oppia's database.
-                    if class_name == "BulkEmailWebhookEndpoint":
+                    if class_name == 'BulkEmailWebhookEndpoint':
                         continue
                     file_name = inspect.getfile(clazz)
                     line_num = inspect.getsourcelines(clazz)[1]
@@ -1106,9 +1107,10 @@ class ControllerClassNameTests(test_utils.GenericTestBase):
                         error_message = (
                             '%s --> Line %s: %s'
                             % (file_name, line_num, message))
-                        self.assertTrue(
-                            class_name.endswith(allowed_class_ending),
-                            msg=error_message)
+                        with self.subTest(class_name):
+                            self.assertTrue(
+                                class_name.endswith(allowed_class_ending),
+                                msg=error_message)
 
                     # Check that the name of the class ends with 'Handler'
                     # if it does not has a get function.
@@ -1119,8 +1121,9 @@ class ControllerClassNameTests(test_utils.GenericTestBase):
                         error_message = (
                             '%s --> Line %s: %s'
                             % (file_name, line_num, message))
-                        self.assertTrue(class_name.endswith('Handler'),
-                                        msg=error_message)
+                        with self.subTest(class_name):
+                            self.assertTrue(class_name.endswith('Handler'),
+                                            msg=error_message)
 
         self.assertGreater(num_handlers_checked, 150)
 
@@ -1700,7 +1703,7 @@ class SchemaValidationRequestArgsTests(test_utils.GenericTestBase):
                     expected_status_int=400)
             error_msg = (
                 'Schema validation for \'exploration_id\' failed: Could not '
-                'convert unicode to int: %s' % self.exp_id)
+                'convert str to int: %s' % self.exp_id)
             self.assertEqual(response['error'], error_msg)
         self.logout()
 

@@ -799,6 +799,27 @@ def get_thread(thread_id):
         feedback_models.GeneralFeedbackThreadModel.get_by_id(thread_id))
 
 
+def get_closed_threads(entity_type, entity_id, has_suggestion):
+    """Fetches all closed threads of the given entity id.
+
+    Args:
+        entity_type: str. The type of entity the feedback thread is linked to.
+        entity_id: str. The id of the entity.
+        has_suggestion: bool. If it's True, return a list of all closed threads
+            that have a suggestion, otherwise return a list of all closed
+            threads that do not have a suggestion.
+
+    Returns:
+        list(FeedbackThread). The resulting FeedbackThread domain objects.
+    """
+    return [
+        thread for thread in get_threads(entity_type, entity_id)
+        if (
+            thread.has_suggestion == has_suggestion and
+            thread.status != feedback_models.STATUS_CHOICES_OPEN)
+    ]
+
+
 def get_all_threads(entity_type, entity_id, has_suggestion):
     """Fetches all threads (regardless of their status) that correspond to the
     given entity id.

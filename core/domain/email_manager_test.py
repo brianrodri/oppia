@@ -189,9 +189,9 @@ class EmailRightsTest(test_utils.GenericTestBase):
                 True, True, True, False),
         }
 
-        for intent in expected_validation_results:
+        for intent, results in expected_validation_results.items():
             for ind, sender_id in enumerate(sender_ids_to_test):
-                if expected_validation_results[intent][ind]:
+                if results[ind]:
                     email_manager.require_sender_id_is_valid(
                         intent, sender_id)
                 else:

@@ -279,8 +279,7 @@ def validate_customization_args(html_list):
             for tag in soup.findAll(name=tag_name):
                 tags_to_original_html_strings[tag] = html_string
 
-    for tag in tags_to_original_html_strings:
-        html_string = tags_to_original_html_strings[tag]
+    for tag, html_string in tags_to_original_html_strings.items():
         err_msg_list = list(validate_customization_args_in_tag(tag))
         for err_msg in err_msg_list:
             if err_msg:

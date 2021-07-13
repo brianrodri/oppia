@@ -23,10 +23,10 @@ import ast
 import hashlib
 
 import feconf
+import python_utils
+
 import mailchimp3
 from mailchimp3 import mailchimpclient
-
-import python_utils
 
 
 def _get_subscriber_hash(email):

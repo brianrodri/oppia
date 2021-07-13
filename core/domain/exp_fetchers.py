@@ -377,8 +377,8 @@ def get_multiple_explorations_by_id(exp_ids, strict=True):
             % '\n'.join(not_found))
 
     cache_update = {
-        eid: db_results_dict[eid] for eid in db_results_dict
-        if db_results_dict[eid] is not None
+        eid: results for eid, results in db_results_dict.items()
+        if results is not None
     }
 
     if cache_update:

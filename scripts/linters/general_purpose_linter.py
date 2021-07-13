@@ -508,7 +508,7 @@ class GeneralPurposeLinter(python_utils.OBJECT):
         for filepath in all_filepaths:
             file_content = self.file_cache.readlines(filepath)
             total_files_checked += 1
-            for pattern in BAD_PATTERNS:
+            for pattern, error in BAD_PATTERNS.items():
                 if is_filepath_excluded_for_bad_patterns_check(
                         pattern, filepath):
                     continue
@@ -517,7 +517,7 @@ class GeneralPurposeLinter(python_utils.OBJECT):
                         failed = True
                         error_message = ('%s --> Line %s: %s' % (
                             filepath, line_num + 1,
-                            BAD_PATTERNS[pattern]['message']))
+                            error['message']))
                         error_messages.append(error_message)
                         total_error_count += 1
 
@@ -541,13 +541,13 @@ class GeneralPurposeLinter(python_utils.OBJECT):
             error_messages.extend(bad_pattern_error_messages)
 
             if filepath == 'constants.ts':
-                for pattern in BAD_STRINGS_CONSTANTS:
+                for pattern, constants in BAD_STRINGS_CONSTANTS.items():
                     for line in file_content:
                         if pattern in line:
                             failed = True
                             error_message = ('%s --> %s' % (
                                 filepath,
-                                BAD_STRINGS_CONSTANTS[pattern]['message']))
+                                constants['message']))
                             error_messages.append(error_message)
                             total_error_count += 1
         return concurrent_task_utils.TaskResult(

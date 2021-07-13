@@ -61,11 +61,11 @@ class JobRunResultTests(test_utils.TestBase):
             job_run_result.JobRunResult(stdout='a' * 1000001)
 
     def test_accumulate(self):
-        (single_job_run_result,) = job_run_result.JobRunResult.accumulate([
+        single_job_run_result = job_run_result.JobRunResult.accumulate([
             job_run_result.JobRunResult(stdout='abc', stderr=''),
             job_run_result.JobRunResult(stdout='', stderr='123'),
             job_run_result.JobRunResult(stdout='def', stderr='456'),
-        ])
+        ])[0]
 
         self.assertItemsEqual(
             single_job_run_result.stdout.split('\n'), ['abc', 'def'])

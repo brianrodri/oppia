@@ -278,8 +278,7 @@ def get_multiple_collections_by_id(collection_ids, strict=True):
             % '\n'.join(not_found))
 
     cache_update = {
-        cid: db_results_dict[cid] for cid in db_results_dict
-        if db_results_dict[cid] is not None
+        cid: val for cid, val in db_results_dict.items() if val is not None
     }
 
     if cache_update:

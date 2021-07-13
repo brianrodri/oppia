@@ -53,7 +53,7 @@ PNG_DATA_URL_PREFIX = 'data:image/png;base64,'
 SECONDS_IN_HOUR = 60 * 60
 SECONDS_IN_MINUTE = 60
 
-T = TypeVar('T')
+T = TypeVar('T') # pylint: disable=invalid-name
 
 # TODO(#13059): Every use of constants is followed by
 # 'type: ignore[attr-defined]' because mypy is not able to identify the

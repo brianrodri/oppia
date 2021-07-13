@@ -48,10 +48,10 @@ class PutResults(beam.PTransform):
         super(PutResults, self).__init__(label=label)
         self.job_id = job_id
 
-    def expand(self, result_pcoll):
+    def expand(self, input_or_inputs):
         """Writes the given job results to the NDB datastore."""
         return (
-            result_pcoll
+            input_or_inputs
             # NOTE: Pylint is wrong. WithKeys() is a decorated function with a
             # different signature than the one it's defined with.
             | beam.WithKeys(None) # pylint: disable=no-value-for-parameter
@@ -62,7 +62,7 @@ class PutResults(beam.PTransform):
             | beam.FlatMap(job_run_result.JobRunResult.accumulate)
             | beam.Map(
                 self.create_beam_job_run_result_model,
-                result_pcoll.pipeline.options.namespace)
+                input_or_inputs.pipeline.options.namespace)
             | ndb_io.PutModels()
         )
 

@@ -538,8 +538,8 @@ class ContentMigrationTests(test_utils.GenericTestBase):
             )]}
 
         self.assertEqual(set(actual_output.keys()), set(expected_output.keys()))
-        for key in expected_output:
-            self.assertEqual(set(actual_output[key]), set(expected_output[key]))
+        for key, expected in expected_output.items():
+            self.assertEqual(set(actual_output[key]), set(expected))
 
     def test_validate_customization_args_in_tag(self):
         test_cases = [{

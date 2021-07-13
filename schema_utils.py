@@ -113,13 +113,11 @@ def normalize_against_schema(
         expected_dict_keys = [
             p[SCHEMA_KEY_NAME] for p in schema[SCHEMA_KEY_PROPERTIES]]
 
-        missing_keys = list(set(expected_dict_keys) - set(obj.keys()))
-        extra_keys = list(set(obj.keys()) - set(expected_dict_keys))
+        missing_keys = list(sorted(set(expected_dict_keys) - set(obj.keys())))
+        extra_keys = list(sorted(set(obj.keys()) - set(expected_dict_keys)))
 
         assert set(obj.keys()) == set(expected_dict_keys), (
-            'Missing keys: %s, Extra keys: %s' % (
-                list(sorted(set(expected_dict_keys) - set(obj.keys()))),
-                list(sorted(set(obj.keys()) - set(expected_dict_keys)))))
+            'Missing keys: %s, Extra keys: %s' % (missing_keys, extra_keys))
 
         normalized_obj = {}
         for prop in schema[SCHEMA_KEY_PROPERTIES]:

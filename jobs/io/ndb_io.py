@@ -44,20 +44,20 @@ class GetModels(beam.PTransform):
         super(GetModels, self).__init__(label=label)
         self.query = query
 
-    def expand(self, pbegin):
+    def expand(self, input_or_inputs):
         """Returns a PCollection with models matching the corresponding query.
 
         Args:
-            pbegin: PValue. The initial PValue of the pipeline, used to anchor
-                the models to its underlying pipeline.
+            input_or_inputs: PValue. The initial PValue of the pipeline, used to
+                anchor the models to its underlying pipeline.
 
         Returns:
             PCollection. The PCollection of models.
         """
         query = job_utils.get_beam_query_from_ndb_query(
-            self.query, namespace=pbegin.pipeline.options.namespace)
+            self.query, namespace=input_or_inputs.pipeline.options.namespace)
         return (
-            pbegin.pipeline
+            input_or_inputs.pipeline
             | 'Reading %r from the datastore' % self.query >> (
                 datastoreio.ReadFromDatastore(query))
             | 'Transforming %r into NDB models' % self.query >> (
@@ -70,17 +70,17 @@ class GetModels(beam.PTransform):
 class PutModels(beam.PTransform):
     """Writes NDB models to the datastore."""
 
-    def expand(self, model_pcoll):
+    def expand(self, input_or_inputs):
         """Writes the given models to the datastore.
 
         Args:
-            model_pcoll: PCollection. A PCollection of NDB models.
+            input_or_inputs: PCollection. A PCollection of NDB models.
 
         Returns:
             PCollection. An empty PCollection.
         """
         return (
-            model_pcoll
+            input_or_inputs
             | 'Transforming the NDB models into Apache Beam entities' >> (
                 beam.Map(job_utils.get_beam_entity_from_ndb_model))
             | 'Writing the NDB models to the datastore' >> (
@@ -93,17 +93,17 @@ class PutModels(beam.PTransform):
 class DeleteModels(beam.PTransform):
     """Deletes NDB models from the datastore."""
 
-    def expand(self, model_key_pcoll):
+    def expand(self, input_or_inputs):
         """Deletes the given models from the datastore.
 
         Args:
-            model_key_pcoll: PCollection. The PCollection of NDB keys to delete.
+            input_or_inputs: PCollection. The PCollection of NDB keys to delete.
 
         Returns:
             PCollection. An empty PCollection.
         """
         return (
-            model_key_pcoll
+            input_or_inputs
             | 'Transforming the NDB keys into Apache Beam keys' >> (
                 beam.Map(job_utils.get_beam_key_from_ndb_key))
             | 'Deleting the NDB keys from the datastore' >> (

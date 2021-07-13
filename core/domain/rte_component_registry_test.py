@@ -252,10 +252,8 @@ class RteComponentRegistryUnitTests(test_utils.GenericTestBase):
         self.assertEqual(
             set(obtained_tag_list_with_attrs.keys()),
             set(actual_tag_list_with_attrs.keys()))
-        for key in obtained_tag_list_with_attrs:
-            self.assertEqual(
-                set(obtained_tag_list_with_attrs[key]),
-                set(actual_tag_list_with_attrs[key]))
+        for key, attrs in obtained_tag_list_with_attrs.items():
+            self.assertEqual(set(attrs), set(actual_tag_list_with_attrs[key]))
 
     def test_get_component_types_to_component_classes(self):
         """Test get_component_types_to_component_classes method."""

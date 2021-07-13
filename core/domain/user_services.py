@@ -2043,7 +2043,6 @@ def remove_blog_editor(user_id):
     user_settings = get_user_settings(user_id, strict=True)
     if feconf.ROLE_ID_BLOG_POST_EDITOR == user_settings.role:
         update_user_role(user_id, feconf.ROLE_ID_EXPLORATION_EDITOR)
-    return
 
 
 def allow_user_to_review_voiceover_in_language(user_id, language_code):

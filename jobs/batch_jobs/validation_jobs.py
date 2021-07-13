@@ -183,21 +183,21 @@ class ApplyAuditDoFns(beam.PTransform):
         self._kind = kind
         self._do_fn_types = tuple(AUDIT_DO_FN_TYPES_BY_KIND[kind])
 
-    def expand(self, models_of_kind):
+    def expand(self, input_or_inputs):
         """Returns audit errors from every Audit DoFn targeting the models.
 
         This is the method that PTransform requires us to override when
         implementing custom transforms.
 
         Args:
-            models_of_kind: PCollection. Models of self._kind.
+            input_or_inputs: PCollection. Models of self._kind.
 
         Returns:
             iterable(PCollection). A chain of PCollections. Each individual one
             is the result of a specific DoFn, and is labeled as such.
         """
         return (
-            models_of_kind
+            input_or_inputs
             | 'Apply %s on %s' % (f.__name__, self._kind) >> beam.ParDo(f())
             for f in self._do_fn_types
         )
@@ -216,18 +216,18 @@ class GetExistingModelKeyCounts(beam.PTransform):
             label='Generate (key, count)s for all existing %ss' % kind)
         self._kind = kind
 
-    def expand(self, models_of_kind):
+    def expand(self, input_or_inputs):
         """Returns a PCollection of (key, count) pairs for each input model.
 
         Args:
-            models_of_kind: PCollection. The input models.
+            input_or_inputs: PCollection. The input models.
 
         Returns:
             PCollection. The (ModelKey, int) pairs correponding to the input
             models and their counts (always 1).
         """
         return (
-            models_of_kind
+            input_or_inputs
             | 'Generate (key, count) for %ss' % self._kind >> beam.Map(
                 lambda model: (ModelKey.from_model(model), 1))
         )
@@ -247,11 +247,11 @@ class GetMissingModelKeyErrors(beam.PTransform):
         self._id_referencing_properties = (
             ID_REFERENCING_PROPERTIES_BY_KIND_OF_POSSESSOR[kind])
 
-    def expand(self, models_of_kind):
+    def expand(self, input_or_inputs):
         """Returns PCollections of (key, error) pairs referenced by the models.
 
         Args:
-            models_of_kind: PCollection. The input models.
+            input_or_inputs: PCollection. The input models.
 
         Returns:
             iterable(PCollection). The (ModelKey, ModelRelationshipError) pairs
@@ -260,7 +260,7 @@ class GetMissingModelKeyErrors(beam.PTransform):
             missing.
         """
         return (
-            models_of_kind
+            input_or_inputs
             | 'Generate errors from %s' % property_of_model >> beam.FlatMap(
                 self._generate_missing_key_errors, property_of_model,
                 referenced_kinds)

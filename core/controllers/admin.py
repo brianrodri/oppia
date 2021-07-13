@@ -274,10 +274,10 @@ class AdminHandler(base.BaseHandler):
                     'opportunities_count': opportunities_count
                 }
             elif self.payload.get('action') == 'update_feature_flag_rules':
-                feature_name = self.payload.get('feature_name')
-                new_rule_dicts = self.payload.get('new_rules')
-                commit_message = self.payload.get('commit_message')
-                
+                feature_name = self.normalized_payload.get('feature_name')
+                new_rule_dicts = self.normalized_payload.get('new_rules')
+                commit_message = self.normalized_payload.get('commit_message')
+
                 try:
                     feature_services.update_feature_flag_rules(
                         feature_name, self.user_id, commit_message,

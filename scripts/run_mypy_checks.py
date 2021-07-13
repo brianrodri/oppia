@@ -733,7 +733,6 @@ NOT_FULLY_COVERED_FILES = [
 CONFIG_FILE_PATH = os.path.join('.', 'mypy.ini')
 # TODO(#13113): Change mypy command to mypy path after Python3 migration.
 MYPY_CMD = 'mypy'
-MYPY_REQUIREMENTS_PATH = os.path.join('.', 'mypy_requirements.txt')
 PYTHON3_CMD = 'python3'
 
 
@@ -785,18 +784,6 @@ def get_mypy_cmd(files):
     return cmd
 
 
-def install_mypy_prerequisites():
-    """Install mypy and type stubs from mypy_requirements.txt.
-
-    Returns:
-        int. The return code from installing prerequisites.
-    """
-    cmd = [PYTHON3_CMD, '-m', 'pip', 'install', '-r', MYPY_REQUIREMENTS_PATH]
-    process = subprocess.call(
-        cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    return process
-
-
 def main(args=None):
     """Runs the MyPy type checks."""
     parsed_args = _PARSER.parse_args(args=args)
@@ -809,16 +796,6 @@ def main(args=None):
 
     install_third_party_libraries(parsed_args.skip_install)
     common.fix_third_party_imports()
-
-    python_utils.PRINT('Installing Mypy and stubs for third party libraries.')
-    return_code = install_mypy_prerequisites()
-    if return_code != 0:
-        python_utils.PRINT(
-            'Cannot install Mypy and stubs for third party libraries.')
-        sys.exit(1)
-
-    python_utils.PRINT(
-        'Installed Mypy and stubs for third party libraries.')
 
     python_utils.PRINT('Starting Mypy type checks.')
     cmd = get_mypy_cmd(getattr(parsed_args, 'files'))

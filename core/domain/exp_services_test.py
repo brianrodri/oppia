@@ -4919,10 +4919,10 @@ class ExplorationSummaryGetTests(ExplorationServicesUnitTests):
                         'contributor_ids', 'version',
                         'exploration_model_created_on',
                         'exploration_model_last_updated']
-        for exp_id in actual_summaries:
+        for exp_id, actual_summary in actual_summaries.items():
             for prop in simple_props:
                 self.assertEqual(
-                    getattr(actual_summaries[exp_id], prop),
+                    getattr(actual_summary, prop),
                     getattr(expected_summaries[exp_id], prop))
 
     def test_get_all_exploration_summaries(self):

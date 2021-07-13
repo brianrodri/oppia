@@ -469,7 +469,7 @@ class ElasticSearchStub(python_utils.OBJECT):
             filtered_docs = []
             for term in terms:
                 for _, v in term.items():
-                    values = v['query'].split(b' ')
+                    values = v['query'].split(' ')
                     for doc in result_docs:
                         strs = [val for val in doc.values() if isinstance(
                             val, python_utils.BASESTRING)]

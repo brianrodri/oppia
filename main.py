@@ -880,8 +880,8 @@ URLS = [
 ]
 
 # Adding redirects for topic landing pages.
-for subject in feconf.AVAILABLE_LANDING_PAGES:
-    for topic in feconf.AVAILABLE_LANDING_PAGES[subject]:
+for subject, topics in feconf.AVAILABLE_LANDING_PAGES.items():
+    for topic in topics:
         URLS.append(
             get_redirect_route(
                 r'/%s/%s' % (subject, topic),

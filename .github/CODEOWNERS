@@ -469,8 +469,6 @@
 /main.py @DubeySandeep @nithusha21
 /main_cron.py @DubeySandeep @nithusha21
 /main_taskqueue.py @DubeySandeep @nithusha21
-/appengine_config.py @DubeySandeep @nithusha21
-/appengine_config_test.py @DubeySandeep @nithusha21
 /feconf.py @DubeySandeep @nithusha21 @seanlip
 /constants*.py @nithusha21
 /assets/constants.ts @nithusha21
@@ -478,7 +476,6 @@
 /core/domain/beam_job*.py @brianrodri
 /core/domain/email*.py @aks681
 /core/domain/image_service*.py @DubeySandeep
-/core/jobs*.py @brianrodri
 /core/platform/ @brianrodri
 /core/templates/App*.ts @srijanreddy98
 /core/templates/app.constants.ts @srijanreddy98
@@ -516,7 +513,6 @@
 # TODO(#13119): Set @vojtechjelinek as owner after 2021-07-06
 /mypy.ini @sajalasati
 # TODO(#13119): Set @vojtechjelinek as owner after 2021-07-06
-/mypy_requirements.txt @sajalasati
 /python_utils*.py @DubeySandeep
 /schema_utils*.py @DubeySandeep
 /utils*.py @aks681

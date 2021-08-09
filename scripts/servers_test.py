@@ -35,7 +35,7 @@ from scripts import common
 from scripts import scripts_test_utils
 from scripts import servers
 
-import mock
+from unittest import mock
 import psutil
 
 

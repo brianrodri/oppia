@@ -30,7 +30,7 @@ from core.platform import models
 from core.tests import test_utils
 import python_utils
 
-import mock
+from unittest import mock
 import webapp2
 
 exp_models, = models.Registry.import_models([models.NAMES.exploration])

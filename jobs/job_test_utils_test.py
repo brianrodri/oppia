@@ -26,7 +26,7 @@ import python_utils
 
 import apache_beam as beam
 from apache_beam.testing import util as beam_testing_util
-import mock
+from unittest import mock
 
 (base_models,) = models.Registry.import_models([models.NAMES.base_model])
 

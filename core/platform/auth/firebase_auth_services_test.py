@@ -35,7 +35,7 @@ import utils
 import firebase_admin
 from firebase_admin import auth as firebase_auth
 from firebase_admin import exceptions as firebase_exceptions
-import mock
+from unittest import mock
 import webapp2
 
 auth_models, user_models = (

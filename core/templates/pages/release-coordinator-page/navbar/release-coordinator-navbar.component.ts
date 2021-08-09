@@ -35,7 +35,6 @@ export class ReleaseCoordinatorNavbarComponent implements OnInit {
   @Output() activeTabChange = new EventEmitter();
 
   TAB_ID_BEAM_JOBS: string = ReleaseCoordinatorPageConstants.TAB_ID_BEAM_JOBS;
-  TAB_ID_JOBS: string = ReleaseCoordinatorPageConstants.TAB_ID_JOBS;
   TAB_ID_MISC: string = ReleaseCoordinatorPageConstants.TAB_ID_MISC;
   profilePictureDataUrl: string;
   username: string;
@@ -91,7 +90,7 @@ export class ReleaseCoordinatorNavbarComponent implements OnInit {
     this.logoWebpImageSrc = this.urlInterpolationService.getStaticImageUrl(
       '/logo/288x128_logo_white.webp');
 
-    this.activeTab = this.TAB_ID_JOBS;
+    this.activeTab = this.TAB_ID_BEAM_JOBS;
   }
 }
 

@@ -65,12 +65,12 @@ describe('Release coordinator navbar component', () => {
     expect(component.logoutUrl).toEqual('/logout');
     expect(component.profileDropdownIsActive).toBe(false);
     expect(component.activeTab).toBe(
-      ReleaseCoordinatorPageConstants.TAB_ID_JOBS);
+      ReleaseCoordinatorPageConstants.TAB_ID_BEAM_JOBS);
   });
 
   it('should allow switching tabs correctly', () => {
     expect(component.activeTab).toBe(
-      ReleaseCoordinatorPageConstants.TAB_ID_JOBS);
+      ReleaseCoordinatorPageConstants.TAB_ID_BEAM_JOBS);
 
     component.switchTab(ReleaseCoordinatorPageConstants.TAB_ID_MISC);
     component.activeTabChange.subscribe(

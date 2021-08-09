@@ -40,7 +40,6 @@ import { BeamJobsTabComponent } from 'pages/release-coordinator-page/beam-jobs-t
 import { CancelBeamJobDialogComponent } from 'pages/release-coordinator-page/components/cancel-beam-job-dialog.component';
 import { StartNewBeamJobDialogComponent } from 'pages/release-coordinator-page/components/start-new-beam-job-dialog.component';
 import { ViewBeamJobOutputDialogComponent } from 'pages/release-coordinator-page/components/view-beam-job-output-dialog.component';
-import { JobsTabComponent } from 'pages/release-coordinator-page/jobs-tab/jobs-tab.component';
 import { ReleaseCoordinatorNavbarComponent } from 'pages/release-coordinator-page/navbar/release-coordinator-navbar.component';
 import { ReleaseCoordinatorPageComponent } from 'pages/release-coordinator-page/release-coordinator-page.component';
 import { platformFeatureInitFactory, PlatformFeatureService } from 'services/platform-feature.service';
@@ -79,7 +78,6 @@ import { HybridRouterModuleProvider } from 'hybrid-router-module-provider';
   declarations: [
     BeamJobsTabComponent,
     CancelBeamJobDialogComponent,
-    JobsTabComponent,
     ReleaseCoordinatorNavbarComponent,
     ReleaseCoordinatorPageComponent,
     ReleaseCoordinatorPageRootComponent,
@@ -88,7 +86,6 @@ import { HybridRouterModuleProvider } from 'hybrid-router-module-provider';
   ],
   entryComponents: [
     CancelBeamJobDialogComponent,
-    JobsTabComponent,
     ReleaseCoordinatorNavbarComponent,
     ReleaseCoordinatorPageComponent,
     ReleaseCoordinatorPageRootComponent,

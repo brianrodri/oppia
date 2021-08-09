@@ -26,6 +26,10 @@ import itertools
 import os
 import sys
 
+from typing import Any
+from typing import Callable
+from typing import List
+
 _THIRD_PARTY_PATH = os.path.join(os.getcwd(), 'third_party', 'python_libs')
 sys.path.insert(0, _THIRD_PARTY_PATH)
 
@@ -573,7 +577,7 @@ def is_string(value):
     return isinstance(value, six.string_types)
 
 
-def get_args_of_function(func):
+def get_args_of_function(func: Callable[..., Any]) -> List[str]:
     """Returns the argument names of the function.
 
     Args:
@@ -585,13 +589,8 @@ def get_args_of_function(func):
     Raises:
         TypeError. The input argument is not a function.
     """
-    try:
-        # Python 3.
-        return [p.name for p in inspect.signature(func).parameters
-                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
-    except AttributeError:
-        # Python 2.
-        return inspect.getargspec(func).args
+    return [p.name for p in inspect.signature(func).parameters.values()
+            if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
 
 
 def create_enum(*sequential):

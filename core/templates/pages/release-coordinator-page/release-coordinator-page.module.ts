@@ -29,6 +29,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSortModule } from '@angular/material/sort';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -68,6 +69,7 @@ import { HybridRouterModuleProvider } from 'hybrid-router-module-provider';
     MatIconModule,
     MatInputModule,
     MatProgressBarModule,
+    MatSortModule,
     MatTabsModule,
     MatTableModule,
     MatTooltipModule,

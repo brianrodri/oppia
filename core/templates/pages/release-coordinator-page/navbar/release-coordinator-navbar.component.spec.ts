@@ -100,8 +100,4 @@ describe('Release coordinator navbar component', () => {
 
     expect(component.profileDropdownIsActive).toBe(false);
   });
-
-  it('should disable the Beam Jobs tab by default', () => {
-    expect(component.BEAM_JOBS_TAB_IS_ENABLED).toBe(false);
-  });
 });

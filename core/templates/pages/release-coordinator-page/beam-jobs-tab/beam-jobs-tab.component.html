@@ -45,16 +45,16 @@
       <!-- Started On Column -->
       <ng-container matColumnDef="started_on">
         <th mat-header-cell *matHeaderCellDef>Started on</th>
-        <td mat-cell *matCellDef="let jobRun"> {{ jobRun.jobStartedOnMsecs | date }} </td>
+        <td mat-cell *matCellDef="let jobRun"> {{ jobRun.jobStartedOnMsecs | date:'short' }} </td>
       </ng-container>
 
-      <!-- Ended On Column -->
-      <ng-container matColumnDef="ended_on">
-        <th mat-header-cell *matHeaderCellDef>Ended on</th>
-        <td mat-cell *matCellDef="let jobRun"> {{ jobRun.jobUpdatedOnMsecs | date }} </td>
+      <!-- Last Updated Column -->
+      <ng-container matColumnDef="updated_on">
+        <th mat-header-cell *matHeaderCellDef>Last Updated</th>
+        <td mat-cell *matCellDef="let jobRun"> {{ jobRun.jobUpdatedOnMsecs | date:'short' }} </td>
       </ng-container>
 
-      <!-- Action Button Column -->
+      <!-- Take Action Column -->
       <ng-container matColumnDef="action">
         <th class="job-run-action-column" mat-header-cell *matHeaderCellDef>Take Action</th>
         <td mat-cell *matCellDef="let jobRun">

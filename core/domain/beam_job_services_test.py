@@ -362,7 +362,10 @@ class GetBeamJobRunResultTests(test_utils.GenericTestBase):
         self.assertEqual(beam_job_run_result.stderr, 'def')
 
     def test_get_beam_run_result_with_no_results(self):
-        self.assertIsNone(beam_job_services.get_beam_job_run_result('123'))
+        beam_job_run_result = beam_job_services.get_beam_job_run_result('123')
+
+        self.assertEqual(beam_job_run_result.stdout, '')
+        self.assertEqual(beam_job_run_result.stderr, '')
 
     def test_get_beam_run_result_with_result_batches(self):
         beam_job_models.BeamJobRunResultModel(job_id='123', stdout='abc').put()

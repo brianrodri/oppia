@@ -24,7 +24,6 @@ into this file.
 """
 
 from __future__ import absolute_import
-from __future__ import annotations
 from __future__ import unicode_literals
 
 from jobs import base_jobs
@@ -34,7 +33,8 @@ from jobs.batch_jobs import validation_jobs  # pylint: disable=unused-import
 from typing import List
 
 
-def get_all_jobs() -> List[base_jobs.JobMetaclass]:
+def get_all_jobs():
+    # type: () -> List[base_jobs.JobMetaclass]
     """Returns all jobs that have inherited from the JobBase class.
 
     Returns:
@@ -43,7 +43,8 @@ def get_all_jobs() -> List[base_jobs.JobMetaclass]:
     return base_jobs.JobMetaclass.get_all_jobs()
 
 
-def get_all_job_names() -> List[str]:
+def get_all_job_names():
+    # type: () -> List[str]
     """Returns the names of all jobs that have inherited from the JobBase class.
 
     Returns:
@@ -52,7 +53,8 @@ def get_all_job_names() -> List[str]:
     return base_jobs.JobMetaclass.get_all_job_names()
 
 
-def get_job_by_name(job_name: str) -> base_jobs.JobMetaclass:
+def get_job_by_name(job_name):
+    # type: (str) -> base_jobs.JobMetaclass
     """Returns the class associated with the given job name.
 
     Args:

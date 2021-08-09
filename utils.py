@@ -1170,27 +1170,3 @@ def quoted(s):
         str. The quoted string.
     """
     return json.dumps(s)
-
-
-def split_utf8(utf8_str: str, chunk_len: int) -> Iterable[str]:
-    """Split a UTF-8 string into chunks with a maximum length.
-
-    Args:
-        utf8_str: str. The UTF-8 string.
-        chunk_len: int. The maximum length of each chunk.
-
-    Yields:
-        str. The splits of the string that each fit within chunk_len bytes.
-    """
-    utf8_bytes = utf8_str.encode('utf-8')
-    # For an explanation, see: https://stackoverflow.com/a/6043797/4859885.
-    is_starting_byte: Callable[[int], bool] = lambda byte: (byte & 0xC0) != 0x80
-
-    while len(utf8_bytes) > chunk_len:
-        i = chunk_len
-        while not is_starting_byte(utf8_bytes[i]):
-            i -= 1
-        yield utf8_bytes[:i].decode('utf-8')
-        utf8_bytes = utf8_bytes[i:]
-    if utf8_bytes:
-        yield utf8_bytes.decode('utf-8')

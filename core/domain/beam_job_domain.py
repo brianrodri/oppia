@@ -17,24 +17,22 @@
 """Domain objects related to Apache Beam jobs."""
 
 from __future__ import absolute_import
-from __future__ import annotations
 from __future__ import unicode_literals
-
-import datetime
 
 from core.platform import models
 from jobs import base_jobs
 import python_utils
 import utils
 
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Type
-from typing_extensions import TypedDict  # pylint: disable=import-only-modules
 
 (beam_job_models,) = models.Registry.import_models([models.NAMES.beam_job])
 
 
-class BeamJob:
+class BeamJob(python_utils.OBJECT):
     """Encapsulates the definition of an Apache Beam job.
 
     Attributes:
@@ -42,7 +40,8 @@ class BeamJob:
         parameter_names: list(str). The names of the job's parameters.
     """
 
-    def __init__(self, job_class: Type[base_jobs.JobBase]):
+    def __init__(self, job_class):
+        # type: (Type[base_jobs.JobBase]) -> None
         """Initializes a new instance of BeamJob.
 
         Args:
@@ -52,7 +51,8 @@ class BeamJob:
         self._job_class = job_class
 
     @property
-    def name(self) -> str:
+    def name(self):
+        # type: () -> str
         """Returns the name of the class that implements the job's logic.
 
         Returns:
@@ -61,7 +61,8 @@ class BeamJob:
         return self._job_class.__name__
 
     @property
-    def parameter_names(self) -> List[str]:
+    def parameter_names(self):
+        # type: () -> List[str]
         """Returns the names of the job's parameters.
 
         Returns:
@@ -71,7 +72,8 @@ class BeamJob:
         # should be considered an implementation detail.
         return python_utils.get_args_of_function(self._job_class.run)[1:]
 
-    def to_dict(self) -> BeamJobBackendDict:
+    def to_dict(self):
+        # type: () -> Dict[str, Any]
         """Returns a dict representation of the BeamJob.
 
         Returns:
@@ -86,16 +88,7 @@ class BeamJob:
         }
 
 
-class BeamJobBackendDict(TypedDict):
-    """Type definition for the dict-representation of a BeamJob."""
-
-    # The name of the class that implements the job's logic.
-    name: str
-    # The names of the job's parameters.
-    parameter_names: List[str]
-
-
-class BeamJobRun:
+class BeamJobRun(python_utils.OBJECT):
     """Encapsulates an individual execution of an Apache Beam job.
 
     Attributes:
@@ -116,12 +109,9 @@ class BeamJobRun:
     """
 
     def __init__(
-            self,
-            job_id: str, job_name: str, job_state: str,
-            job_arguments: List[str],
-            job_started_on: datetime.datetime,
-            job_updated_on: datetime.datetime,
-            job_is_synchronous: bool):
+            self, job_id, job_name, job_state, job_arguments, job_started_on,
+            job_updated_on, job_is_synchronous):
+        # type: (str, str, str, List[str], datetime.datetime, datetime.datetime, bool) -> None
         """Initializes a new BeamJobRun instance.
 
         Args:
@@ -146,7 +136,8 @@ class BeamJobRun:
         self.job_is_synchronous = job_is_synchronous
 
     @property
-    def in_terminal_state(self) -> bool:
+    def in_terminal_state(self):
+        # type: () -> bool
         """Returns whether the job run has reached a terminal state and is no
         longer executing.
 
@@ -161,7 +152,8 @@ class BeamJobRun:
             beam_job_models.BeamJobState.FAILED.value,
         )
 
-    def to_dict(self) -> BeamJobRunBackendDict:
+    def to_dict(self):
+        # type: () -> Dict[str, Any]
         """Returns a dict representation of the BeamJobRun.
 
         Returns:
@@ -192,29 +184,7 @@ class BeamJobRun:
         }
 
 
-class BeamJobRunBackendDict(TypedDict):
-    """Type definition for the dict-representation of a BeamJobRun."""
-
-    # The ID of the job execution.
-    job_id: str
-    # The name of the job class that implements the job's logic.
-    job_name: str
-    # The state of the job at the time the model was last updated.
-    job_state: str
-    # The arguments provided to the job run.
-    job_arguments: List[str]
-    # The time at which the job was started.
-    job_started_on_msecs: float
-    # The time at which the job's state was last updated.
-    job_updated_on_msecs: float
-    # Whether the job has been run synchronously. Synchronous jobs are similar
-    # to function calls that return immediately. Asynchronous jobs are similar
-    # to JavaScript Promises that return nothing immediately, but _eventually_
-    # produce a result.
-    job_is_synchronous: bool
-
-
-class AggregateBeamJobRunResult:
+class AggregateBeamJobRunResult(python_utils.OBJECT):
     """Encapsulates the complete result of an Apache Beam job run.
 
     Attributes:
@@ -222,7 +192,8 @@ class AggregateBeamJobRunResult:
         stderr: str. The error output produced by the job.
     """
 
-    def __init__(self, stdout: str, stderr: str):
+    def __init__(self, stdout, stderr):
+        # type: (str, str) -> None
         """Initializes a new instance of AggregateBeamJobRunResult.
 
         Args:
@@ -232,7 +203,8 @@ class AggregateBeamJobRunResult:
         self.stdout = stdout
         self.stderr = stderr
 
-    def to_dict(self) -> BeamJobRunResultBackendDict:
+    def to_dict(self):
+        # type: () -> Dict[str, Any]
         """Returns a dict representation of the AggregateBeamJobRunResult.
 
         Returns:
@@ -244,12 +216,3 @@ class AggregateBeamJobRunResult:
             'stdout': self.stdout,
             'stderr': self.stderr,
         }
-
-
-class BeamJobRunResultBackendDict(TypedDict):
-    """Type definition for the dict-representation of a BeamJobRunResult."""
-
-    # The standard output produced by the job.
-    stdout: str
-    # The error output produced by the job.
-    stderr: str

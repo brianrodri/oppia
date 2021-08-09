@@ -577,7 +577,8 @@ def is_string(value):
     return isinstance(value, six.string_types)
 
 
-def get_args_of_function(func: Callable[..., Any]) -> List[str]:
+def get_args_of_function(func):
+    # type: (Callable[..., Any]) -> List[str]
     """Returns the argument names of the function.
 
     Args:
@@ -589,8 +590,13 @@ def get_args_of_function(func: Callable[..., Any]) -> List[str]:
     Raises:
         TypeError. The input argument is not a function.
     """
-    return [p.name for p in inspect.signature(func).parameters.values()
-            if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+    try:
+        # Python 3.
+        return [p.name for p in inspect.signature(func).parameters
+                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+    except AttributeError:
+        # Python 2.
+        return inspect.getargspec(func).args
 
 
 def create_enum(*sequential):

@@ -1,4 +1,4 @@
-<div class="beam-job-run-dialog">
+<div class="view-beam-job-output-dialog">
   <mat-card class="beam-job-run-summary-card">
     <mat-card-header>
       <div mat-card-avatar>
@@ -62,29 +62,26 @@
 </div>
 
 <style>
-  .beam-job-run-summary-card {
+  .view-beam-job-output-dialog .beam-job-run-summary-card {
     border: 1px solid rgba(0, 0, 0, 0.12);
     margin-bottom: 20px;
   }
-  .beam-job-run-summary-card mat-card-header {
+  .view-beam-job-output-dialog .beam-job-run-summary-card mat-card-header {
     font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
   }
-  .beam-job-run-summary-card mat-card-title {
+  .view-beam-job-output-dialog .beam-job-run-summary-card mat-card-title {
     font-weight: bold;
   }
-  .beam-job-run-summary-icon {
+  .view-beam-job-output-dialog .beam-job-run-summary-icon {
     font-size: 40px;
     margin-top: 8px;
     width: 40px;
   }
-  .beam-job-run-summary-table td, .beam-job-run-summary-table th {
+  .view-beam-job-output-dialog .beam-job-run-summary-table td,
+  .view-beam-job-output-dialog .beam-job-run-summary-table th {
     padding: 10px;
   }
-  .beam-job-run-dialog {
-    font-size: 12px;
-    width: 600px;
-  }
-  .beam-job-run-output {
+  .view-beam-job-output-dialog .beam-job-run-output {
     background-color: rgba(0, 0, 0, 0.06);
     max-height: 300px;
     overflow-x: auto;
@@ -93,7 +90,7 @@
     white-space: pre;
     word-wrap: normal;
   }
-  .beam-job-run-empty-output {
+  .view-beam-job-output-dialog .beam-job-run-empty-output {
     background-color: rgba(0, 0, 0, 0.06);
     max-height: 300px;
     overflow-x: auto;
@@ -103,12 +100,12 @@
     white-space: pre;
     word-wrap: normal;
   }
-  .beam-job-run-output-actions {
+  .view-beam-job-output-dialog .beam-job-run-output-actions {
     display: flex;
     justify-content: space-between;
     width: 100%;
   }
-  .mat-icon.mat-warn {
+  .view-beam-job-output-dialog .mat-icon.mat-warn {
     color: #f44336;
   }
 </style>

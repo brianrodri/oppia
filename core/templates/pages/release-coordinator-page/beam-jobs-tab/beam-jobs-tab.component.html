@@ -1,6 +1,6 @@
-<mat-card class="oppia-page-card oppia-long-text oppia-long-text-card">
+<mat-card class="oppia-page-card oppia-long-text oppia-long-text-card oppia-beam-jobs-tab-page">
   <div class="job-name-form-container">
-    <mat-form-field class="job-input-form" appearance="outline">
+    <mat-form-field class="job-name-form" appearance="outline">
       <mat-label>Job name</mat-label>
       <input matInput
              [disabled]="!dataIsReady || dataFailedToLoad"
@@ -23,7 +23,7 @@
 
     <button mat-fab
             matSuffix
-            class="job-input-button"
+            class="job-start-button"
             color="primary"
             [disabled]="selectedJob === null"
             (click)="onStartNewClick($event)">
@@ -94,48 +94,49 @@
 </mat-card>
 
 <style>
-  .oppia-long-text-card {
+  .oppia-beam-jobs-tab-page {
     max-width: 900px;
+    height: 100%;
   }
-  .job-name-form-container {
+  .oppia-beam-jobs-tab-page .job-name-form-container {
     display: flex;
     width: 100%;
   }
-  .job-input-form {
+  .oppia-beam-jobs-tab-page .job-name-form {
     flex-grow: 1;
   }
-  .job-input-button {
+  .oppia-beam-jobs-tab-page .job-start-button {
     flex-grow: 0;
     margin-left: 10px;
     margin-top: 6px;
   }
-  .job-runs-table-container {
-    max-height: 300px;
-    min-height: 200px;
+  .oppia-beam-jobs-tab-page .job-runs-table-container {
+    max-height: 800px;
+    min-height: 300px;
     overflow: auto;
     width: 100%;
   }
-  .job-runs-table {
+  .oppia-beam-jobs-tab-page .job-runs-table {
     font-size: 30px;
     width: 100%;
   }
-  .job-name-cell {
+  .oppia-beam-jobs-tab-page .job-name-cell {
     font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
   }
-  .mat-icon.mat-warn {
+  .oppia-beam-jobs-tab-page .mat-icon.mat-warn {
     color: #f44336;
   }
-  .mat-raised-button {
+  .oppia-beam-jobs-tab-page .mat-raised-button {
     width: 100%;
   }
-  .mat-raised-button.mat-warn:not(.mat-button-disabled) {
+  .oppia-beam-jobs-tab-page .mat-raised-button.mat-warn:not(.mat-button-disabled) {
     background-color: #f44336;
     color: #fff;
   }
-  .job-run-action-column {
+  .oppia-beam-jobs-tab-page .job-run-action-column {
     width: 150px;
   }
-  .job-status-mat-icon {
+  .oppia-beam-jobs-tab-page .job-status-mat-icon {
     font-size: 30px;
     height: 30px;
     width: 30px;

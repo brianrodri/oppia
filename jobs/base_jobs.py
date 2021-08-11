@@ -148,6 +148,8 @@ class JobMetaclass(type):
         Returns:
             class. The class associated to the given job name.
         """
+        if job_name not in cls._JOB_REGISTRY:
+            raise ValueError('%s is not registered as a job' % job_name)
         return cls._JOB_REGISTRY[job_name]
 
 

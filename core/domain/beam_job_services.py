@@ -31,6 +31,8 @@ from jobs import registry as jobs_registry
 from scripts import common
 import utils
 
+from typing import List
+
 (beam_job_models,) = models.Registry.import_models([models.NAMES.beam_job])
 
 datastore_services = models.Registry.import_datastore_services()
@@ -89,6 +91,7 @@ _GCLOUD_DATAFLOW_JOB_STATE_TO_OPPIA_BEAM_JOB_STATE = {
 
 
 def get_beam_jobs():
+    # type: () -> List[beam_job_domain.BeamJob]
     """Returns the list of all registered Apache Beam jobs.
 
     Returns:

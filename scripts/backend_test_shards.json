@@ -131,6 +131,7 @@
         "scripts.common_test"
     ],
     "5": [
+        "core.controllers.beam_jobs_test",
         "core.controllers.contributor_dashboard_admin_test",
         "core.controllers.oppia_root_test",
         "core.domain.subtopic_page_domain_test",

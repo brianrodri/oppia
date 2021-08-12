@@ -36,7 +36,8 @@ class BeamJobHandler(base.BaseHandler):
     }
 
     @acl_decorators.can_run_any_job
-    def get(self) -> None:
+    def get(self):
+        # type: () -> None
         self.render_json({
             'jobs': [j.to_dict() for j in beam_job_services.get_beam_jobs()]
         })
@@ -67,7 +68,8 @@ class BeamJobRunHandler(base.BaseHandler):
     }
 
     @acl_decorators.can_run_any_job
-    def get(self) -> None:
+    def get(self):
+        # type: () -> None
         sorted_beam_job_runs = sorted(
             beam_job_services.get_beam_job_runs(),
             key=lambda j: j.job_updated_on,
@@ -78,7 +80,8 @@ class BeamJobRunHandler(base.BaseHandler):
         })
 
     @acl_decorators.can_run_any_job
-    def put(self) -> None:
+    def put(self):
+        # type: () -> None
         job_name = self.payload.get('job_name')
         job_args = self.payload.get('job_arguments')
         beam_job_run = jobs_manager.run_job_sync(job_name, job_args)
@@ -101,7 +104,8 @@ class BeamJobRunResultHandler(base.BaseHandler):
     }
 
     @acl_decorators.can_run_any_job
-    def get(self) -> None:
+    def get(self):
+        # type: () -> None
         job_id = self.request.get('job_id', None)
         if job_id is None:
             raise self.InvalidInputException('job_id must not be None')

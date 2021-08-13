@@ -106,8 +106,6 @@ class BeamJobRunResultHandler(base.BaseHandler):
     @acl_decorators.can_run_any_job
     def get(self):
         # type: () -> None
-        job_id = self.request.get('job_id', None)
-        if job_id is None:
-            raise self.InvalidInputException('job_id must not be None')
+        job_id = self.request.get('job_id')
         result = beam_job_services.get_beam_job_run_result(job_id)
         self.render_json(result.to_dict())

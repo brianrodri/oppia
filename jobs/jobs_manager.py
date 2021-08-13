@@ -31,10 +31,11 @@ import apache_beam as beam
 from apache_beam import runners
 
 from typing import List
+from typing import Optional
 
 
-def run_job_sync(job_name, job_args):
-    # type: (str, List[str]) -> beam_job_domain.BeamJobRun
+def run_job_sync(job_name, job_args, namespace=None):
+    # type: (str, List[str], Optional[str]) -> beam_job_domain.BeamJobRun
     """Runs the specified job synchronously.
 
     In other words, the function will wait for the job to finish running before
@@ -43,13 +44,15 @@ def run_job_sync(job_name, job_args):
     Args:
         job_name: str. The name of the job to run.
         job_args: list(str). The arguments to the job's run() method.
+        namespace: str. The namespace in which models should be created.
 
     Returns:
         BeamJobRun. Contains metadata related to the execution status of the
         job.
     """
     job_pipeline = beam.Pipeline(
-        runner=runners.DirectRunner(), options=job_options.JobOptions())
+        runner=runners.DirectRunner(),
+        options=job_options.JobOptions(namespace=namespace))
     job_class = registry.get_job_by_name(job_name)
 
     job = job_class(job_pipeline)

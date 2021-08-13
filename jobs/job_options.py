@@ -38,7 +38,7 @@ class JobOptions(pipeline_options.PipelineOptions): # type: ignore
     }
 
     def __init__(self, flags=None, **job_options):
-        # type: (Optional[List[str]], Dict[str, Any]) -> None
+        # type: (Optional[List[str]], Optional[str]) -> None
         """Initializes a new JobOptions instance.
 
         Args:

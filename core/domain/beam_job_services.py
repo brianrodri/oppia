@@ -131,6 +131,7 @@ def get_beam_job_runs(refresh=False):
 
 
 def get_beam_job_run_result(job_id):
+    # type: (str) -> beam_job_domain.AggregateBeamJobRunResult
     """Returns the result of the given Apache Beam job run.
 
     Args:

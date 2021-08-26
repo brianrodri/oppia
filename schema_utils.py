@@ -24,8 +24,8 @@ The objects that can be described by these schemas must be composable from the
 following Python types: bool, dict, float, int, list, unicode.
 """
 
-from __future__ import absolute_import  # pylint: disable=import-only-modules
-from __future__ import unicode_literals  # pylint: disable=import-only-modules
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import numbers
 import re
@@ -113,8 +113,8 @@ def normalize_against_schema(
         expected_dict_keys = [
             p[SCHEMA_KEY_NAME] for p in schema[SCHEMA_KEY_PROPERTIES]]
 
-        missing_keys = list(set(expected_dict_keys) - set(obj.keys()))
-        extra_keys = list(set(obj.keys()) - set(expected_dict_keys))
+        missing_keys = list(sorted(set(expected_dict_keys) - set(obj.keys())))
+        extra_keys = list(sorted(set(obj.keys()) - set(expected_dict_keys)))
 
         assert set(obj.keys()) == set(expected_dict_keys), (
             'Missing keys: %s, Extra keys: %s' % (missing_keys, extra_keys))
@@ -616,8 +616,7 @@ class _Validators(python_utils.OBJECT):
         return utils.is_supported_audio_language_code(obj)
 
     @staticmethod
-    def is_valid_audio_language_code(obj):
-        # type: (Text) -> bool
+    def is_valid_audio_language_code(obj: str) -> bool:
         """Checks if the given obj (a string) represents a valid language code.
 
         Args:
@@ -627,3 +626,31 @@ class _Validators(python_utils.OBJECT):
             bool. Whether the given object is a valid audio language code.
         """
         return utils.is_valid_language_code(obj)
+
+    @staticmethod
+    def is_regex_matched(obj: str, regex_pattern: str) -> bool:
+        """Checks if a given string is matched with the provided regular
+        experssion.
+
+        Args:
+            obj: str. The string to verify.
+            regex_pattern: str. Provided regular expression.
+
+        Returns:
+            bool. Whether the given object matched with the regex pattern.
+        """
+        return bool(re.match(regex_pattern, obj))
+
+    @staticmethod
+    def is_search_query_string(obj: str) -> bool:
+        """Checks if the given obj (a string) is a gae search query string.
+
+        Args:
+            obj: str. The string to verify.
+
+        Returns:
+            bool. Whether the given object is a gae search query string.
+        """
+        if obj and (not obj.startswith('("') or not obj.endswith('")')):
+            return False
+        return True

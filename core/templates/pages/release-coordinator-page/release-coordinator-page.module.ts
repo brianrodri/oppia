@@ -18,8 +18,7 @@
 
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { APP_INITIALIZER, DoBootstrap, NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,11 +31,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { BrowserModule } from '@angular/platform-browser';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { downgradeComponent, downgradeModule } from '@angular/upgrade/static';
 
-import { OppiaAngularRootComponent } from 'components/oppia-angular-root.component';
 import { SharedComponentsModule } from 'components/shared-component.module';
 import { BeamJobsTabComponent } from 'pages/release-coordinator-page/beam-jobs-tab/beam-jobs-tab.component';
 import { CancelBeamJobDialogComponent } from 'pages/release-coordinator-page/components/cancel-beam-job-dialog.component';
@@ -45,19 +40,15 @@ import { ViewBeamJobOutputDialogComponent } from 'pages/release-coordinator-page
 import { JobsTabComponent } from 'pages/release-coordinator-page/jobs-tab/jobs-tab.component';
 import { ReleaseCoordinatorNavbarComponent } from 'pages/release-coordinator-page/navbar/release-coordinator-navbar.component';
 import { ReleaseCoordinatorPageComponent } from 'pages/release-coordinator-page/release-coordinator-page.component';
-import { platformFeatureInitFactory, PlatformFeatureService } from 'services/platform-feature.service';
-import { RequestInterceptor } from 'services/request-interceptor.service';
-
-
-declare var angular: ng.IAngularStatic;
+import { ReleaseCoordinatorPageRootComponent } from './release-coordinator-page-root.component';
+import { ReleaseCoordinatorPageRoutingModule } from './release-coordinator-page-routing.module';
+import { Error404PageModule } from 'pages/error-pages/error-404/error-404-page.module';
 
 @NgModule({
   imports: [
-    BrowserModule,
     CommonModule,
     ClipboardModule,
     FormsModule,
-    HttpClientModule,
     MatAutocompleteModule,
     MatButtonModule,
     MatCardModule,
@@ -71,49 +62,27 @@ declare var angular: ng.IAngularStatic;
     MatTooltipModule,
     ReactiveFormsModule,
     SharedComponentsModule,
+    ReleaseCoordinatorPageRoutingModule,
+    Error404PageModule
   ],
   declarations: [
     BeamJobsTabComponent,
     CancelBeamJobDialogComponent,
     JobsTabComponent,
-    OppiaAngularRootComponent,
     ReleaseCoordinatorNavbarComponent,
     ReleaseCoordinatorPageComponent,
+    ReleaseCoordinatorPageRootComponent,
     StartNewBeamJobDialogComponent,
     ViewBeamJobOutputDialogComponent,
   ],
   entryComponents: [
     CancelBeamJobDialogComponent,
     JobsTabComponent,
-    OppiaAngularRootComponent,
     ReleaseCoordinatorNavbarComponent,
     ReleaseCoordinatorPageComponent,
+    ReleaseCoordinatorPageRootComponent,
     StartNewBeamJobDialogComponent,
     ViewBeamJobOutputDialogComponent,
-  ],
-  providers: [
-    {
-      provide: HTTP_INTERCEPTORS,
-      useClass: RequestInterceptor,
-      multi: true,
-    },
-    {
-      provide: APP_INITIALIZER,
-      useFactory: platformFeatureInitFactory,
-      deps: [PlatformFeatureService],
-      multi: true,
-    },
-  ],
+  ]
 })
-class ReleaseCoordinatorPageModule implements DoBootstrap {
-  ngDoBootstrap() {}
-}
-
-angular.module('oppia').requires.push(downgradeModule(extraProviders => {
-  const platformRef = platformBrowserDynamic(extraProviders);
-  return platformRef.bootstrapModule(ReleaseCoordinatorPageModule);
-}));
-
-angular.module('oppia').directive('oppiaAngularRoot', downgradeComponent({
-  component: OppiaAngularRootComponent,
-}));
+export class ReleaseCoordinatorPageModule {}

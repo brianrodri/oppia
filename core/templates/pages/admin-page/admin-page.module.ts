@@ -39,19 +39,28 @@ import { AdminMiscTabComponent } from './misc-tab/admin-misc-tab.component';
 import { AdminRolesTabComponent } from './roles-tab/admin-roles-tab.component';
 import { AdminConfigTabComponent } from './config-tab/admin-config-tab.component';
 import { AdminPageComponent } from './admin-page.component';
+import { TopicManagerRoleEditorModalComponent } from './roles-tab/topic-manager-role-editor-modal.component';
 import { SharedFormsModule } from 'components/forms/shared-forms.module';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { HybridRouterModuleProvider } from 'hybrid-router-module-provider';
+import { ToastrModule } from 'ngx-toastr';
+import { toastrConfig } from 'pages/oppia-root/app.module';
 
 @NgModule({
   imports: [
     BrowserModule,
+    BrowserAnimationsModule,
     FormsModule,
     HttpClientModule,
+    // TODO(#13443): Remove hybrid router module provider once all pages are
+    // migrated to angular router.
+    HybridRouterModuleProvider.provide(),
     SharedComponentsModule,
-    SharedFormsModule
+    SharedFormsModule,
+    ToastrModule.forRoot(toastrConfig)
   ],
   declarations: [
     OppiaAdminProdModeActivitiesTabComponent,
-    OppiaAngularRootComponent,
     AdminConfigTabComponent,
     AdminFeaturesTabComponent,
     AdminMiscTabComponent,
@@ -59,11 +68,11 @@ import { SharedFormsModule } from 'components/forms/shared-forms.module';
     AdminPageComponent,
     AdminRolesTabComponent,
     AdminDevModeActivitiesTabComponent,
-    RolesAndActionsVisualizerComponent
+    RolesAndActionsVisualizerComponent,
+    TopicManagerRoleEditorModalComponent
   ],
   entryComponents: [
     OppiaAdminProdModeActivitiesTabComponent,
-    OppiaAngularRootComponent,
     AdminConfigTabComponent,
     AdminFeaturesTabComponent,
     AdminMiscTabComponent,
@@ -71,7 +80,8 @@ import { SharedFormsModule } from 'components/forms/shared-forms.module';
     AdminPageComponent,
     AdminRolesTabComponent,
     AdminDevModeActivitiesTabComponent,
-    RolesAndActionsVisualizerComponent
+    RolesAndActionsVisualizerComponent,
+    TopicManagerRoleEditorModalComponent
   ],
   providers: [
     {

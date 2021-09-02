@@ -21,8 +21,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { downgradeComponent } from '@angular/upgrade/static';
-import { BehaviorSubject, combineLatest, Observable, of, zip } from 'rxjs';
-import { catchError, distinctUntilChanged, first, map, startWith } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, interval, Observable, of, Subscription, zip } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, first, flatMap, map, startWith, switchMap } from 'rxjs/operators';
 
 import { BeamJobRun } from 'domain/jobs/beam-job-run.model';
 import { BeamJob } from 'domain/jobs/beam-job.model';
@@ -46,6 +46,7 @@ export class BeamJobsTabComponent implements OnInit, OnDestroy {
   dataIsReady = false;
   beamJobs: BeamJob[] = null;
   selectedJob: BeamJob = null;
+  beamJobRunsRefreshSubscription: Subscription;
 
   jobNames = new BehaviorSubject<string[]>([]);
   beamJobRuns = new BehaviorSubject<BeamJobRun[]>([]);
@@ -91,11 +92,18 @@ export class BeamJobsTabComponent implements OnInit, OnDestroy {
         )
       )
     );
+
+    this.beamJobRunsRefreshSubscription = interval(15000).pipe(
+      switchMap(() => this.backendApiService.getBeamJobRuns()),
+      catchError(error => this.onError<BeamJobRun>(error)),
+      filter(beamJobRuns => beamJobRuns.length > 0)
+    ).subscribe(beamJobRuns => this.beamJobRuns.next(beamJobRuns));
   }
 
   ngOnDestroy(): void {
     this.jobNames.complete();
     this.beamJobRuns.complete();
+    this.beamJobRunsRefreshSubscription.unsubscribe();
   }
 
   onError<T>(error: Error): Observable<T[]> {

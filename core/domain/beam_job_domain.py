@@ -26,7 +26,7 @@ from jobs import base_jobs
 import python_utils
 import utils
 
-from typing import Dict, List, Type, Union # isort: skip
+from typing import Dict, List, Union # isort: skip
 
 (beam_job_models,) = models.Registry.import_models([models.NAMES.beam_job])
 
@@ -39,7 +39,7 @@ class BeamJob(python_utils.OBJECT):
         parameter_names: list(str). The names of the job's parameters.
     """
 
-    def __init__(self, job_class: Type[base_jobs.JobBase]) -> None:
+    def __init__(self, job_class: base_jobs.JobMetaclass) -> None:
         """Initializes a new instance of BeamJob.
 
         Args:

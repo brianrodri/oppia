@@ -1230,6 +1230,15 @@ FIREBASE_SESSION_COOKIE_NAME = 'session'
 # cookie requires the user to sign-in _explicitly_.
 FIREBASE_SESSION_COOKIE_MAX_AGE = datetime.timedelta(days=14)
 
+# Cloud Storage bucket path for staging your binary. May be the same as
+# DATAFLOW_TEMP_LOCATION.
+# Must be a valid Cloud Storage URL that begins with gs://.
+DATAFLOW_STAGING_LOCATION = 'gs://todo/todo'
+# Cloud Storage bucket path for staging temporary files. May be the same as the
+# DATAFLOW_STAGING_LOCATION.
+# Must be a valid Cloud Storage URL that begins with gs://.
+DATAFLOW_TEMP_LOCATION = 'gs://todo/todo'
+
 # TODO(#10501): Once domain objects can be imported by the storage layer, move
 # these back to appropriate places (rights_domain, topic_domain).
 # The reserved prefix for keys that are automatically inserted into a

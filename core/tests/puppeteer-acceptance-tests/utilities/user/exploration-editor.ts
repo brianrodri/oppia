@@ -231,7 +231,9 @@ const setAsCheckpointButton = '.e2e-test-checkpoint-selection-checkbox';
 const tagsField = '.e2e-test-chip-list-tags';
 const saveUploadedAudioButton = '.e2e-test-save-uploaded-audio-button';
 const feedBackButtonTab = '.e2e-test-feedback-tab';
+const statisticsButtonTab = '.e2e-test-stats-tab';
 const mobileFeedbackTabButton = '.e2e-test-mobile-feedback-button';
+const mobileStatisticsTabButton = '.e2e-test-mobile-stats-button';
 const explorationSummaryTileTitleSelector = '.e2e-test-exp-summary-tile-title';
 const feedbackSubjectSelector = '.e2e-test-exploration-feedback-subject';
 const feedbackSelector = '.e2e-test-exploration-feedback';
@@ -250,6 +252,11 @@ const explorationFeedbackCardActiveSelector =
   '.e2e-test-exploration-feedback-card-active';
 const explorationFeedbackTabContentSelector =
   '.e2e-test-exploration-feedback-card';
+const explorationStatisticsTabContentSelector =
+  '.e2e-test-exploration-stats-card';
+const explorationStateStatsModalSelector = '.e2e-test-state-stats-modal-body';
+const explorationStateStatsEnterCountSelector =
+  '.e2e-test-state-stats-card-entered-here-count';
 
 const editRolesButtonSelector = '.oppia-edit-roles-btn-container';
 const stateContentEditorSelector =
@@ -2751,6 +2758,124 @@ export class ExplorationEditor extends BaseUser {
   }
 
   /**
+   * Navigate to statistics tab.
+   */
+  async navigateToStatisticsTab(): Promise<void> {
+    if (this.isViewportAtMobileWidth()) {
+      const mobileNavbarElement = await this.page.$(mobileNavbarOptions);
+      if (!mobileNavbarElement) {
+        await this.clickOnElementWithSelector(mobileOptionsButtonSelector);
+      }
+      await this.clickOnElementWithSelector(mobileNavbarDropdown);
+      await this.page.waitForSelector(mobileNavbarPane);
+      await this.clickOnElementWithSelector(mobileStatisticsTabButton);
+    } else {
+      await this.clickOnElementWithSelector(statisticsButtonTab);
+      await this.waitForNetworkIdle();
+    }
+
+    await this.page.waitForSelector(explorationStatisticsTabContentSelector, {
+      visible: true,
+    });
+  }
+
+  /**
+   * Function to click on a specific card in the exploration visualization graph.
+   * @param {string} cardName - The name of the card to navigate to.
+   */
+  async clickStateCard(cardName: string): Promise<void> {
+    if (this.isViewportAtMobileWidth()) {
+      // Check if the state graph modal is already open before clicking the
+      // resize button.
+      const stateGraphModalIsOpen = await this.page.$(
+        explorationStateGraphModalSelector
+      );
+      if (!stateGraphModalIsOpen) {
+        // Wait for any blocking modal to close first before clicking the
+        // resize button.
+        const blockingModal = await this.page.$('div.modal-content');
+        if (blockingModal) {
+          await this.page.waitForSelector('div.modal-content', {hidden: true});
+        }
+        await this.page.waitForSelector(mobileStateGraphResizeButton, {
+          visible: true,
+        });
+        await this.clickOnElementWithSelector(mobileStateGraphResizeButton);
+      }
+    }
+
+    // Get all state node groups (not just labels) since we need to click the
+    // background rect which has the click handler.
+    const stateNodeGroupSelector = '.e2e-test-node';
+    await this.page.waitForSelector(stateNodeGroupSelector);
+    const elements = await this.page.$$(stateNodeGroupSelector);
+
+    const cardNames = await Promise.all(
+      elements.map(element =>
+        element.$eval(
+          '.e2e-test-node-label',
+          node => node.textContent?.trim() || ''
+        )
+      )
+    );
+    const cardIndex = cardNames.indexOf(cardName);
+
+    if (cardIndex === -1) {
+      throw new Error(`Card name ${cardName} not found in the graph.`);
+    }
+
+    let nodeGroup: ElementHandle<Element> | null = null;
+    if (this.isViewportAtMobileWidth()) {
+      nodeGroup = elements[cardIndex + elements.length / 2];
+    } else {
+      nodeGroup = elements[cardIndex];
+    }
+
+    if (!nodeGroup) {
+      throw new Error(`Could not find card button for card: ${cardName}`);
+    }
+
+    // Click on the node background rect which has the click handler.
+    const nodeBackground = await nodeGroup.$('.e2e-test-node-background');
+    if (!nodeBackground) {
+      throw new Error(
+        `Could not find clickable background for card: ${cardName}`
+      );
+    }
+    await this.clickOnElement(nodeBackground);
+    await this.waitForNetworkIdle({idleTime: 1000});
+  }
+
+  /**
+   * From the statistics tab, open the modal showing the stats of the specified card.
+   */
+  async openCardStats(state: string): Promise<void> {
+    await this.clickStateCard(state);
+    await this.page.waitForSelector(explorationStateStatsModalSelector, {
+      visible: true,
+    });
+  }
+
+  /**
+   * Close the currently-opened state stats modal.
+   */
+  async closeCardStats(): Promise<void> {
+    await this.expectElementToBeVisible(explorationStateStatsModalSelector);
+    await this.clickOnElementWithSelector(closeModalButtonSelector);
+  }
+
+  /**
+   * Function to check how many times a card has been entered.
+   * Requires the card stats modal to be open.
+   */
+  async expectCardEnteredTimesToBe(count: number): Promise<void> {
+    await this.expectTextContentToContain(
+      explorationStateStatsEnterCountSelector,
+      `Card entered: ${count} times.`
+    );
+  }
+
+  /**
    * Fetches the exploration ID from the current URL of the exploration editor page.
    * The exploration ID is the string after '/create/' in the URL.
    */
@@ -3698,67 +3823,7 @@ export class ExplorationEditor extends BaseUser {
    * @param {string} cardName - The name of the card to navigate to.
    */
   async navigateToCard(cardName: string, retry: boolean = true): Promise<void> {
-    let elements;
-    if (this.isViewportAtMobileWidth()) {
-      // Check if the state graph modal is already open before clicking the
-      // resize button.
-      const stateGraphModalIsOpen = await this.page.$(
-        explorationStateGraphModalSelector
-      );
-      if (!stateGraphModalIsOpen) {
-        // Wait for any blocking modal to close first before clicking the
-        // resize button.
-        const blockingModal = await this.page.$('div.modal-content');
-        if (blockingModal) {
-          await this.page.waitForSelector('div.modal-content', {hidden: true});
-        }
-        await this.page.waitForSelector(mobileStateGraphResizeButton, {
-          visible: true,
-        });
-        await this.clickOnElementWithSelector(mobileStateGraphResizeButton);
-      }
-    }
-
-    // Get all state node groups (not just labels) since we need to click the
-    // background rect which has the click handler.
-    const stateNodeGroupSelector = '.e2e-test-node';
-    await this.page.waitForSelector(stateNodeGroupSelector);
-    elements = await this.page.$$(stateNodeGroupSelector);
-
-    const cardNames = await Promise.all(
-      elements.map(element =>
-        element.$eval(
-          '.e2e-test-node-label',
-          node => node.textContent?.trim() || ''
-        )
-      )
-    );
-    const cardIndex = cardNames.indexOf(cardName);
-
-    if (cardIndex === -1) {
-      throw new Error(`Card name ${cardName} not found in the graph.`);
-    }
-
-    let nodeGroup: ElementHandle<Element> | null = null;
-    if (this.isViewportAtMobileWidth()) {
-      nodeGroup = elements[cardIndex + elements.length / 2];
-    } else {
-      nodeGroup = elements[cardIndex];
-    }
-
-    if (!nodeGroup) {
-      throw new Error(`Could not find card button for card: ${cardName}`);
-    }
-
-    // Click on the node background rect which has the click handler.
-    const nodeBackground = await nodeGroup.$('.e2e-test-node-background');
-    if (!nodeBackground) {
-      throw new Error(
-        `Could not find clickable background for card: ${cardName}`
-      );
-    }
-    await this.clickOnElement(nodeBackground);
-    await this.waitForNetworkIdle({idleTime: 1000});
+    await this.clickStateCard(cardName);
 
     const headingName = !cardName.trimEnd().endsWith('...')
       ? cardName

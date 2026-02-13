@@ -1653,12 +1653,23 @@ class FirebaseSpecificAssociationTests(FirebaseAuthServicesTestBase):
         self.assertItemsEqual(
             firebase_auth_services.get_all_auth_provider_records(),
             [
-                auth_domain.AuthProviderRecord(self.AUTH_ID, self.EMAIL, False),
                 auth_domain.AuthProviderRecord(
-                    'aid2', 'user2@example.com', False
+                    self.AUTH_ID,
+                    feconf.FIREBASE_AUTH_PROVIDER_ID,
+                    self.EMAIL,
+                    disabled=False,
                 ),
                 auth_domain.AuthProviderRecord(
-                    'aid3', 'user3@example.com', True
+                    'aid2',
+                    feconf.FIREBASE_AUTH_PROVIDER_ID,
+                    'user2@example.com',
+                    disabled=False,
+                ),
+                auth_domain.AuthProviderRecord(
+                    'aid3',
+                    feconf.FIREBASE_AUTH_PROVIDER_ID,
+                    'user3@example.com',
+                    disabled=True,
                 ),
             ],
         )
@@ -1670,7 +1681,8 @@ class FirebaseSpecificAssociationTests(FirebaseAuthServicesTestBase):
         firebase_auth.delete_user(self.AUTH_ID)
 
         self.assertEqual(
-            firebase_auth_services.get_all_auth_provider_records(), []
+            firebase_auth_services.get_all_auth_provider_records(),
+            [],
         )
 
     def test_get_all_auth_provider_records_raises_error_when_firebase_fails(
@@ -1826,9 +1838,15 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
         for i in range(5):
             self.firebase_sdk_stub.create_user(f'uid_{i}')
         accounts = [
-            auth_domain.AuthProviderRecord('uid_0', 'a@example.com'),
-            auth_domain.AuthProviderRecord('uid_1', 'b@example.com'),
-            auth_domain.AuthProviderRecord('uid_2', 'c@example.com'),
+            auth_domain.AuthProviderRecord(
+                'uid_0', feconf.FIREBASE_AUTH_PROVIDER_ID, 'a@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_1', feconf.FIREBASE_AUTH_PROVIDER_ID, 'b@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_2', feconf.FIREBASE_AUTH_PROVIDER_ID, 'c@example.com'
+            ),
         ]
 
         firebase_auth_services.delete_multi_auth_provider_records(accounts)
@@ -1842,7 +1860,11 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
         for i in range(5):
             self.firebase_sdk_stub.create_user(f'uid_{i}')
         accounts = [
-            auth_domain.AuthProviderRecord(f'uid_{i}', f'user_{i}@example.com')
+            auth_domain.AuthProviderRecord(
+                f'uid_{i}',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                f'user_{i}@example.com',
+            )
             for i in range(5)
         ]
 
@@ -1860,7 +1882,11 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
             self.firebase_sdk_stub.create_user(f'uid_{i}')
 
         accounts = [
-            auth_domain.AuthProviderRecord(f'uid_{i}', f'user_{i}@example.com')
+            auth_domain.AuthProviderRecord(
+                f'uid_{i}',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                f'user_{i}@example.com',
+            )
             for i in range(2505)
         ]
 
@@ -1875,9 +1901,15 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
                 f'uid_{i}', email=f'user_{i}@example.com'
             )
         accounts = [
-            auth_domain.AuthProviderRecord('uid_0', 'user_0@example.com'),
-            auth_domain.AuthProviderRecord('uid_1', 'user_1@example.com'),
-            auth_domain.AuthProviderRecord('uid_2', 'user_2@example.com'),
+            auth_domain.AuthProviderRecord(
+                'uid_0', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_0@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_1', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_1@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_2', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_2@example.com'
+            ),
         ]
 
         with (
@@ -1895,11 +1927,21 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
             self.firebase_sdk_stub.create_user(f'uid_{i}')
 
         accounts = [
-            auth_domain.AuthProviderRecord('uid_0', 'uid_0'),
-            auth_domain.AuthProviderRecord('uid_1', 'uid_1'),
-            auth_domain.AuthProviderRecord('uid_2', 'uid_2'),
-            auth_domain.AuthProviderRecord('uid_3', 'uid_3'),
-            auth_domain.AuthProviderRecord('uid_4', 'uid_4'),
+            auth_domain.AuthProviderRecord(
+                'uid_0', feconf.FIREBASE_AUTH_PROVIDER_ID, 'uid_0'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_1', feconf.FIREBASE_AUTH_PROVIDER_ID, 'uid_1'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_2', feconf.FIREBASE_AUTH_PROVIDER_ID, 'uid_2'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_3', feconf.FIREBASE_AUTH_PROVIDER_ID, 'uid_3'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_4', feconf.FIREBASE_AUTH_PROVIDER_ID, 'uid_4'
+            ),
         ]
 
         with (
@@ -1922,7 +1964,11 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
             self.firebase_sdk_stub.create_user(f'uid_{i}')
 
         accounts = [
-            auth_domain.AuthProviderRecord(f'uid_{i}', f'user_{i}@example.com')
+            auth_domain.AuthProviderRecord(
+                f'uid_{i}',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                f'user_{i}@example.com',
+            )
             for i in range(2505)
         ]
 
@@ -1954,7 +2000,11 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
             self.firebase_sdk_stub.create_user(f'uid_{i}')
 
         accounts = [
-            auth_domain.AuthProviderRecord(f'uid_{i}', f'a_{1}@example.com')
+            auth_domain.AuthProviderRecord(
+                f'uid_{i}',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                f'a_{1}@example.com',
+            )
             for i in range(750)
         ]
 
@@ -1978,8 +2028,9 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
     def test_upload_multiple_accounts_successfully(self) -> None:
         accounts = [
             auth_domain.AuthProviderRecord(
-                auth_id=f'uid_{i}',
-                email=f'user_{i}@example.com',
+                f'uid_{i}',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                f'user_{i}@example.com',
                 disabled=False,
             )
             for i in range(5)
@@ -1994,13 +2045,22 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
     def test_upload_accounts_with_all_fields(self) -> None:
         accounts = [
             auth_domain.AuthProviderRecord(
-                'uid_0', 'user_0@example.com', disabled=False
+                'uid_0',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                'user_0@example.com',
+                disabled=False,
             ),
             auth_domain.AuthProviderRecord(
-                'uid_1', 'user_1@example.com', disabled=True
+                'uid_1',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                'user_1@example.com',
+                disabled=True,
             ),
             auth_domain.AuthProviderRecord(
-                'uid_2', 'user_2@example.com', disabled=False
+                'uid_2',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                'user_2@example.com',
+                disabled=False,
             ),
         ]
 
@@ -2017,8 +2077,9 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
     def test_upload_accounts_with_batching(self) -> None:
         accounts = [
             auth_domain.AuthProviderRecord(
-                auth_id=f'uid_{i}',
-                email=f'user_{i}@example.com',
+                f'uid_{i}',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                f'user_{i}@example.com',
                 disabled=False,
             )
             for i in range(2505)
@@ -2031,9 +2092,15 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
 
     def test_upload_accounts_raises_error_when_some_fail(self) -> None:
         accounts = [
-            auth_domain.AuthProviderRecord('uid_0', 'user_0@example.com'),
-            auth_domain.AuthProviderRecord('uid_1', 'user_1@example.com'),
-            auth_domain.AuthProviderRecord('uid_2', 'user_2@example.com'),
+            auth_domain.AuthProviderRecord(
+                'uid_0', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_0@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_1', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_1@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_2', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_2@example.com'
+            ),
         ]
 
         with (
@@ -2050,8 +2117,12 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
         self,
     ) -> None:
         accounts = [
-            auth_domain.AuthProviderRecord('', 'user_0@example.com'),
-            auth_domain.AuthProviderRecord('uid_0', 'user_1@example.com'),
+            auth_domain.AuthProviderRecord(
+                '', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_0@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_0', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_1@example.com'
+            ),
         ]
 
         # The SDK raises ValueError for empty/None uid values.
@@ -2060,11 +2131,21 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
 
     def test_upload_accounts_reports_correct_error_indices(self) -> None:
         accounts = [
-            auth_domain.AuthProviderRecord('uid_0', 'user_0@example.com'),
-            auth_domain.AuthProviderRecord('uid_1', 'user_1@example.com'),
-            auth_domain.AuthProviderRecord('uid_2', 'user_2@example.com'),
-            auth_domain.AuthProviderRecord('uid_3', 'user_3@example.com'),
-            auth_domain.AuthProviderRecord('uid_4', 'user_4@example.com'),
+            auth_domain.AuthProviderRecord(
+                'uid_0', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_0@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_1', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_1@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_2', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_2@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_3', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_3@example.com'
+            ),
+            auth_domain.AuthProviderRecord(
+                'uid_4', feconf.FIREBASE_AUTH_PROVIDER_ID, 'user_4@example.com'
+            ),
         ]
 
         with (
@@ -2084,7 +2165,11 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
         self,
     ) -> None:
         accounts = [
-            auth_domain.AuthProviderRecord(f'uid_{i}', f'user_{i}@example.com')
+            auth_domain.AuthProviderRecord(
+                f'uid_{i}',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                f'user_{i}@example.com',
+            )
             for i in range(2505)
         ]
 
@@ -2113,7 +2198,11 @@ class FirebaseAuthProviderRecordCrudTests(FirebaseAuthServicesTestBase):
 
     def test_upload_accounts_with_sdk_error_during_batch(self) -> None:
         accounts = [
-            auth_domain.AuthProviderRecord(f'uid_{i}', f'user_{i}@example.com')
+            auth_domain.AuthProviderRecord(
+                f'uid_{i}',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                f'user_{i}@example.com',
+            )
             for i in range(750)
         ]
 

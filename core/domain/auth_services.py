@@ -21,6 +21,7 @@ from __future__ import annotations
 import base64
 import os
 
+from core import feconf
 from core.domain import auth_domain, caching_services, feature_flag_domain
 from core.platform import models
 from core.platform.auth import firebase_auth_services
@@ -30,9 +31,11 @@ from typing import Final, List, Optional
 
 MYPY = False
 if MYPY:  # pragma: no cover
-    from mypy_imports import auth_models, platform_auth_services
+    from mypy_imports import auth_models, platform_auth_services, user_models
 
-(auth_models,) = models.Registry.import_models([models.Names.AUTH])
+auth_models, user_models = models.Registry.import_models(
+    [models.Names.AUTH, models.Names.USER]
+)
 
 platform_auth_services = models.Registry.import_auth_services()
 
@@ -272,6 +275,85 @@ def associate_multi_auth_ids_with_user_ids(
     platform_auth_services.associate_multi_auth_ids_with_user_ids(
         auth_id_user_id_pairs
     )
+
+
+def get_auth_provider_records_from_models(
+    auth_provider_id: auth_domain.AuthProviderId,
+    user_settings_model: user_models.UserSettingsModel,
+    user_auth_details_model: auth_models.UserAuthDetailsModel,
+    strict: bool = True,
+) -> Optional[auth_domain.AuthProviderRecord]:
+    """Builds an AuthProviderRecord from the given models if possible.
+
+    AuthProviderRecords can only be built for full users (i.e. users without a
+    parent user). If the given models correspond to a profile user, then this
+    function returns None.
+
+    Args:
+        auth_provider_id: AuthProviderId. The auth provider for which to build
+            the record.
+        user_settings_model: UserSettingsModel. The settings model belonging to
+            the user for which to build the record.
+        user_auth_details_model: UserAuthDetailsModel. The auth details model
+            belonging to the user for which to build the record.
+        strict: bool. Whether to raise an error if the given models are missing
+            their auth IDs.
+
+    Returns:
+        auth_domain.AuthProviderRecord|None. The record built from the given
+        models, or None if the models correspond to a profile user.
+
+    Raises:
+        ValueError. The given models do not correspond to the same user, or
+            their deleted values do not match, or the auth details model is
+            missing auth IDs corresponding to the auth_provider_id argument.
+    """
+    if user_settings_model.id != user_auth_details_model.id:
+        raise ValueError(
+            'UserSettingsModel(id=%r).id must be same as '
+            'UserAuthDetailsModel(id=%r).id'
+            % (user_settings_model.id, user_auth_details_model.id)
+        )
+
+    if user_settings_model.deleted != user_auth_details_model.deleted:
+        raise ValueError(
+            'UserSettingsModel(id=%r).deleted must be same as '
+            'UserAuthDetailsModel(id=%r).deleted'
+            % (user_settings_model.id, user_auth_details_model.id)
+        )
+
+    if user_auth_details_model.parent_user_id:
+        return None
+
+    if auth_provider_id == feconf.GAE_AUTH_PROVIDER_ID:
+        if auth_id := user_auth_details_model.gae_id:
+            return auth_domain.AuthProviderRecord(
+                auth_id,
+                auth_provider_id,
+                user_settings_model.email,
+                user_settings_model.deleted,
+            )
+        elif strict:
+            raise ValueError(
+                'UserAuthDetailsModel(id=%r).gae_id must not be None'
+                % user_auth_details_model.id
+            )
+
+    if auth_provider_id == feconf.FIREBASE_AUTH_PROVIDER_ID:
+        if auth_id := user_auth_details_model.firebase_auth_id:
+            return auth_domain.AuthProviderRecord(
+                auth_id,
+                auth_provider_id,
+                user_settings_model.email,
+                user_settings_model.deleted,
+            )
+        elif strict:
+            raise ValueError(
+                'UserAuthDetailsModel(id=%r).firebase_auth_id must not be None'
+                % user_auth_details_model.id
+            )
+
+    return None
 
 
 def get_all_auth_provider_records(

@@ -74,6 +74,12 @@ from core.jobs.batch_jobs import (  # pylint: disable=unused-import
 from typing import List, Type
 
 from core.jobs.batch_jobs import (  # pylint: disable=unused-import  # isort: skip
+    auth_regeneration_jobs,
+)
+from core.jobs.batch_jobs import (  # pylint: disable=unused-import  # isort: skip
+    auth_validation_jobs,
+)
+from core.jobs.batch_jobs import (  # pylint: disable=unused-import  # isort: skip
     exp_recommendation_computation_jobs,
 )
 from core.jobs.batch_jobs import (  # pylint: disable=unused-import  # isort: skip

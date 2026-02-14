@@ -34,12 +34,15 @@ from core.platform import models
 from core.tests import test_utils
 
 import webapp2
+from typing import Optional, cast
 
 MYPY = False
 if MYPY:  # pragma: no cover
-    from mypy_imports import auth_models, platform_auth_services
+    from mypy_imports import auth_models, platform_auth_services, user_models
 
-(auth_models,) = models.Registry.import_models([models.Names.AUTH])
+auth_models, user_models = models.Registry.import_models(
+    [models.Names.AUTH, models.Names.USER]
+)
 
 platform_auth_services = models.Registry.import_auth_services()
 
@@ -556,3 +559,201 @@ class AuthServicesTests(test_utils.GenericTestBase):
         self.assertEqual(
             expected_csrf_secret.oppia_csrf_secret, actual_csrf_secret_value
         )
+
+
+class GetAuthProviderRecordsFromModelsTests(test_utils.TestBase):
+    """Tests for get_auth_provider_records_from_models."""
+
+    def _make_user_settings_model(
+        self,
+        user_id: str = 'uid_abc',
+        email: str = 'user@example.com',
+        deleted: bool = False,
+    ) -> user_models.UserSettingsModel:
+        """Returns a mock UserSettingsModel with the given attributes."""
+        model = mock.Mock(spec=user_models.UserSettingsModel)
+        model.id = user_id
+        model.email = email
+        model.deleted = deleted
+        return model
+
+    def _make_user_auth_details_model(
+        self,
+        user_id: str = 'uid_abc',
+        gae_id: Optional[str] = 'gae_abc',
+        firebase_auth_id: Optional[str] = 'firebase_abc',
+        parent_user_id: Optional[str] = None,
+        deleted: bool = False,
+    ) -> auth_models.UserAuthDetailsModel:
+        """Returns a mock UserAuthDetailsModel with the given attributes."""
+        model = mock.Mock(spec=auth_models.UserAuthDetailsModel)
+        model.id = user_id
+        model.gae_id = gae_id
+        model.firebase_auth_id = firebase_auth_id
+        model.parent_user_id = parent_user_id
+        model.deleted = deleted
+        return model
+
+    def test_returns_gae_record_for_full_user(self) -> None:
+        user_settings = self._make_user_settings_model(
+            email='a@a.com',
+            deleted=False,
+        )
+        auth_details = self._make_user_auth_details_model(gae_id='gae_123')
+
+        result = auth_services.get_auth_provider_records_from_models(
+            feconf.GAE_AUTH_PROVIDER_ID,
+            user_settings,
+            auth_details,
+        )
+
+        self.assertEqual(
+            result,
+            auth_domain.AuthProviderRecord(
+                'gae_123',
+                feconf.GAE_AUTH_PROVIDER_ID,
+                'a@a.com',
+                False,
+            ),
+        )
+
+    def test_returns_firebase_record_for_full_user(self) -> None:
+        user_settings = self._make_user_settings_model(
+            email='b@b.com',
+            deleted=False,
+        )
+        auth_details = self._make_user_auth_details_model(
+            firebase_auth_id='fb_456',
+        )
+
+        result = auth_services.get_auth_provider_records_from_models(
+            feconf.FIREBASE_AUTH_PROVIDER_ID,
+            user_settings,
+            auth_details,
+        )
+
+        self.assertEqual(
+            result,
+            auth_domain.AuthProviderRecord(
+                'fb_456',
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                'b@b.com',
+                False,
+            ),
+        )
+
+    def test_returns_none_for_profile_user(self) -> None:
+        user_settings = self._make_user_settings_model()
+        auth_details = self._make_user_auth_details_model(
+            parent_user_id='parent_uid',
+        )
+
+        result = auth_services.get_auth_provider_records_from_models(
+            feconf.FIREBASE_AUTH_PROVIDER_ID,
+            user_settings,
+            auth_details,
+        )
+
+        self.assertIsNone(result)
+
+    def test_raises_when_model_ids_differ(self) -> None:
+        user_settings = self._make_user_settings_model(user_id='uid_1')
+        auth_details = self._make_user_auth_details_model(user_id='uid_2')
+
+        with self.assertRaisesRegex(
+            ValueError,
+            'UserSettingsModel.*must be same as.*UserAuthDetailsModel',
+        ):
+            auth_services.get_auth_provider_records_from_models(
+                feconf.GAE_AUTH_PROVIDER_ID,
+                user_settings,
+                auth_details,
+            )
+
+    def test_raises_when_deleted_values_differ(self) -> None:
+        user_settings = self._make_user_settings_model(deleted=False)
+        auth_details = self._make_user_auth_details_model(deleted=True)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            'UserSettingsModel.*deleted.*must be same as',
+        ):
+            auth_services.get_auth_provider_records_from_models(
+                feconf.GAE_AUTH_PROVIDER_ID,
+                user_settings,
+                auth_details,
+            )
+
+    def test_raises_when_gae_id_is_none_in_strict_mode(self) -> None:
+        user_settings = self._make_user_settings_model()
+        auth_details = self._make_user_auth_details_model(gae_id=None)
+
+        with self.assertRaisesRegex(ValueError, 'gae_id must not be None'):
+            auth_services.get_auth_provider_records_from_models(
+                feconf.GAE_AUTH_PROVIDER_ID,
+                user_settings,
+                auth_details,
+                strict=True,
+            )
+
+    def test_raises_when_firebase_auth_id_is_none_in_strict_mode(
+        self,
+    ) -> None:
+        user_settings = self._make_user_settings_model()
+        auth_details = self._make_user_auth_details_model(
+            firebase_auth_id=None,
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            'firebase_auth_id must not be None',
+        ):
+            auth_services.get_auth_provider_records_from_models(
+                feconf.FIREBASE_AUTH_PROVIDER_ID,
+                user_settings,
+                auth_details,
+                strict=True,
+            )
+
+    def test_returns_none_when_gae_id_is_none_in_non_strict_mode(self) -> None:
+        user_settings = self._make_user_settings_model()
+        auth_details = self._make_user_auth_details_model(gae_id=None)
+
+        result = auth_services.get_auth_provider_records_from_models(
+            feconf.GAE_AUTH_PROVIDER_ID,
+            user_settings,
+            auth_details,
+            strict=False,
+        )
+
+        self.assertIsNone(result)
+
+    def test_returns_none_when_firebase_id_is_none_in_non_strict_mode(
+        self,
+    ) -> None:
+        user_settings = self._make_user_settings_model()
+        auth_details = self._make_user_auth_details_model(
+            firebase_auth_id=None,
+        )
+
+        result = auth_services.get_auth_provider_records_from_models(
+            feconf.FIREBASE_AUTH_PROVIDER_ID,
+            user_settings,
+            auth_details,
+            strict=False,
+        )
+
+        self.assertIsNone(result)
+
+    def test_returns_none_for_unrecognized_auth_provider_id(self) -> None:
+        user_settings = self._make_user_settings_model()
+        auth_details = self._make_user_auth_details_model()
+
+        result = auth_services.get_auth_provider_records_from_models(
+            # Here we use cast because we want to test invalid values.
+            cast(auth_domain.AuthProviderId, 'unknown_provider'),
+            user_settings,
+            auth_details,
+        )
+
+        self.assertIsNone(result)

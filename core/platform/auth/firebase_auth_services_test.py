@@ -183,11 +183,12 @@ class FirebaseAdminSdkStub:
         self._uid_by_session_cookie[session_cookie] = claims['sub']
         return session_cookie
 
-    def create_user(
+    def create_user(  # pylint: disable=unused-argument
         self,
         uid: Optional[str] = None,
         email: Optional[str] = None,
         disabled: bool = False,
+        password: Optional[str] = None,
     ) -> firebase_auth.UserRecord:
         """Adds user to storage if new, otherwise raises an error.
 
@@ -196,6 +197,8 @@ class FirebaseAdminSdkStub:
                 then a randomly generated string will be used instead.
             email: str|None. The email address for the user, or None.
             disabled: bool. Whether the user account is to be disabled.
+            password: str|None. The password for the user. Accepted but not
+                stored by the stub.
 
         Returns:
             firebase_auth.UserRecord. The final state of the account.
@@ -852,7 +855,13 @@ class FirebaseAdminSdkStub:
         """
         page = mock.Mock()
         if page_index < len(page_list):
-            page.users = page_list[page_index]
+            page.users = [
+                # Here we use MyPy ignore because we are depending on fragile
+                # private methods intentionally to reduce the maintenance burden
+                # in this stub.
+                firebase_auth.ExportedUserRecord(user._data)  # type: ignore[attr-defined]  # pylint: disable=protected-access
+                for user in page_list[page_index]
+            ]
             page.has_next_page = (page_index + 1) < len(page_list)
             page.next_page_token = (
                 '' if not page.has_next_page else str(page_index + 1)
@@ -865,7 +874,13 @@ class FirebaseAdminSdkStub:
                 )
             )
             page.iterate_all = lambda: (
-                itertools.chain.from_iterable(page_list[page_index:])
+                # Here we use MyPy ignore because we are depending on fragile
+                # private methods intentionally to reduce the maintenance burden
+                # in this stub.
+                firebase_auth.ExportedUserRecord(user._data)  # type: ignore[attr-defined]  # pylint: disable=protected-access
+                for user in itertools.chain.from_iterable(
+                    page_list[page_index:]
+                )
             )
         else:
             page.users = []

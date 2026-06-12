@@ -33,13 +33,13 @@ auth_models, user_models = models.Registry.import_models(
 )
 
 
-@dataclasses.dataclass(frozen=True, unsafe_hash=True, eq=False)
+@dataclasses.dataclass(frozen=True, unsafe_hash=True, eq=False, kw_only=True)
 class StrongRecord:
     """Adapts Firebase records fetched directly from the Firebase Admin SDK."""
 
-    auth_id: str = dataclasses.field(hash=True)
-    email: str = dataclasses.field(hash=True)
-    disabled: bool = dataclasses.field(hash=True)
+    auth_id: str
+    email: str
+    disabled: bool
 
     # Here we use object because Python requires `==` to work between ALL types.
     def __eq__(self, other: object) -> bool:
@@ -75,10 +75,12 @@ class StrongRecord:
             firebase_adapters.StrongRecord. Holds the same auth_id, email, and
             disabled values.
         """
-        return StrongRecord(record.uid, record.email, record.disabled)
+        return StrongRecord(
+            auth_id=record.uid, email=record.email, disabled=record.disabled
+        )
 
 
-@dataclasses.dataclass(frozen=True, unsafe_hash=True, eq=False)
+@dataclasses.dataclass(frozen=True, unsafe_hash=True, eq=False, kw_only=True)
 class WeakRecord(StrongRecord):
     """Adapts Firebase records ASSUMED to exist based on Oppia's auth models."""
 
@@ -133,8 +135,8 @@ class WeakRecord(StrongRecord):
         if auth_details.parent_user_id is not None:
             return None
         return WeakRecord(
-            auth_details.firebase_auth_id,
-            settings.email,
-            settings.deleted,
-            settings.id,
+            auth_id=auth_details.firebase_auth_id,
+            email=settings.email,
+            disabled=settings.deleted,
+            user_id=settings.id,
         )

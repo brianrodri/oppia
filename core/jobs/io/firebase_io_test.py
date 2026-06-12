@@ -43,7 +43,6 @@ class AuthIoTestBase(
 
 
 class GetStrongRecordsTests(AuthIoTestBase):
-
     def test_get_with_no_firebase_users_returns_empty(self) -> None:
         self.assert_pcoll_empty(self.pipeline | firebase_io.GetStrongRecords())
 
@@ -61,15 +60,20 @@ class GetStrongRecordsTests(AuthIoTestBase):
         self.assert_pcoll_equal(
             self.pipeline | firebase_io.GetStrongRecords(),
             [
-                firebase_adapters.StrongRecord('uid_a', 'a@a.com', False),
-                firebase_adapters.StrongRecord('uid_b', 'b@b.com', False),
-                firebase_adapters.StrongRecord('uid_c', 'c@c.com', True),
+                firebase_adapters.StrongRecord(
+                    auth_id='uid_a', email='a@a.com', disabled=False
+                ),
+                firebase_adapters.StrongRecord(
+                    auth_id='uid_b', email='b@b.com', disabled=False
+                ),
+                firebase_adapters.StrongRecord(
+                    auth_id='uid_c', email='c@c.com', disabled=True
+                ),
             ],
         )
 
 
 class GetWeakRecordsTests(AuthIoTestBase):
-
     def test_get_with_no_oppia_models_returns_empty(self) -> None:
         self.assert_pcoll_empty(self.pipeline | firebase_io.GetWeakRecords())
 
@@ -91,7 +95,14 @@ class GetWeakRecordsTests(AuthIoTestBase):
 
         self.assert_pcoll_equal(
             self.pipeline | firebase_io.GetWeakRecords(),
-            [firebase_adapters.WeakRecord('fb_a', 'a@a.com', False, 'uid_a')],
+            [
+                firebase_adapters.WeakRecord(
+                    auth_id='fb_a',
+                    email='a@a.com',
+                    disabled=False,
+                    user_id='uid_a',
+                )
+            ],
         )
 
     def test_get_with_deleted_model_returns_disabled_record(self) -> None:
@@ -114,7 +125,14 @@ class GetWeakRecordsTests(AuthIoTestBase):
 
         self.assert_pcoll_equal(
             self.pipeline | firebase_io.GetWeakRecords(),
-            [firebase_adapters.WeakRecord('fb_a', 'a@a.com', True, 'uid_a')],
+            [
+                firebase_adapters.WeakRecord(
+                    auth_id='fb_a',
+                    email='a@a.com',
+                    disabled=True,
+                    user_id='uid_a',
+                )
+            ],
         )
 
     def test_get_with_multiple_model_pairs_returns_all(self) -> None:
@@ -146,8 +164,18 @@ class GetWeakRecordsTests(AuthIoTestBase):
         self.assert_pcoll_equal(
             self.pipeline | firebase_io.GetWeakRecords(),
             [
-                firebase_adapters.WeakRecord('fb_a', 'a@a.com', False, 'uid_a'),
-                firebase_adapters.WeakRecord('fb_b', 'b@b.com', False, 'uid_b'),
+                firebase_adapters.WeakRecord(
+                    auth_id='fb_a',
+                    email='a@a.com',
+                    disabled=False,
+                    user_id='uid_a',
+                ),
+                firebase_adapters.WeakRecord(
+                    auth_id='fb_b',
+                    email='b@b.com',
+                    disabled=False,
+                    user_id='uid_b',
+                ),
             ],
         )
 
@@ -181,7 +209,14 @@ class GetWeakRecordsTests(AuthIoTestBase):
 
         self.assert_pcoll_equal(
             self.pipeline | firebase_io.GetWeakRecords(),
-            [firebase_adapters.WeakRecord('fb_a', 'a@a.com', False, 'uid_a')],
+            [
+                firebase_adapters.WeakRecord(
+                    auth_id='fb_a',
+                    email='a@a.com',
+                    disabled=False,
+                    user_id='uid_a',
+                )
+            ],
         )
 
     def test_get_with_missing_auth_details_raises_value_error(self) -> None:

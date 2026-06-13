@@ -38,12 +38,6 @@ class FirebaseSyncRecordsJob(base_jobs.JobBase):
     """Sync Firebase records to match with Oppia's user & auth models."""
 
     def run(self) -> beam.PCollection[job_run_result.JobRunResult]:
-        if (
-            feature_flag_domain.get_server_mode()
-            == feature_flag_domain.ServerMode.PROD
-        ):
-            job_name = self.__class__.__name__
-            raise PermissionError(f'{job_name} must never be run in production')
 
         weak_records = (
             self.pipeline

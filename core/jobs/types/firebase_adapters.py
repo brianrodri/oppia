@@ -51,7 +51,7 @@ class StrongRecord:
             other.disabled,
         )
 
-    def into_import(self) -> firebase_auth.ImportUserRecord:
+    def to_import(self) -> firebase_auth.ImportUserRecord:
         """Converts self into firebase_auth.ImportUserRecord.
 
         Returns:

@@ -144,4 +144,4 @@ class _GetTaggedRecords(beam.DoFn):  # type: ignore[misc]
             yield beam.TaggedOutput(DELETED_TAG, record.auth_id)
 
         for record in from_oppia.difference(from_firebase):
-            yield beam.TaggedOutput(CREATED_TAG, record.into_import())
+            yield beam.TaggedOutput(CREATED_TAG, record.to_import())

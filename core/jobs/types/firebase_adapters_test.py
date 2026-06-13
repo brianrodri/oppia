@@ -59,20 +59,20 @@ class StrongRecordTests(unittest.TestCase):
         self.assertEqual(record.email, 'a@a.com')
         self.assertTrue(record.disabled)
 
-    def test_into_import_returns_matching_import_user_record(self) -> None:
+    def test_to_import_returns_matching_import_user_record(self) -> None:
         record = firebase_adapters.StrongRecord(
             auth_id='aid', email='a@a.com', disabled=False
         )
-        import_record = record.into_import()
+        import_record = record.to_import()
         self.assertEqual(import_record.uid, 'aid')
         self.assertEqual(import_record.email, 'a@a.com')
         self.assertFalse(import_record.disabled)
 
-    def test_into_import_with_disabled_record_preserves_disabled(self) -> None:
+    def test_to_import_with_disabled_record_preserves_disabled(self) -> None:
         record = firebase_adapters.StrongRecord(
             auth_id='aid', email='a@a.com', disabled=True
         )
-        import_record = record.into_import()
+        import_record = record.to_import()
         self.assertEqual(import_record.uid, 'aid')
         self.assertEqual(import_record.email, 'a@a.com')
         self.assertTrue(import_record.disabled)
@@ -154,11 +154,11 @@ class WeakRecordTests(test_utils.GenericTestBase):
         )
         self.assertIsNone(record)
 
-    def test_into_import_returns_matching_import_user_record(self) -> None:
+    def test_to_import_returns_matching_import_user_record(self) -> None:
         record = firebase_adapters.WeakRecord(
             auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
         )
-        import_record = record.into_import()
+        import_record = record.to_import()
         self.assertEqual(import_record.uid, 'aid')
         self.assertEqual(import_record.email, 'a@a.com')
         self.assertFalse(import_record.disabled)

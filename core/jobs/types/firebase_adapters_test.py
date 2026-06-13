@@ -88,11 +88,6 @@ class WeakRecordTests(test_utils.GenericTestBase):
         self.assertFalse(record.disabled)
         self.assertEqual(record.user_id, 'uid')
 
-    def test_from_export_raises_type_error(self) -> None:
-        export_record = mock.Mock(uid='uid', email='a@a.com', disabled=False)
-        with self.assertRaisesRegex(TypeError, 'records have no Oppia User ID'):
-            firebase_adapters.WeakRecord.from_export(export_record)
-
     def test_from_oppia_models_with_matching_ids_creates_record(self) -> None:
         record = firebase_adapters.WeakRecord.from_oppia_models(
             user_models.UserSettingsModel(id='uid', email='a@a.com'),

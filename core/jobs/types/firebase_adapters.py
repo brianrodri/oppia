@@ -62,10 +62,8 @@ class StrongRecord:
             uid=self.auth_id, email=self.email, disabled=self.disabled
         )
 
-    @classmethod
-    def from_export(
-        cls, record: firebase_auth.ExportedUserRecord
-    ) -> 'StrongRecord':
+    @staticmethod
+    def from_export(record: firebase_auth.ExportedUserRecord) -> 'StrongRecord':
         """Creates a strong record corresponding to the ExportedUserRecord.
 
         Args:
@@ -86,24 +84,8 @@ class WeakRecord(StrongRecord):
 
     user_id: str = dataclasses.field(hash=False)
 
-    @classmethod
-    def from_export(
-        cls, record: firebase_auth.ExportedUserRecord
-    ) -> 'WeakRecord':
-        """Always raises because Firebase records do not keep Oppia User IDs.
-
-        Args:
-            record: firebase_auth.ExportedUserRecord. The record to convert.
-
-        Raises:
-            TypeError. Always, since Firebase records lack a valid `user_id`.
-        """
-        del record
-        raise TypeError('Firebase records have no Oppia User ID')
-
-    @classmethod
+    @staticmethod
     def from_oppia_models(
-        cls,
         settings: user_models.UserSettingsModel,
         auth_details: auth_models.UserAuthDetailsModel,
     ) -> 'WeakRecord | None':

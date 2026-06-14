@@ -230,9 +230,7 @@ class GetWeakRecordsTests(AuthIoTestBase):
             ]
         )
 
-        with self.assertRaisesRegex(
-            ValueError, 'need EXACTLY ONE of each model'
-        ):
+        with self.assertRaisesRegex(ValueError, 'needs exactly one'):
             self.assert_pcoll_equal(
                 self.pipeline | firebase_io.GetWeakRecords(), []
             )
@@ -248,9 +246,7 @@ class GetWeakRecordsTests(AuthIoTestBase):
             ]
         )
 
-        with self.assertRaisesRegex(
-            ValueError, 'need EXACTLY ONE of each model'
-        ):
+        with self.assertRaisesRegex(ValueError, 'needs exactly one'):
             self.assert_pcoll_equal(
                 self.pipeline | firebase_io.GetWeakRecords(), []
             )

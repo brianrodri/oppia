@@ -39,13 +39,8 @@ auth_models, user_models = models.Registry.import_models(
 
 
 # TODO(#15613): Here we use MyPy ignore because Apache Beam lacks type hints.
-class GetStrongRecords(beam.PTransform):  # type: ignore[misc]
-    """Gets the collection of "strong" records directly from Firebase.
-
-    These records are considered to be "strong" because they are based on
-    Firebase's _real_ data. In other words, this collection represents the
-    source of truth.
-    """
+class GetRecordsDirectlyFromFirebase(beam.PTransform):  # type: ignore[misc]
+    """Gets the collection of records directly from the Firebase server."""
 
     def setup(self) -> None:
         """Establishes a Firebase connection just before running `process`."""
@@ -54,7 +49,7 @@ class GetStrongRecords(beam.PTransform):  # type: ignore[misc]
 
     def expand(
         self, pbegin: pvalue.PBegin
-    ) -> beam.PCollection[firebase_adapters.StrongRecord]:
+    ) -> beam.PCollection[firebase_adapters.FirebaseRecord]:
         """Returns all of the records directly from Firebase."""
 
         return (
@@ -65,28 +60,23 @@ class GetStrongRecords(beam.PTransform):  # type: ignore[misc]
 
     def _yield_strong_records_from_firebase(
         self, _: None
-    ) -> abc.Iterable[firebase_adapters.StrongRecord]:
+    ) -> abc.Iterable[firebase_adapters.FirebaseRecord]:
         """Yields all of the records directly from Firebase."""
 
         yield from (
-            firebase_adapters.StrongRecord.from_export(user)
+            firebase_adapters.FirebaseRecord.from_export(user)
             for user in firebase_auth.list_users().iterate_all()
         )
 
 
 # TODO(#15613): Here we use MyPy ignore because Apache Beam lacks type hints.
-class GetWeakRecords(beam.PTransform):  # type: ignore[misc]
-    """Gets the collection of "weak" records from Oppia's user & auth models.
-
-    These records are considered to be "weak" because they are NOT based on real
-    data. Instead, they are built using Oppia's internal association models,
-    under the assumption that they are consistent with "strong" (real) records.
-    """
+class RecreateRecordsFromOppiaModels(beam.PTransform):  # type: ignore[misc]
+    """Re-creates the collection of records from Oppia's user & auth models."""
 
     def expand(
         self, pbegin: pvalue.PBegin
-    ) -> beam.PCollection[firebase_adapters.WeakRecord]:
-        """Returns all of the "weak" records from Oppia's user & auth models."""
+    ) -> beam.PCollection[firebase_adapters.FirebaseRecord]:
+        """Returns all of the records known by Oppia's user & auth models."""
 
         user_settings_model_pcoll = (
             pbegin
@@ -113,7 +103,7 @@ class GetWeakRecords(beam.PTransform):  # type: ignore[misc]
             | 'Group User Models by id' >> beam.CoGroupByKey()
             | 'Rebuild Records from User Models'
             >> beam.FlatMapTuple(
-                GetWeakRecords._rebuild_fields_from_oppia_models
+                RecreateRecordsFromOppiaModels._rebuild_fields_from_oppia_models
             )
         )
 
@@ -124,8 +114,8 @@ class GetWeakRecords(beam.PTransform):  # type: ignore[misc]
             abc.Iterable[user_models.UserSettingsModel],
             abc.Iterable[auth_models.UserAuthDetailsModel],
         ],
-    ) -> abc.Iterable[firebase_adapters.WeakRecord]:
-        """Yields a WeakRecord for the given user_id if possible."""
+    ) -> abc.Iterable[firebase_adapters.FirebaseRecord]:
+        """Yields a FirebaseRecord for the given user_id if possible."""
 
         user_settings_model_iter, user_auth_details_model_iter = group_of_models
         user_settings_models = tuple(user_settings_model_iter)
@@ -143,7 +133,7 @@ class GetWeakRecords(beam.PTransform):  # type: ignore[misc]
             ) from e
 
         try:
-            fields = firebase_adapters.WeakRecord.from_oppia_models(
+            fields = firebase_adapters.FirebaseRecord.from_oppia_models(
                 user_settings_model, user_auth_details_model
             )
         except ValueError as e:

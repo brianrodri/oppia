@@ -20,7 +20,6 @@ from __future__ import annotations
 
 from collections import abc
 
-from core.domain import feature_flag_domain
 from core.jobs import base_jobs
 from core.jobs.io import firebase_io
 from core.jobs.transforms import firebase_transforms, job_result_transforms
@@ -39,21 +38,23 @@ class FirebaseSyncRecordsJob(base_jobs.JobBase):
 
     def run(self) -> beam.PCollection[job_run_result.JobRunResult]:
 
-        weak_records = (
+        oppia_records = (
             self.pipeline
-            | 'Get Weak Records' >> firebase_io.GetWeakRecords()
-            | 'Key Weak Records by Email'
+            | 'Recreate Records from Oppia Models'
+            >> firebase_io.RecreateRecordsFromOppiaModels()
+            | 'Key Oppia Records by Email'
             >> beam.Map(lambda record: (record.email, record))
         )
         strong_records = (
             self.pipeline
-            | 'Get Strong Records' >> firebase_io.GetStrongRecords()
-            | 'Key Strong Records by Email'
+            | 'Get Records Directly from Firebase'
+            >> firebase_io.GetRecordsDirectlyFromFirebase()
+            | 'Key Firebase Records by Email'
             >> beam.Map(lambda record: (record.email, record))
         )
 
         tagged_records = (
-            {'from_oppia': weak_records, 'from_firebase': strong_records}
+            {'from_oppia': oppia_records, 'from_firebase': strong_records}
             | 'Group Records by Email Key' >> beam.CoGroupByKey()
             | 'Drop Email Key' >> beam.Map(lambda key_value: key_value[1])
             | 'Get Tagged Records'
@@ -120,8 +121,8 @@ class _GetTaggedRecords(beam.DoFn):  # type: ignore[misc]
     class GroupedByUserId(TypedDict):
         """Typings for the CoGroupByKey() output joined by email."""
 
-        from_oppia: abc.Iterable[firebase_adapters.WeakRecord]
-        from_firebase: abc.Iterable[firebase_adapters.StrongRecord]
+        from_oppia: abc.Iterable[firebase_adapters.FirebaseRecord]
+        from_firebase: abc.Iterable[firebase_adapters.FirebaseRecord]
 
     def process(
         self, grouped: GroupedByUserId

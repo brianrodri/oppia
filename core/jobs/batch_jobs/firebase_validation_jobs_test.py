@@ -37,7 +37,6 @@ class FirebaseAuditRecordsJobTests(
     job_test_utils.JobTestBase,
     firebase_auth_services_test.FirebaseAuthServicesTestBase,
 ):
-
     JOB_CLASS = firebase_validation_jobs.FirebaseAuditRecordsJob
 
     def test_run_with_no_data_produces_no_output(self) -> None:
@@ -63,10 +62,10 @@ class FirebaseAuditRecordsJobTests(
         )
 
         self.assert_job_output_is(
-            [job_run_result.JobRunResult(stdout='CORRECT: 1')],
+            [job_run_result.JobRunResult(stdout='OK: 1')],
         )
 
-    def test_run_with_missing_firebase_record_reports_corrupt(self) -> None:
+    def test_run_with_missing_firebase_record_reports_add(self) -> None:
         self.put_multi(
             [
                 self.create_model(
@@ -85,15 +84,15 @@ class FirebaseAuditRecordsJobTests(
         self.assert_job_output_is(
             [
                 job_run_result.JobRunResult(
-                    stderr=(
-                        'FIXABLE: Oppia user (user_id=\'uid_a\') linked to '
-                        'non-existent Firebase record (firebase_id=\'fb_a\')'
+                    stdout=(
+                        'ADD RECORD: FirebaseRecord(auth_id=\'fb_a\', '
+                        'email=\'a@a.com\', disabled=False)'
                     )
                 ),
             ],
         )
 
-    def test_run_with_extra_firebase_record_reports_corrupt(self) -> None:
+    def test_run_with_extra_firebase_record_reports_delete(self) -> None:
         self.firebase_sdk_stub.create_user(
             uid='fb_a', email='a@a.com', disabled=False
         )
@@ -101,9 +100,9 @@ class FirebaseAuditRecordsJobTests(
         self.assert_job_output_is(
             [
                 job_run_result.JobRunResult(
-                    stderr=(
-                        'FIXABLE: Firebase record (firebase_id=\'fb_a\') '
-                        'linked to non-existent Oppia user'
+                    stdout=(
+                        'DEL RECORD: FirebaseRecord(auth_id=\'fb_a\', '
+                        'email=\'a@a.com\', disabled=False)'
                     )
                 ),
             ],
@@ -139,16 +138,14 @@ class FirebaseAuditRecordsJobTests(
             [
                 job_run_result.JobRunResult(
                     stderr=(
-                        'CORRUPT: OPPIA USERS '
-                        '(user_ids=[\'uid_a\', \'uid_b\']) ARE USING THE SAME '
-                        'EMAIL! A server admin must manually resolve these '
-                        'collisions by giving each user a UNIQUE email.'
+                        'email=\'a@a.com\' shared by '
+                        'user_ids=[\'uid_a\', \'uid_b\']'
                     )
                 ),
             ],
         )
 
-    def test_run_with_duplicate_firebase_emails_reports_collision(self) -> None:
+    def test_run_with_duplicate_firebase_emails_reports_deletes(self) -> None:
         self.firebase_sdk_stub.create_user(
             uid='fb_a', email='a@a.com', disabled=False
         )
@@ -159,15 +156,21 @@ class FirebaseAuditRecordsJobTests(
         self.assert_job_output_is(
             [
                 job_run_result.JobRunResult(
-                    stderr=(
-                        'FIXABLE: Firebase records share email: '
-                        'firebase_ids=[\'fb_a\', \'fb_b\']'
+                    stdout=(
+                        'DEL RECORD: FirebaseRecord(auth_id=\'fb_a\', '
+                        'email=\'a@a.com\', disabled=False)'
+                    )
+                ),
+                job_run_result.JobRunResult(
+                    stdout=(
+                        'DEL RECORD: FirebaseRecord(auth_id=\'fb_b\', '
+                        'email=\'a@a.com\', disabled=False)'
                     )
                 ),
             ],
         )
 
-    def test_run_with_mismatched_disabled_reports_detailed_corrupt(
+    def test_run_with_mismatched_disabled_reports_add_and_delete(
         self,
     ) -> None:
         self.firebase_sdk_stub.create_user(
@@ -191,11 +194,15 @@ class FirebaseAuditRecordsJobTests(
         self.assert_job_output_is(
             [
                 job_run_result.JobRunResult(
-                    stderr=(
-                        'FIXABLE: Oppia user (user_id=\'uid_a\') is '
-                        'inconsistent with its Firebase record '
-                        '(firebase_id=\'fb_a\'): \'disabled\' is False in '
-                        'Oppia but True in Firebase'
+                    stdout=(
+                        'DEL RECORD: FirebaseRecord(auth_id=\'fb_a\', '
+                        'email=\'a@a.com\', disabled=True)'
+                    )
+                ),
+                job_run_result.JobRunResult(
+                    stdout=(
+                        'ADD RECORD: FirebaseRecord(auth_id=\'fb_a\', '
+                        'email=\'a@a.com\', disabled=False)'
                     )
                 ),
             ],
@@ -234,16 +241,14 @@ class FirebaseAuditRecordsJobTests(
             [
                 job_run_result.JobRunResult(
                     stderr=(
-                        'CORRUPT: OPPIA USERS '
-                        '(user_ids=[\'uid_a\', \'uid_b\']) ARE USING THE SAME '
-                        'EMAIL! A server admin must manually resolve these '
-                        'collisions by giving each user a UNIQUE email.'
+                        'email=\'a@a.com\' shared by '
+                        'user_ids=[\'uid_a\', \'uid_b\']'
                     )
                 ),
             ],
         )
 
-    def test_run_with_both_oppia_and_firebase_collisions_reports_both_corrupt(
+    def test_run_with_oppia_collision_and_firebase_duplicates_reports_collision(
         self,
     ) -> None:
         self.firebase_sdk_stub.create_user(
@@ -281,22 +286,14 @@ class FirebaseAuditRecordsJobTests(
             [
                 job_run_result.JobRunResult(
                     stderr=(
-                        'FIXABLE: Firebase records share email: '
-                        'firebase_ids=[\'fb_a\', \'fb_b\']'
-                    )
-                ),
-                job_run_result.JobRunResult(
-                    stderr=(
-                        'CORRUPT: OPPIA USERS '
-                        '(user_ids=[\'uid_a\', \'uid_b\']) ARE USING THE SAME '
-                        'EMAIL! A server admin must manually resolve these '
-                        'collisions by giving each user a UNIQUE email.'
+                        'email=\'a@a.com\' shared by '
+                        'user_ids=[\'uid_a\', \'uid_b\']'
                     )
                 ),
             ],
         )
 
-    def test_run_with_multi_field_mismatch_reports_all_differences(
+    def test_run_with_mismatched_records_reports_add_and_delete(
         self,
     ) -> None:
         self.firebase_sdk_stub.create_user(
@@ -320,18 +317,21 @@ class FirebaseAuditRecordsJobTests(
         self.assert_job_output_is(
             [
                 job_run_result.JobRunResult(
-                    stderr=(
-                        'FIXABLE: Oppia user (user_id=\'uid_a\') is '
-                        'inconsistent with its Firebase record '
-                        '(firebase_id=\'fb_x\'): \'auth_id\' is \'fb_a\' in '
-                        'Oppia but \'fb_x\' in Firebase, \'disabled\' is False '
-                        'in Oppia but True in Firebase'
+                    stdout=(
+                        'DEL RECORD: FirebaseRecord(auth_id=\'fb_x\', '
+                        'email=\'a@a.com\', disabled=True)'
+                    )
+                ),
+                job_run_result.JobRunResult(
+                    stdout=(
+                        'ADD RECORD: FirebaseRecord(auth_id=\'fb_a\', '
+                        'email=\'a@a.com\', disabled=False)'
                     )
                 ),
             ],
         )
 
-    def test_run_with_mixed_outcomes_reports_correct_and_corrupt(self) -> None:
+    def test_run_with_mixed_outcomes_reports_ok_and_add(self) -> None:
         self.firebase_sdk_stub.create_user(
             uid='fb_a', email='a@a.com', disabled=False
         )
@@ -362,11 +362,11 @@ class FirebaseAuditRecordsJobTests(
 
         self.assert_job_output_is(
             [
-                job_run_result.JobRunResult(stdout='CORRECT: 1'),
+                job_run_result.JobRunResult(stdout='OK: 1'),
                 job_run_result.JobRunResult(
-                    stderr=(
-                        'FIXABLE: Oppia user (user_id=\'uid_b\') linked to '
-                        'non-existent Firebase record (firebase_id=\'fb_b\')'
+                    stdout=(
+                        'ADD RECORD: FirebaseRecord(auth_id=\'fb_b\', '
+                        'email=\'b@b.com\', disabled=False)'
                     )
                 ),
             ],
@@ -394,7 +394,7 @@ class FirebaseAuditRecordsJobTests(
         )
 
         self.assert_job_output_is(
-            [job_run_result.JobRunResult(stdout='CORRECT: 1')],
+            [job_run_result.JobRunResult(stdout='OK: 1')],
         )
 
     def test_run_with_multiple_emails_reports_each(self) -> None:
@@ -430,5 +430,5 @@ class FirebaseAuditRecordsJobTests(
         )
 
         self.assert_job_output_is(
-            [job_run_result.JobRunResult(stdout='CORRECT: 2')],
+            [job_run_result.JobRunResult(stdout='OK: 2')],
         )

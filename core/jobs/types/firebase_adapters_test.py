@@ -23,20 +23,15 @@ from unittest import mock
 
 from core.jobs.types import firebase_adapters
 from core.platform import models
-from core.tests import test_utils
-
-MYPY = False
-if MYPY:  # pragma: no cover
-    from mypy_imports import auth_models, user_models
 
 auth_models, user_models = models.Registry.import_models(
     [models.Names.AUTH, models.Names.USER]
 )
 
 
-class StrongRecordTests(unittest.TestCase):
+class FirebaseRecordTests(unittest.TestCase):
     def test_init_with_valid_args_sets_fields(self) -> None:
-        record = firebase_adapters.StrongRecord(
+        record = firebase_adapters.FirebaseRecord(
             auth_id='aid', email='a@a.com', disabled=False
         )
         self.assertEqual(record.auth_id, 'aid')
@@ -45,7 +40,7 @@ class StrongRecordTests(unittest.TestCase):
 
     def test_from_export_with_exported_record_sets_fields(self) -> None:
         export_record = mock.Mock(uid='uid', email='a@a.com', disabled=False)
-        record = firebase_adapters.StrongRecord.from_export(export_record)
+        record = firebase_adapters.FirebaseRecord.from_export(export_record)
         self.assertEqual(record.auth_id, 'uid')
         self.assertEqual(record.email, 'a@a.com')
         self.assertFalse(record.disabled)
@@ -54,13 +49,13 @@ class StrongRecordTests(unittest.TestCase):
         self,
     ) -> None:
         export_record = mock.Mock(uid='uid', email='a@a.com', disabled=True)
-        record = firebase_adapters.StrongRecord.from_export(export_record)
+        record = firebase_adapters.FirebaseRecord.from_export(export_record)
         self.assertEqual(record.auth_id, 'uid')
         self.assertEqual(record.email, 'a@a.com')
         self.assertTrue(record.disabled)
 
     def test_to_import_returns_matching_import_user_record(self) -> None:
-        record = firebase_adapters.StrongRecord(
+        record = firebase_adapters.FirebaseRecord(
             auth_id='aid', email='a@a.com', disabled=False
         )
         import_record = record.to_import()
@@ -69,226 +64,10 @@ class StrongRecordTests(unittest.TestCase):
         self.assertFalse(import_record.disabled)
 
     def test_to_import_with_disabled_record_preserves_disabled(self) -> None:
-        record = firebase_adapters.StrongRecord(
+        record = firebase_adapters.FirebaseRecord(
             auth_id='aid', email='a@a.com', disabled=True
         )
         import_record = record.to_import()
         self.assertEqual(import_record.uid, 'aid')
         self.assertEqual(import_record.email, 'a@a.com')
         self.assertTrue(import_record.disabled)
-
-
-class WeakRecordTests(test_utils.GenericTestBase):
-    def test_init_with_valid_args_sets_fields(self) -> None:
-        record = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
-        )
-        self.assertEqual(record.auth_id, 'aid')
-        self.assertEqual(record.email, 'a@a.com')
-        self.assertFalse(record.disabled)
-        self.assertEqual(record.user_id, 'uid')
-
-    def test_from_oppia_models_with_matching_ids_creates_record(self) -> None:
-        record = firebase_adapters.WeakRecord.from_oppia_models(
-            user_models.UserSettingsModel(id='uid', email='a@a.com'),
-            auth_models.UserAuthDetailsModel(id='uid', firebase_auth_id='fid'),
-        )
-        self.assertIsNotNone(record)
-        assert record is not None
-        self.assertEqual(record.auth_id, 'fid')
-        self.assertEqual(record.email, 'a@a.com')
-        self.assertFalse(record.disabled)
-        self.assertEqual(record.user_id, 'uid')
-
-    def test_from_oppia_models_with_deleted_model_sets_disabled_to_true(
-        self,
-    ) -> None:
-        record = firebase_adapters.WeakRecord.from_oppia_models(
-            user_models.UserSettingsModel(
-                id='uid', email='a@a.com', deleted=True
-            ),
-            auth_models.UserAuthDetailsModel(
-                id='uid', firebase_auth_id='fid', deleted=True
-            ),
-        )
-        self.assertIsNotNone(record)
-        assert record is not None
-        self.assertEqual(record.auth_id, 'fid')
-        self.assertEqual(record.email, 'a@a.com')
-        self.assertTrue(record.disabled)
-        self.assertEqual(record.user_id, 'uid')
-
-    def test_from_oppia_models_with_mismatched_ids_raises_value_error(
-        self,
-    ) -> None:
-        settings = user_models.UserSettingsModel(id='a', email='a@a.com')
-        auth_details = auth_models.UserAuthDetailsModel(
-            id='b', firebase_auth_id='b'
-        )
-        with self.assertRaisesRegex(ValueError, 'does not match'):
-            firebase_adapters.WeakRecord.from_oppia_models(
-                settings, auth_details
-            )
-
-    def test_from_oppia_models_with_mismatched_deleted_field_raises_value_error(
-        self,
-    ) -> None:
-        settings = user_models.UserSettingsModel(
-            id='a', email='a@a.com', deleted=True
-        )
-        auth_details = auth_models.UserAuthDetailsModel(
-            id='a', firebase_auth_id='b', deleted=False
-        )
-        with self.assertRaisesRegex(ValueError, 'does not match'):
-            firebase_adapters.WeakRecord.from_oppia_models(
-                settings, auth_details
-            )
-
-    def test_from_oppia_models_with_parent_user_id_returns_none(self) -> None:
-        settings = user_models.UserSettingsModel(id='a', email='a@a.com')
-        auth_details = auth_models.UserAuthDetailsModel(
-            id='a', firebase_auth_id='a', parent_user_id='p'
-        )
-        record = firebase_adapters.WeakRecord.from_oppia_models(
-            settings, auth_details
-        )
-        self.assertIsNone(record)
-
-    def test_to_import_returns_matching_import_user_record(self) -> None:
-        record = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
-        )
-        import_record = record.to_import()
-        self.assertEqual(import_record.uid, 'aid')
-        self.assertEqual(import_record.email, 'a@a.com')
-        self.assertFalse(import_record.disabled)
-
-
-class RecordEqualityTests(unittest.TestCase):
-    def test_strong_record_is_not_instance_of_weak_record(self) -> None:
-        record = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        self.assertNotIsInstance(record, firebase_adapters.WeakRecord)
-
-    def test_weak_record_is_instance_of_strong_record(self) -> None:
-        record = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
-        )
-        self.assertIsInstance(record, firebase_adapters.StrongRecord)
-
-    def test_equal_records_have_equal_hashes(self) -> None:
-        strong = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        weak = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
-        )
-        self.assertEqual(hash(strong), hash(weak))
-
-    def test_equality_is_symmetric_across_record_types(self) -> None:
-        strong = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        weak = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
-        )
-        self.assertEqual(weak, strong)
-        self.assertEqual(strong, weak)
-
-    def test_equality_is_transitive_across_record_types(self) -> None:
-        strong = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        weak1 = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid1'
-        )
-        weak2 = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid2'
-        )
-        self.assertEqual(weak1, strong)
-        self.assertEqual(strong, weak2)
-        self.assertEqual(weak1, weak2)
-
-    def test_weak_records_with_different_user_ids_are_equal(self) -> None:
-        weak1 = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid1'
-        )
-        weak2 = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid2'
-        )
-        self.assertEqual(weak1, weak2)
-
-    def test_records_with_different_auth_ids_are_not_equal(self) -> None:
-        a = firebase_adapters.StrongRecord(
-            auth_id='aid1', email='a@a.com', disabled=False
-        )
-        b = firebase_adapters.StrongRecord(
-            auth_id='aid2', email='a@a.com', disabled=False
-        )
-        self.assertNotEqual(a, b)
-
-    def test_records_with_different_emails_are_not_equal(self) -> None:
-        a = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        b = firebase_adapters.StrongRecord(
-            auth_id='aid', email='b@b.com', disabled=False
-        )
-        self.assertNotEqual(a, b)
-
-    def test_records_with_different_disabled_are_not_equal(self) -> None:
-        a = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        b = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=True
-        )
-        self.assertNotEqual(a, b)
-
-    def test_compare_with_unrelated_type_is_not_equal(self) -> None:
-        record = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        self.assertNotEqual(record, 'not a record')
-        self.assertNotEqual(record, ('aid', 'a@a.com', False))
-
-
-class RecordSetAndDictTests(unittest.TestCase):
-    def test_set_deduplicates_across_record_types(self) -> None:
-        strong = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        weak = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
-        )
-        self.assertEqual(len({strong, weak}), 1)
-
-    def test_set_difference_finds_mismatched_records(self) -> None:
-        strong = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        weak = firebase_adapters.WeakRecord(
-            auth_id='aid2', email='b@b.com', disabled=False, user_id='uid'
-        )
-        self.assertIn(weak, {weak}.difference({strong}))
-        self.assertIn(strong, {strong}.difference({weak}))
-
-    def test_set_intersection_finds_matched_records(self) -> None:
-        strong = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        weak = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
-        )
-        self.assertIn(strong, {weak}.intersection({strong}))
-
-    def test_dict_lookup_works_across_record_types(self) -> None:
-        strong = firebase_adapters.StrongRecord(
-            auth_id='aid', email='a@a.com', disabled=False
-        )
-        weak = firebase_adapters.WeakRecord(
-            auth_id='aid', email='a@a.com', disabled=False, user_id='uid'
-        )
-        self.assertIn(weak, {strong: 'found'})
-        self.assertIn(strong, {weak: 'found'})

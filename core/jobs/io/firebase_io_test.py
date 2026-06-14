@@ -42,9 +42,11 @@ class AuthIoTestBase(
     pass
 
 
-class GetStrongRecordsTests(AuthIoTestBase):
+class GetRecordsDirectlyFromFirebaseTests(AuthIoTestBase):
     def test_get_with_no_firebase_users_returns_empty(self) -> None:
-        self.assert_pcoll_empty(self.pipeline | firebase_io.GetStrongRecords())
+        self.assert_pcoll_empty(
+            self.pipeline | firebase_io.GetRecordsDirectlyFromFirebase()
+        )
 
     def test_get_with_multiple_firebase_users_returns_all(self) -> None:
         self.firebase_sdk_stub.create_user(
@@ -58,24 +60,26 @@ class GetStrongRecordsTests(AuthIoTestBase):
         )
 
         self.assert_pcoll_equal(
-            self.pipeline | firebase_io.GetStrongRecords(),
+            self.pipeline | firebase_io.GetRecordsDirectlyFromFirebase(),
             [
-                firebase_adapters.StrongRecord(
+                firebase_adapters.FirebaseRecord(
                     auth_id='uid_a', email='a@a.com', disabled=False
                 ),
-                firebase_adapters.StrongRecord(
+                firebase_adapters.FirebaseRecord(
                     auth_id='uid_b', email='b@b.com', disabled=False
                 ),
-                firebase_adapters.StrongRecord(
+                firebase_adapters.FirebaseRecord(
                     auth_id='uid_c', email='c@c.com', disabled=True
                 ),
             ],
         )
 
 
-class GetWeakRecordsTests(AuthIoTestBase):
+class RecreateRecordsFromOppiaModelsTests(AuthIoTestBase):
     def test_get_with_no_oppia_models_returns_empty(self) -> None:
-        self.assert_pcoll_empty(self.pipeline | firebase_io.GetWeakRecords())
+        self.assert_pcoll_empty(
+            self.pipeline | firebase_io.RecreateRecordsFromOppiaModels()
+        )
 
     def test_get_with_single_model_pair_returns_record(self) -> None:
         self.put_multi(
@@ -94,13 +98,12 @@ class GetWeakRecordsTests(AuthIoTestBase):
         )
 
         self.assert_pcoll_equal(
-            self.pipeline | firebase_io.GetWeakRecords(),
+            self.pipeline | firebase_io.RecreateRecordsFromOppiaModels(),
             [
-                firebase_adapters.WeakRecord(
+                firebase_adapters.FirebaseRecord(
                     auth_id='fb_a',
                     email='a@a.com',
                     disabled=False,
-                    user_id='uid_a',
                 )
             ],
         )
@@ -124,13 +127,12 @@ class GetWeakRecordsTests(AuthIoTestBase):
         )
 
         self.assert_pcoll_equal(
-            self.pipeline | firebase_io.GetWeakRecords(),
+            self.pipeline | firebase_io.RecreateRecordsFromOppiaModels(),
             [
-                firebase_adapters.WeakRecord(
+                firebase_adapters.FirebaseRecord(
                     auth_id='fb_a',
                     email='a@a.com',
                     disabled=True,
-                    user_id='uid_a',
                 )
             ],
         )
@@ -162,19 +164,17 @@ class GetWeakRecordsTests(AuthIoTestBase):
         )
 
         self.assert_pcoll_equal(
-            self.pipeline | firebase_io.GetWeakRecords(),
+            self.pipeline | firebase_io.RecreateRecordsFromOppiaModels(),
             [
-                firebase_adapters.WeakRecord(
+                firebase_adapters.FirebaseRecord(
                     auth_id='fb_a',
                     email='a@a.com',
                     disabled=False,
-                    user_id='uid_a',
                 ),
-                firebase_adapters.WeakRecord(
+                firebase_adapters.FirebaseRecord(
                     auth_id='fb_b',
                     email='b@b.com',
                     disabled=False,
-                    user_id='uid_b',
                 ),
             ],
         )
@@ -208,13 +208,12 @@ class GetWeakRecordsTests(AuthIoTestBase):
         )
 
         self.assert_pcoll_equal(
-            self.pipeline | firebase_io.GetWeakRecords(),
+            self.pipeline | firebase_io.RecreateRecordsFromOppiaModels(),
             [
-                firebase_adapters.WeakRecord(
+                firebase_adapters.FirebaseRecord(
                     auth_id='fb_a',
                     email='a@a.com',
                     disabled=False,
-                    user_id='uid_a',
                 )
             ],
         )
@@ -232,7 +231,7 @@ class GetWeakRecordsTests(AuthIoTestBase):
 
         with self.assertRaisesRegex(ValueError, 'needs exactly one'):
             self.assert_pcoll_equal(
-                self.pipeline | firebase_io.GetWeakRecords(), []
+                self.pipeline | firebase_io.RecreateRecordsFromOppiaModels(), []
             )
 
     def test_get_with_missing_settings_raises_value_error(self) -> None:
@@ -248,5 +247,5 @@ class GetWeakRecordsTests(AuthIoTestBase):
 
         with self.assertRaisesRegex(ValueError, 'needs exactly one'):
             self.assert_pcoll_equal(
-                self.pipeline | firebase_io.GetWeakRecords(), []
+                self.pipeline | firebase_io.RecreateRecordsFromOppiaModels(), []
             )

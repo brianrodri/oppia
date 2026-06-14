@@ -18,132 +18,134 @@
 
 from __future__ import annotations
 
-import dataclasses
 from collections import abc
 
 from core.jobs import base_jobs
-from core.jobs.io import firebase_io
-from core.jobs.transforms import job_result_transforms
+from core.jobs.io import firebase_io, ndb_io
 from core.jobs.types import firebase_adapters, job_run_result
+from core.platform import models
 
 import apache_beam as beam
-from typing import TypedDict
 
-# CORRUPT outputs are **unexpected**, and require a SERVER ADMIN to investigate.
-TAG_CORRUPT = 'CORRUPT'
+(user_models,) = models.Registry.import_models([models.Names.USER])
 
-# FIXABLE outputs are _expected_, and can be fixed by running `FirebaseSyncJob`.
-TAG_FIXABLE = 'FIXABLE'
-
-# CORRECT outputs are _expected_, and can be used to confirm that things are OK.
-TAG_CORRECT = 'CORRECT'
+TAG_COLLISION = 'COLLISION'
+TAG_OK = 'OK'
+TAG_ADD = 'ADD'
+TAG_DEL = 'DEL'
+TAG_COLLISION = 'STDERR'
 
 
 class FirebaseAuditRecordsJob(base_jobs.JobBase):
     """Audit Firebase records against the records that Oppia claims to exist."""
 
     def run(self) -> beam.PCollection[job_run_result.JobRunResult]:
-        weak_records = (
+        user_id_by_email = (
             self.pipeline
-            | 'Get Weak Records' >> firebase_io.GetWeakRecords()
-            | 'Key Weak Records by Email'
+            | 'Get UserSettingsModels'
+            >> ndb_io.GetModels(
+                user_models.UserSettingsModel.get_all(include_deleted=True)
+            )
+            | 'Key UserSettingsModels by Email'
+            >> beam.Map(lambda model: (model.email, model.id))
+        )
+        oppia_record_by_email = (
+            self.pipeline
+            | 'Recreate Records from Oppia Models'
+            >> firebase_io.RecreateRecordsFromOppiaModels()
+            | 'Key Records from Oppia by Email'
             >> beam.Map(lambda record: (record.email, record))
         )
-        strong_records = (
+        firebase_record_by_email = (
             self.pipeline
-            | 'Get Strong Records' >> firebase_io.GetStrongRecords()
-            | 'Key Strong Records by Email'
+            | 'Get Records Directly from Firebase'
+            >> firebase_io.GetRecordsDirectlyFromFirebase()
+            | 'Key Records from Firebase by Email'
             >> beam.Map(lambda record: (record.email, record))
         )
-        return (
-            {'from_oppia': weak_records, 'from_firebase': strong_records}
+
+        outputs = (
+            (user_id_by_email, oppia_record_by_email, firebase_record_by_email)
             | 'Group Records by Email Key' >> beam.CoGroupByKey()
-            | 'Drop Email Key' >> beam.Map(lambda key_value: key_value[1])
-            | 'Audit Records'
-            >> beam.ParDo(_AuditRecords()).with_outputs(
-                TAG_CORRECT, TAG_FIXABLE, TAG_CORRUPT
-            )
-            | 'Summarize Audited Records'
-            >> job_result_transforms.FromTaggedOutputs(
-                TAG_CORRECT, TAG_FIXABLE, TAG_CORRUPT
+            | 'Inspect Records'
+            >> beam.ParDo(_TagEmailGroup()).with_outputs(
+                TAG_OK, TAG_ADD, TAG_DEL, TAG_COLLISION
             )
         )
+
+        return (
+            (
+                outputs[TAG_OK]
+                | beam.combiners.Count.Globally(False)
+                | beam.Map(self.format_ok_result)
+            ),
+            outputs[TAG_ADD] | beam.Map(self.format_add_result),
+            outputs[TAG_DEL] | beam.Map(self.format_del_result),
+            outputs[TAG_COLLISION] | beam.Map(self.format_collision_result),
+        ) | beam.Flatten()
+
+    @classmethod
+    def format_ok_result(cls, ok_count: int) -> job_run_result.JobRunResult:
+        """Formats the given OK count as a human-readable string."""
+        return job_run_result.JobRunResult.as_stdout(f'OK: {ok_count}')
+
+    @classmethod
+    def format_add_result(
+        cls, record: firebase_adapters.FirebaseRecord
+    ) -> job_run_result.JobRunResult:
+        """Formats the account to create as a human-readable string."""
+        return job_run_result.JobRunResult.as_stdout(f'ADD RECORD: {record}')
+
+    @classmethod
+    def format_del_result(
+        cls, record: firebase_adapters.FirebaseRecord
+    ) -> job_run_result.JobRunResult:
+        """Formats the account to deleted as a human-readable string."""
+        return job_run_result.JobRunResult.as_stdout(f'DEL RECORD: {record}')
+
+    @classmethod
+    def format_collision_result(
+        cls, message: str
+    ) -> job_run_result.JobRunResult:
+        """Formats the given collision message as a human-readable string."""
+        return job_run_result.JobRunResult.as_stderr(message)
 
 
 # TODO(#15613): Here we use MyPy ignore because Apache Beam lacks type hints.
-class _AuditRecords(beam.DoFn):  # type: ignore[misc]
+class _TagEmailGroup(beam.DoFn):  # type: ignore[misc]
     """Audits records using tagged outputs to group findings by severity."""
 
-    class GroupedByEmail(TypedDict):
-        """Typings for the CoGroupByKey() output joined by email."""
-
-        from_oppia: abc.Iterable[firebase_adapters.WeakRecord]
-        from_firebase: abc.Iterable[firebase_adapters.StrongRecord]
-
     def process(
-        self, grouped: GroupedByEmail
+        self,
+        entry: tuple[
+            str,
+            tuple[
+                abc.Iterable[str],
+                abc.Iterable[firebase_adapters.FirebaseRecord],
+                abc.Iterable[firebase_adapters.FirebaseRecord],
+            ],
+        ],
     ) -> abc.Iterable[beam.TaggedOutput]:
         """Yields tagged outputs which will group audit findings by severity."""
+        email, (user_id_iter, oppia_record_iter, firebase_record_iter) = entry
 
-        from_oppia = frozenset(grouped['from_oppia'])
-        from_firebase = frozenset(grouped['from_firebase'])
-        email_is_reused = False
-
-        if len(user_ids := sorted({r.user_id for r in from_oppia})) > 1:
-            email_is_reused = True
+        if len(user_ids := sorted(set(user_id_iter))) > 1:
             yield beam.TaggedOutput(
-                TAG_CORRUPT,
-                f'OPPIA USERS ({user_ids=!r}) ARE USING THE SAME EMAIL! '
-                'A server admin must manually resolve these collisions by '
-                'giving each user a UNIQUE email.',
+                TAG_COLLISION, f'{email=} shared by {user_ids=}'
             )
-
-        if len(firebase_ids := sorted({r.auth_id for r in from_firebase})) > 1:
-            email_is_reused = True
-            yield beam.TaggedOutput(
-                TAG_FIXABLE,
-                f'Firebase records share email: {firebase_ids=!r}',
-            )
-
-        if email_is_reused:
             return
 
-        [oppia_record] = from_oppia or [None]
-        [firebase_record] = from_firebase or [None]
+        oppia_record_set = frozenset(oppia_record_iter)
+        firebase_record_set = frozenset(firebase_record_iter)
 
-        if oppia_record and not firebase_record:
-            user_id = oppia_record.user_id
-            firebase_id = oppia_record.auth_id
+        if ok_records := oppia_record_set & firebase_record_set:
+            yield beam.TaggedOutput(TAG_OK, len(ok_records))
 
-            yield beam.TaggedOutput(
-                TAG_FIXABLE,
-                f'Oppia user ({user_id=!r}) linked to non-existent '
-                f'Firebase record ({firebase_id=!r})',
-            )
-        elif not oppia_record and firebase_record:
-            firebase_id = firebase_record.auth_id
-
-            yield beam.TaggedOutput(
-                TAG_FIXABLE,
-                f'Firebase record ({firebase_id=!r}) linked to non-existent '
-                'Oppia user',
-            )
-        elif oppia_record != firebase_record:
-            oppia_dict = dataclasses.asdict(oppia_record)
-            firebase_dict = dataclasses.asdict(firebase_record)
-
-            user_id = oppia_dict['user_id']
-            firebase_id = firebase_dict['auth_id']
-            inconsistent_props = ', '.join(
-                f'{prop!r} is {o!r} in Oppia but {f!r} in Firebase'
-                for prop in sorted(oppia_dict.keys() & firebase_dict.keys())
-                if (o := oppia_dict[prop]) != (f := firebase_dict[prop])
-            )
-
-            yield beam.TaggedOutput(
-                TAG_FIXABLE,
-                f'Oppia user ({user_id=!r}) is inconsistent with its '
-                f'Firebase record ({firebase_id=!r}): {inconsistent_props}',
-            )
-        else:
-            yield beam.TaggedOutput(TAG_CORRECT, 1)
+        yield from (
+            beam.TaggedOutput(TAG_DEL, record)
+            for record in firebase_record_set - oppia_record_set
+        )
+        yield from (
+            beam.TaggedOutput(TAG_ADD, record)
+            for record in oppia_record_set - firebase_record_set
+        )

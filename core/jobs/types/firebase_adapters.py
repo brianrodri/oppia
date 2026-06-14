@@ -34,7 +34,7 @@ auth_models, user_models = models.Registry.import_models(
 
 
 @dataclasses.dataclass(frozen=True, unsafe_hash=True, eq=False, kw_only=True)
-class StrongRecord:
+class FirebaseRecord:
     """Adapts Firebase records fetched directly from the Firebase Admin SDK."""
 
     auth_id: str
@@ -43,7 +43,7 @@ class StrongRecord:
 
     # Here we use object because Python requires `==` to work between ALL types.
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, StrongRecord):
+        if not isinstance(other, FirebaseRecord):
             return NotImplemented
         return (self.auth_id, self.email, self.disabled) == (
             other.auth_id,
@@ -63,40 +63,35 @@ class StrongRecord:
         )
 
     @staticmethod
-    def from_export(record: firebase_auth.ExportedUserRecord) -> 'StrongRecord':
-        """Creates a strong record corresponding to the ExportedUserRecord.
+    def from_export(
+        record: firebase_auth.ExportedUserRecord,
+    ) -> 'FirebaseRecord':
+        """Returns the record corresponding to the ExportedUserRecord.
 
         Args:
             record: firebase_auth.ExportedUserRecord. The record to convert.
 
         Returns:
-            firebase_adapters.StrongRecord. Holds the same auth_id, email, and
+            firebase_adapters.FirebaseRecord. Holds the same auth_id, email, and
             disabled values.
         """
-        return StrongRecord(
+        return FirebaseRecord(
             auth_id=record.uid, email=record.email, disabled=record.disabled
         )
-
-
-@dataclasses.dataclass(frozen=True, unsafe_hash=True, eq=False, kw_only=True)
-class WeakRecord(StrongRecord):
-    """Adapts Firebase records ASSUMED to exist based on Oppia's auth models."""
-
-    user_id: str = dataclasses.field(hash=False)
 
     @staticmethod
     def from_oppia_models(
         settings: user_models.UserSettingsModel,
         auth_details: auth_models.UserAuthDetailsModel,
-    ) -> 'WeakRecord | None':
-        """Returns WeakRecord from Oppia's user models if valid, else None.
+    ) -> 'FirebaseRecord | None':
+        """Returns FirebaseRecord from Oppia's user models if valid, else None.
 
         Args:
             settings: UserSettingsModel. User settings of a given user.
             auth_details: UserAuthDetailsModel. Auth details of a given user.
 
         Returns:
-            WeakRecord | None. A record if the given models are consistent with
+            FirebaseRecord | None. A record if the given models are consistent with
             each other, i.e. they have the same user id and same deleted status.
 
         Raises:
@@ -116,9 +111,8 @@ class WeakRecord(StrongRecord):
             )
         if auth_details.parent_user_id is not None:
             return None
-        return WeakRecord(
+        return FirebaseRecord(
             auth_id=auth_details.firebase_auth_id,
             email=settings.email,
             disabled=settings.deleted,
-            user_id=settings.id,
         )

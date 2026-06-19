@@ -259,14 +259,10 @@ class DeleteFirebaseRecords(
 class _ExportFirebaseRecords(beam.DoFn):
     """Exports all Firebase records directly from the Firebase server."""
 
-    def setup(self) -> None:
-        """Establishes a Firebase connection just before running `process`."""
-
-        firebase_auth_services.establish_firebase_connection()
-
     def process(self, _: None) -> abc.Iterable[firebase_domain.FirebaseRecord]:
         """Yields all of the records directly from Firebase."""
 
+        firebase_auth_services.establish_firebase_connection()
         yield from (
             firebase_domain.FirebaseRecord.from_export(user)
             for user in firebase_auth.list_users().iterate_all()

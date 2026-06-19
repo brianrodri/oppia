@@ -18,17 +18,12 @@
 
 from __future__ import annotations
 
-from unittest import mock
-
 from core.constants import constants
 from core.jobs import job_test_utils
 from core.jobs.io import firebase_io
 from core.jobs.types import firebase_domain, job_run_result
 from core.platform import models
-from core.platform.auth import (
-    firebase_auth_services,
-    firebase_auth_services_test,
-)
+from core.platform.auth import firebase_auth_services_test
 
 import apache_beam as beam
 
@@ -45,14 +40,6 @@ class GetRecordsDirectlyFromFirebaseTests(
     job_test_utils.JobTestBase,
     firebase_auth_services_test.FirebaseAuthServicesTestBase,
 ):
-    @mock.patch.object(firebase_auth_services, 'establish_firebase_connection')
-    def test_setup_calls_establish_firebase_connection(
-        self, establish_firebase_connection: mock.Mock
-    ) -> None:
-        firebase_io.GetRecordsDirectlyFromFirebase().setup()
-
-        establish_firebase_connection.assert_called_once_with()
-
     def test_get_with_no_firebase_users_returns_empty(self) -> None:
         self.assert_pcoll_empty(
             self.pipeline | firebase_io.GetRecordsDirectlyFromFirebase()
@@ -410,7 +397,7 @@ class CreateFirebaseRecordsTests(
                 [
                     job_run_result.JobRunResult(
                         stderr=(
-                            'CREATE ERROR: at index=[0]: uid=\'uid_a\' '
+                            "CREATE ERROR: at index=[0]: uid='uid_a' "
                             'already exists'
                         )
                     ),

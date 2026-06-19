@@ -406,16 +406,6 @@ class FirebaseBatchOperationInheritanceTests(unittest.TestCase):
         with self.assertRaisesRegex(NotImplementedError, 'run_batch_operation'):
             operation.run_batch_operation(['a'])
 
-    @mock.patch.object(firebase_auth_services, 'establish_firebase_connection')
-    def test_setup_calls_establish_firebase_connection(
-        self, establish_firebase_connection: mock.Mock
-    ) -> None:
-        TestBatchOperation(
-            lambda _: mock.Mock(failure_count=0, errors=[])
-        ).setup()
-
-        establish_firebase_connection.assert_called_once_with()
-
 
 TestBatchResult = (
     firebase_auth.DeleteUsersResult | firebase_auth.UserImportResult

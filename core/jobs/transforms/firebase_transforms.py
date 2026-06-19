@@ -232,13 +232,9 @@ class FirebaseBatchOperation(
 ):
     """Executes a batch operation against Firebase and returns the results."""
 
-    BATCH_LIMIT = 1000
     OK_TAG = 'OK'
     ERR_TAG = 'ERROR'
-
-    def setup(self) -> None:
-        """Establishes a Firebase connection just before running expand()."""
-        firebase_auth_services.establish_firebase_connection()
+    BATCH_LIMIT = 1000
 
     def expand(
         self, records: beam.PCollection[firebase_domain.FirebaseRecord]
@@ -248,7 +244,7 @@ class FirebaseBatchOperation(
             records
             | beam.Map(self.get_batch_input)
             | beam.combiners.ToList()
-            | beam.ParDo(self._yield_run_batch_operation_output).with_outputs(
+            | beam.FlatMap(self._yield_run_batch_operation_output).with_outputs(
                 self.OK_TAG,
                 self.ERR_TAG,
             )
@@ -261,14 +257,12 @@ class FirebaseBatchOperation(
     @abstract_base_classes.abstractmethod
     def get_batch_input(self, record: firebase_domain.FirebaseRecord) -> InputT:
         """Virtual function to extract the relevant FirebaseRecord fields."""
-
         del record
         raise NotImplementedError('Subclasses must implement get_batch_input()')
 
     @abstract_base_classes.abstractmethod
     def run_batch_operation(self, input_batch: list[InputT]) -> OutputT:
         """Virtual function to call a specific Firebase Admin SDK operation."""
-
         del input_batch
         raise NotImplementedError(
             'Subclasses must implement run_batch_operation()'
@@ -278,6 +272,8 @@ class FirebaseBatchOperation(
         self, inputs: list[InputT]
     ) -> abc.Iterator[pvalue.TaggedOutput]:
         """Common batch processing logic for Firebase Admin SDK operations."""
+
+        firebase_auth_services.establish_firebase_connection()
 
         input_iter = iter(inputs)
         input_offset = 0

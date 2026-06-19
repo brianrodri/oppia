@@ -30,7 +30,7 @@ import apache_beam as beam
 import firebase_admin.auth as firebase_auth
 import firebase_admin.exceptions as firebase_exceptions
 from apache_beam import pvalue
-from typing import Generic, TypeVar
+from typing import Generic, TypedDict, TypeVar
 
 InputT = TypeVar('InputT', bound=str | firebase_auth.ImportUserRecord)
 OutputT = TypeVar(
@@ -50,25 +50,35 @@ class DiffFirebaseRecords(beam.PTransform):  # type: ignore[misc]
     Firebase).
 
     Attributes:
-        TAG_OK: str. Tag to PCollection[int] that can be summed to find the
-            number of records present in both PCollections.
-        TAG_ADD: str. Tag to PCollection[FirebaseRecord] with the records that
-            are present in the expected records but absent from the actual ones.
-        TAG_DEL: str. Tag to PCollection[FirebaseRecord] with the records that
-            are absent from the expected records but present in the actual ones.
-        TAG_EMAIL_CONFLICT: str. Tag to PCollection[str] describing the Oppia
-            users that are sharing an email address; this violates the
-            assumption that each email should map to exactly one user.
-        TAG_AUTH_ID_CONFLICT: str. Tag to PCollection[str] describing the Oppia
-            users that are sharing a Firebase account ID; this violates the
-            assumption that each Firebase account maps to exactly one user.
+        TAG_OK: PCollection[int] that can be summed to find the number of
+            records present in both PCollections.
+        TAG_ADD: PCollection[FirebaseRecord] with the records that are present
+            in the expected records but absent from the actual ones.
+        TAG_DEL: PCollection[FirebaseRecord] with the records that are absent
+            from the expected records but present in the actual ones.
+        TAG_EMAIL_CONFLICT: PCollection[str] describing the Oppia users that are
+            sharing an email address; this violates the assumption that each
+            email should map to exactly one user.
+        TAG_AUTH_ID_CONFLICT: PCollection[str] describing the Oppia users that
+            are sharing a Firebase account ID; this violates the assumption that
+            each Firebase account maps to exactly one user.
     """
 
-    TAG_OK = 'OK'
-    TAG_ADD = 'ADD'
-    TAG_DEL = 'DEL'
-    TAG_EMAIL_CONFLICT = 'EMAIL_CONFLICT'
-    TAG_AUTH_ID_CONFLICT = 'AUTH_ID_CONFLICT'
+    class OutputDict(TypedDict):
+        """Mapping from each output tag to its PCollection."""
+
+        OK: beam.PCollection[int]
+        ADD: beam.PCollection[firebase_domain.FirebaseRecord]
+        DEL: beam.PCollection[firebase_domain.FirebaseRecord]
+        EMAIL_CONFLICT: beam.PCollection[str]
+        AUTH_ID_CONFLICT: beam.PCollection[str]
+
+    # NOTE: Tag values are taken from the runtime keys of OutputDict to keep
+    # them DRY. These MUST be kept in the same order to keep the mapping correct
+    # (verified with tests).
+    TAG_OK, TAG_ADD, TAG_DEL, TAG_EMAIL_CONFLICT, TAG_AUTH_ID_CONFLICT = (
+        OutputDict.__annotations__.keys()
+    )
 
     def __init__(
         self,
@@ -98,7 +108,7 @@ class DiffFirebaseRecords(beam.PTransform):  # type: ignore[misc]
             beam.PCollection[firebase_domain.FirebaseRecord],
             beam.PCollection[firebase_domain.FirebaseRecord],
         ],
-    ) -> dict[str, beam.PCollection]:
+    ) -> DiffFirebaseRecords.OutputDict:
         """Computes the diff between the input pair of Firebase records.
 
         Args:
@@ -109,11 +119,10 @@ class DiffFirebaseRecords(beam.PTransform):  # type: ignore[misc]
                 exported directly from Firebase).
 
         Returns:
-            dict. A dict mapping each tag (TAG_OK, TAG_ADD, TAG_DEL,
-            TAG_EMAIL_CONFLICT, TAG_AUTH_ID_CONFLICT) to its PCollection. The
-            tags encode the actions needed to bring the actual records in-sync
-            with the expected records, and all data-integrity conflicts found
-            which aren't actionable (by this job).
+            OutputDict. A mapping from each tag to its PCollection. The tags
+            encode the actions needed to bring the actual records in-sync with
+            the expected records, and all data-integrity conflicts found which
+            aren't actionable (by this job).
         """
 
         expected_records, actual_records = records
@@ -155,13 +164,13 @@ class DiffFirebaseRecords(beam.PTransform):  # type: ignore[misc]
             >> beam.MapTuple(self._format_auth_id_conflict)
         )
 
-        return {
-            self.TAG_OK: diff_outputs[self.TAG_OK],
-            self.TAG_ADD: diff_outputs[self.TAG_ADD],
-            self.TAG_DEL: diff_outputs[self.TAG_DEL],
-            self.TAG_EMAIL_CONFLICT: diff_outputs[self.TAG_EMAIL_CONFLICT],
-            self.TAG_AUTH_ID_CONFLICT: auth_id_conflicts,
-        }
+        return DiffFirebaseRecords.OutputDict(
+            OK=diff_outputs[self.TAG_OK],
+            ADD=diff_outputs[self.TAG_ADD],
+            DEL=diff_outputs[self.TAG_DEL],
+            EMAIL_CONFLICT=diff_outputs[self.TAG_EMAIL_CONFLICT],
+            AUTH_ID_CONFLICT=auth_id_conflicts,
+        )
 
     @classmethod
     def _yield_diffs(

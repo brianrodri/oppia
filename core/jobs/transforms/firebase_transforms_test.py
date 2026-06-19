@@ -24,7 +24,6 @@ from unittest import mock
 from core.jobs import job_test_utils
 from core.jobs.transforms import firebase_transforms
 from core.jobs.types import firebase_domain, job_run_result
-from core.platform.auth import firebase_auth_services
 
 import apache_beam as beam
 import firebase_admin.auth as firebase_auth

@@ -256,7 +256,8 @@ class DeleteFirebaseRecords(
         return firebase_auth.delete_users(uids)
 
 
-class _ExportFirebaseRecords(beam.DoFn):
+# TODO(#15613): Here we use MyPy ignore because Apache Beam lacks type hints.
+class _ExportFirebaseRecords(beam.DoFn):  # type: ignore[misc]
     """Exports all Firebase records directly from the Firebase server."""
 
     def process(self, _: None) -> abc.Iterable[firebase_domain.FirebaseRecord]:

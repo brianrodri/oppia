@@ -397,7 +397,7 @@ class CreateFirebaseRecordsTests(
                 [
                     job_run_result.JobRunResult(
                         stderr=(
-                            "CREATE ERROR: at index=[0]: uid='uid_a' "
+                            'CREATE ERROR: at index=[0]: uid=\'uid_a\' '
                             'already exists'
                         )
                     ),

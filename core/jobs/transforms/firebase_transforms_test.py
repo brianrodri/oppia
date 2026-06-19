@@ -24,6 +24,7 @@ from unittest import mock
 from core.jobs import job_test_utils
 from core.jobs.transforms import firebase_transforms
 from core.jobs.types import firebase_domain, job_run_result
+from core.platform.auth import firebase_auth_services
 
 import apache_beam as beam
 import firebase_admin.auth as firebase_auth
@@ -222,14 +223,30 @@ class DiffFirebaseRecordsTests(job_test_utils.PipelinedTestBase):
 class FirebaseBatchOperationTests(job_test_utils.PipelinedTestBase):
     """Pipeline tests for FirebaseBatchOperation using a "fake" subclass."""
 
+    def setUp(self) -> None:
+        super().setUp()
+        # The batch operation connects to Firebase, so mock out the connection
+        # to avoid establishing a real one during testing.
+        establish_connection_patcher = mock.patch.object(
+            firebase_auth_services, 'establish_firebase_connection'
+        )
+        self.establish_firebase_connection_mock = (
+            establish_connection_patcher.start()
+        )
+        self.addCleanup(establish_connection_patcher.stop)
+
     def test_expand_with_no_inputs_produces_no_output(self) -> None:
         self.assert_pcoll_empty(self.run_batch_operation([]))
+        # The batch operation connects to Firebase, so a connection is made.
+        self.establish_firebase_connection_mock.assert_called_once()
 
     def test_expand_with_successful_inputs_reports_ok_count(self) -> None:
         self.assert_pcoll_equal(
             self.run_batch_operation(['a', 'b', 'c']),
             [job_run_result.JobRunResult(stdout='OK: 3')],
         )
+        # The batch operation connects to Firebase, so a connection is made.
+        self.establish_firebase_connection_mock.assert_called_once()
 
     def test_expand_with_batch_value_error_reports_error(self) -> None:
         def raise_value_error(_: list[str]) -> TestBatchResult:
@@ -243,6 +260,8 @@ class FirebaseBatchOperationTests(job_test_utils.PipelinedTestBase):
                 ),
             ],
         )
+        # The batch operation connects to Firebase, so a connection is made.
+        self.establish_firebase_connection_mock.assert_called_once()
 
     def test_expand_with_batch_firebase_error_reports_error(self) -> None:
         def raise_firebase_error(_: list[str]) -> TestBatchResult:
@@ -256,6 +275,8 @@ class FirebaseBatchOperationTests(job_test_utils.PipelinedTestBase):
                 ),
             ],
         )
+        # The batch operation connects to Firebase, so a connection is made.
+        self.establish_firebase_connection_mock.assert_called_once()
 
     def test_expand_with_individual_failures_reports_each_error(self) -> None:
         errors = [
@@ -278,6 +299,8 @@ class FirebaseBatchOperationTests(job_test_utils.PipelinedTestBase):
                 ),
             ],
         )
+        # The batch operation connects to Firebase, so a connection is made.
+        self.establish_firebase_connection_mock.assert_called_once()
 
     def test_expand_with_mixed_success_and_individual_failures_reports_both(
         self,
@@ -296,6 +319,8 @@ class FirebaseBatchOperationTests(job_test_utils.PipelinedTestBase):
                 ),
             ],
         )
+        # The batch operation connects to Firebase, so a connection is made.
+        self.establish_firebase_connection_mock.assert_called_once()
 
     def test_expand_with_all_inputs_failed_produces_no_ok_count(
         self,
@@ -319,6 +344,8 @@ class FirebaseBatchOperationTests(job_test_utils.PipelinedTestBase):
                 ),
             ],
         )
+        # The batch operation connects to Firebase, so a connection is made.
+        self.establish_firebase_connection_mock.assert_called_once()
 
     def test_expand_with_inputs_exceeding_batch_limit_processes_each_batch(
         self,
@@ -345,6 +372,8 @@ class FirebaseBatchOperationTests(job_test_utils.PipelinedTestBase):
                     ),
                 ],
             )
+        # The batch operation connects to Firebase, so a connection is made.
+        self.establish_firebase_connection_mock.assert_called_once()
 
     def run_batch_operation(
         self,

@@ -176,8 +176,8 @@ class DiffFirebaseRecordsTests(job_test_utils.PipelinedTestBase):
 
     def run_diff(
         self,
-        actual: list[firebase_domain.FirebaseRecord],
         expected: list[firebase_domain.FirebaseRecord],
+        actual: list[firebase_domain.FirebaseRecord],
         keyed_user_ids_by_auth_id: dict[str, list[str]] | None = None,
     ) -> beam.PCollection[tuple[str, str | int]]:
         """Runs the diff and flattens the tagged outputs into one PCollection.
@@ -187,8 +187,8 @@ class DiffFirebaseRecordsTests(job_test_utils.PipelinedTestBase):
         corruption message for TAG_EMAIL_CONFLICT / TAG_AUTH_ID_CONFLICT.
 
         Args:
-            actual: list(FirebaseRecord). The "actual" (Oppia) records.
             expected: list(FirebaseRecord). The "expected" (Firebase) records.
+            actual: list(FirebaseRecord). The "actual" (Oppia) records.
             keyed_user_ids_by_auth_id: dict(str, list(str)). Maps each
                 firebase_auth_id to the Oppia user ID(s) that claim it, used to
                 build the side input. Defaults to an empty mapping when None.
@@ -205,8 +205,8 @@ class DiffFirebaseRecordsTests(job_test_utils.PipelinedTestBase):
             ]
         )
         diffs = (
-            self.pipeline | 'CreateActual' >> beam.Create(actual),
             self.pipeline | 'CreateExpected' >> beam.Create(expected),
+            self.pipeline | 'CreateActual' >> beam.Create(actual),
         ) | 'Compute diffs' >> firebase_transforms.DiffFirebaseRecords(
             auth_pairs=auth_pairs
         )

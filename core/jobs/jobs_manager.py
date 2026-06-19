@@ -125,6 +125,7 @@ def run_job(
         job.
 
     Raises:
+        ValueError. The parameterized_args defines service_account_email.
         RuntimeError. Failed to deploy given job to the Dataflow service.
     """
     job_name = job_class.__name__

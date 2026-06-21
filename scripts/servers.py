@@ -275,7 +275,33 @@ def managed_firebase_auth_emulator(
         common.wait_for_firebase_emulator_to_be_ready(
             feconf.FIREBASE_EMULATOR_PORT
         )
-        yield proc
+        try:
+            yield proc
+        finally:
+            # The Firebase CLI only performs a clean shutdown (which is what
+            # flushes `--export-on-exit`) when it receives a single SIGINT
+            # (CTRL-C). Letting managed_process send SIGTERM to the CLI's
+            # children first can corrupt the export and block the port, so we
+            # send SIGINT here and give the emulator time to export before
+            # falling back to terminate()/kill().
+            try:
+                proc.send_signal(signal.SIGINT)
+            except OSError:
+                # Raised when the process has already shut down, in which case
+                # we can return immediately.
+                return  # pylint: disable=lost-exception
+            else:
+                # Give the emulator 15 seconds to export and shut down after
+                # sending CTRL-C (SIGINT); the export can take a few seconds.
+                try:
+                    proc.wait(timeout=15)
+                except psutil.TimeoutExpired:
+                    # If the emulator fails to shut down, allow proc_context to
+                    # end it by calling terminate() and/or kill().
+                    logging.error(
+                        'Firebase emulator failed to shut down after 15 '
+                        'seconds.'
+                    )
 
 
 @contextlib.contextmanager
@@ -504,8 +530,8 @@ def managed_ng_build(
             )
         )
 
-        read_line_func: Callable[[], Optional[bytes]] = (
-            lambda: proc.stdout.readline() or None
+        read_line_func: Callable[[], Optional[bytes]] = lambda: (
+            proc.stdout.readline() or None
         )
         if watch_mode:
             for line in iter(read_line_func, None):
@@ -602,8 +628,8 @@ def managed_webpack_compiler(
             )
         )
 
-        read_line_func: Callable[[], Optional[bytes]] = (
-            lambda: proc.stdout.readline() or None
+        read_line_func: Callable[[], Optional[bytes]] = lambda: (
+            proc.stdout.readline() or None
         )
         if watch_mode:
             for line in iter(read_line_func, None):

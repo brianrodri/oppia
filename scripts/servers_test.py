@@ -467,12 +467,74 @@ class ManagedProcessTests(test_utils.TestBase):
             )
         )
 
-        self.exit_stack.enter_context(servers.managed_firebase_auth_emulator())
-        self.exit_stack.close()
+        proc = self.exit_stack.enter_context(
+            servers.managed_firebase_auth_emulator()
+        )
+        # The emulator shuts down cleanly in response to the SIGINT, so it
+        # exits before managed_process can terminate it. PopenStub reports a
+        # nonzero exit code for a signal-driven exit, which managed_process
+        # surfaces as an exception.
+        with self.assertRaisesRegex(
+            Exception,
+            'Process Firebase Emulator.* exited unexpectedly with exit code 1',
+        ):
+            self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
         self.assertIn('firebase', popen_calls[0].program_args)
         self.assertEqual(popen_calls[0].kwargs, {'shell': True})
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 0)
+        self.assertEqual(proc.kill_count, 0)
+
+    def test_managed_firebase_emulator_when_signals_are_rejected(self) -> None:
+        popen_calls = self.exit_stack.enter_context(self.swap_popen())
+        self.exit_stack.enter_context(
+            self.swap_to_always_return(
+                common, 'wait_for_firebase_emulator_to_be_ready'
+            )
+        )
+
+        proc = self.exit_stack.enter_context(
+            servers.managed_firebase_auth_emulator()
+        )
+        proc.reject_signal = True
+        # When the SIGINT is rejected, managed_process falls back to
+        # terminate(), which PopenStub treats as a graceful exit (returncode
+        # reset by wait_procs), so no exception is raised.
+        self.exit_stack.close()
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertIn('firebase', popen_calls[0].program_args)
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 1)
+        self.assertEqual(proc.kill_count, 0)
+
+    def test_managed_firebase_emulator_when_unresponsive(self) -> None:
+        popen_calls = self.exit_stack.enter_context(self.swap_popen())
+        self.exit_stack.enter_context(
+            self.swap_to_always_return(
+                common, 'wait_for_firebase_emulator_to_be_ready'
+            )
+        )
+
+        proc = self.exit_stack.enter_context(
+            servers.managed_firebase_auth_emulator()
+        )
+        proc.unresponsive = True
+        # An unresponsive emulator ignores both the SIGINT and the subsequent
+        # terminate(), forcing managed_process to kill() it.
+        with self.assertRaisesRegex(
+            Exception,
+            'Process Firebase Emulator.* exited unexpectedly with exit code 1',
+        ):
+            self.exit_stack.close()
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertIn('firebase', popen_calls[0].program_args)
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 1)
+        self.assertEqual(proc.kill_count, 1)
 
     def test_managed_cloud_datastore_emulator(self) -> None:
         popen_calls = self.exit_stack.enter_context(self.swap_popen())

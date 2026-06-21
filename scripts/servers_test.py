@@ -546,10 +546,19 @@ class ManagedProcessTests(test_utils.TestBase):
             self.swap_to_always_return(common, 'wait_for_port_to_be_in_use')
         )
 
-        self.exit_stack.enter_context(
+        proc = self.exit_stack.enter_context(
             servers.managed_cloud_datastore_emulator()
         )
-        self.exit_stack.close()
+        # The emulator shuts down cleanly in response to the SIGINT, so it
+        # exits before managed_process can terminate it. PopenStub reports a
+        # nonzero exit code for a signal-driven exit, which managed_process
+        # surfaces as an exception.
+        with self.assertRaisesRegex(
+            Exception,
+            'Process Cloud Datastore Emulator.* exited unexpectedly with exit '
+            'code 1',
+        ):
+            self.exit_stack.close()
 
         self.assertEqual(len(popen_calls), 1)
         self.assertIn(
@@ -557,6 +566,9 @@ class ManagedProcessTests(test_utils.TestBase):
         )
         self.assertNotIn('--no-store-on-disk', popen_calls[0].program_args)
         self.assertEqual(popen_calls[0].kwargs, {'shell': True})
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 0)
+        self.assertEqual(proc.kill_count, 0)
 
     def test_managed_cloud_datastore_emulator_creates_missing_data_dir(
         self,
@@ -570,13 +582,22 @@ class ManagedProcessTests(test_utils.TestBase):
             self.swap_to_always_return(common, 'wait_for_port_to_be_in_use')
         )
 
-        self.exit_stack.enter_context(
+        proc = self.exit_stack.enter_context(
             servers.managed_cloud_datastore_emulator()
         )
-        self.exit_stack.close()
+        with self.assertRaisesRegex(
+            Exception,
+            'Process Cloud Datastore Emulator.* exited unexpectedly with exit '
+            'code 1',
+        ):
+            self.exit_stack.close()
 
         self.assertEqual(rmtree_counter.times_called, 0)
         self.assertEqual(makedirs_counter.times_called, 1)
+        # SIGINT alone shut the emulator down; no terminate()/kill() fallback.
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 0)
+        self.assertEqual(proc.kill_count, 0)
 
     def test_managed_cloud_datastore_emulator_clears_data_dir(self) -> None:
         popen_calls = self.exit_stack.enter_context(self.swap_popen())
@@ -588,15 +609,24 @@ class ManagedProcessTests(test_utils.TestBase):
             self.swap_to_always_return(common, 'wait_for_port_to_be_in_use')
         )
 
-        self.exit_stack.enter_context(
+        proc = self.exit_stack.enter_context(
             servers.managed_cloud_datastore_emulator(clear_datastore=True)
         )
-        self.exit_stack.close()
+        with self.assertRaisesRegex(
+            Exception,
+            'Process Cloud Datastore Emulator.* exited unexpectedly with exit '
+            'code 1',
+        ):
+            self.exit_stack.close()
 
         self.assertIn('--no-store-on-disk', popen_calls[0].program_args)
 
         self.assertEqual(rmtree_counter.times_called, 1)
         self.assertEqual(makedirs_counter.times_called, 1)
+        # SIGINT alone shut the emulator down; no terminate()/kill() fallback.
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 0)
+        self.assertEqual(proc.kill_count, 0)
 
     def test_managed_cloud_datastore_emulator_acknowledges_data_dir(
         self,
@@ -610,15 +640,76 @@ class ManagedProcessTests(test_utils.TestBase):
             self.swap_to_always_return(common, 'wait_for_port_to_be_in_use')
         )
 
-        self.exit_stack.enter_context(
+        proc = self.exit_stack.enter_context(
             servers.managed_cloud_datastore_emulator(clear_datastore=False)
         )
-        self.exit_stack.close()
+        with self.assertRaisesRegex(
+            Exception,
+            'Process Cloud Datastore Emulator.* exited unexpectedly with exit '
+            'code 1',
+        ):
+            self.exit_stack.close()
 
         self.assertNotIn('--no-store-on-disk', popen_calls[0].program_args)
 
         self.assertEqual(rmtree_counter.times_called, 0)
         self.assertEqual(makedirs_counter.times_called, 0)
+        # SIGINT alone shut the emulator down; no terminate()/kill() fallback.
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 0)
+        self.assertEqual(proc.kill_count, 0)
+
+    def test_managed_cloud_datastore_emulator_when_signals_are_rejected(
+        self,
+    ) -> None:
+        popen_calls = self.exit_stack.enter_context(self.swap_popen())
+        self.exit_stack.enter_context(
+            self.swap_managed_cloud_datastore_emulator_io_operations(True)
+        )
+        self.exit_stack.enter_context(
+            self.swap_to_always_return(common, 'wait_for_port_to_be_in_use')
+        )
+
+        proc = self.exit_stack.enter_context(
+            servers.managed_cloud_datastore_emulator()
+        )
+        proc.reject_signal = True
+        # When the SIGINT is rejected, managed_process falls back to
+        # terminate(), which PopenStub treats as a graceful exit, so no
+        # exception is raised.
+        self.exit_stack.close()
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 1)
+        self.assertEqual(proc.kill_count, 0)
+
+    def test_managed_cloud_datastore_emulator_when_unresponsive(self) -> None:
+        popen_calls = self.exit_stack.enter_context(self.swap_popen())
+        self.exit_stack.enter_context(
+            self.swap_managed_cloud_datastore_emulator_io_operations(True)
+        )
+        self.exit_stack.enter_context(
+            self.swap_to_always_return(common, 'wait_for_port_to_be_in_use')
+        )
+
+        proc = self.exit_stack.enter_context(
+            servers.managed_cloud_datastore_emulator()
+        )
+        proc.unresponsive = True
+        # An unresponsive emulator ignores both the SIGINT and the subsequent
+        # terminate(), forcing managed_process to kill() it.
+        with self.assertRaisesRegex(
+            Exception,
+            'Process Cloud Datastore Emulator.* exited unexpectedly with exit '
+            'code 1',
+        ):
+            self.exit_stack.close()
+
+        self.assertEqual(len(popen_calls), 1)
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 1)
+        self.assertEqual(proc.kill_count, 1)
 
     def test_managed_dev_appserver(self) -> None:
         popen_calls = self.exit_stack.enter_context(self.swap_popen())

@@ -417,6 +417,33 @@ def managed_cloud_datastore_emulator(
             )
         )
 
+        def shut_down_with_sigint() -> None:
+            """Stops the emulator with SIGINT, its documented Ctrl-C shutdown.
+
+            The emulator is launched through the gcloud wrapper, which spawns
+            the actual Java emulator as a child. Sending SIGTERM (as
+            managed_process does by default) can leave that Java process
+            orphaned, so we send SIGINT and wait for a clean exit first.
+            """
+            try:
+                proc.send_signal(signal.SIGINT)
+            except OSError:
+                # The process has already shut down.
+                return
+            try:
+                proc.wait(timeout=15)
+            except psutil.TimeoutExpired:
+                logging.error(
+                    'Cloud Datastore emulator failed to shut down after 15 '
+                    'seconds.'
+                )
+
+        # Registered right after the process starts so that -- because
+        # ExitStack unwinds in LIFO order -- this runs after the swap_env
+        # contexts below but before managed_process falls back to
+        # terminate()/kill() on exit.
+        stack.callback(shut_down_with_sigint)
+
         common.wait_for_port_to_be_in_use(feconf.CLOUD_DATASTORE_EMULATOR_PORT)
 
         # Environment variables required to communicate with the emulator.

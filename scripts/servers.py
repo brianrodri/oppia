@@ -105,33 +105,45 @@ def managed_process(
     finally:
         proc_name = get_proc_info(popen_proc)
         print('Stopping %s...' % proc_name)
-        procs_still_alive = [popen_proc]
+
+        def log_proc_ended(proc: psutil.Process) -> None:
+            """Logs that a process has ended (wait_procs callback)."""
+            logging.info('%s has already ended.' % get_proc_info(proc))
 
         try:
             if popen_proc.is_running():
                 # Children must be terminated before the parent, otherwise they
                 # may become zombie processes.
-                procs_still_alive = popen_proc.children(recursive=True) + [
-                    popen_proc
-                ]
+                procs = popen_proc.children(recursive=True) + [popen_proc]
+            else:
+                procs = [popen_proc]
 
             procs_to_kill = []
-            for proc in procs_still_alive:
-                if proc.is_running():
-                    logging.info('Terminating %s...' % get_proc_info(proc))
-                    proc.terminate()
-                    procs_to_kill.append(proc)
-                else:
-                    logging.info('%s has already ended.' % get_proc_info(proc))
+            for proc in procs:
+                try:
+                    if not proc.is_running():
+                        log_proc_ended(proc)
+                    else:
+                        logging.info('Terminating %s...' % get_proc_info(proc))
+                        proc.terminate()
+                        procs_to_kill.append(proc)
+                except psutil.NoSuchProcess:
+                    # The process ended between the is_running() check and the
+                    # terminate() call. Handle it like any other ended process
+                    # rather than aborting cleanup of its siblings.
+                    log_proc_ended(proc)
 
-            procs_gone, procs_still_alive = psutil.wait_procs(
-                procs_to_kill, timeout=timeout_secs
+            # Passing a callback lets psutil report each process as it exits,
+            # instead of reconciling the gone/alive lists by hand afterwards.
+            _, procs_still_alive = psutil.wait_procs(
+                procs_to_kill, timeout=timeout_secs, callback=log_proc_ended
             )
             for proc in procs_still_alive:
-                logging.warning('Forced to kill %s!' % get_proc_info(proc))
-                proc.kill()
-            for proc in procs_gone:
-                logging.info('%s has already ended.' % get_proc_info(proc))
+                try:
+                    logging.warning('Forced to kill %s!' % get_proc_info(proc))
+                    proc.kill()
+                except psutil.NoSuchProcess:
+                    log_proc_ended(proc)
         except Exception:
             # NOTE: Raising an exception while exiting a context manager is bad
             # practice, so we log and suppress exceptions instead.

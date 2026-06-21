@@ -400,6 +400,38 @@ class ManagedProcessTests(test_utils.TestBase):
             manager_should_have_sent_kill_signal=False,
         )
 
+    def test_continues_cleanup_when_a_process_disappears_mid_terminate(
+        self,
+    ) -> None:
+        self.exit_stack.enter_context(self.swap_popen(num_children=3))
+        logs = self.exit_stack.enter_context(self.capture_logging())
+
+        proc = self.exit_stack.enter_context(
+            servers.managed_process(['a'], timeout_secs=10)
+        )
+        children = proc.children()
+
+        def raise_no_such_process() -> None:
+            """Mocks terminate() on a process that has already disappeared."""
+            raise psutil.NoSuchProcess(children[0].pid)
+
+        # Simulate the first child dying between the is_running() check and the
+        # terminate() call, so that terminate() raises NoSuchProcess.
+        setattr(children[0], 'terminate', raise_no_such_process)
+
+        # The vanished process must not abort cleanup of its siblings, and the
+        # context manager must not raise.
+        self.exit_stack.close()
+
+        # Every other process is still terminated as usual.
+        for sibling in children[1:] + [proc]:
+            self.assert_proc_was_managed_as_expected(logs, sibling.pid)
+        # The disappearance is handled quietly, not surfaced as a failure.
+        self.assertFalse(
+            any('Failed to stop' in msg for msg in logs),
+            msg='Cleanup should not report a failure, but got: %r' % logs,
+        )
+
     def test_raise_when_process_errors(self) -> None:
         self.exit_stack.enter_context(self.swap_popen())
         self.exit_stack.enter_context(

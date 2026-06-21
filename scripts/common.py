@@ -113,10 +113,6 @@ REDIS_SERVER_PATH = os.path.join(
 REDIS_CLI_PATH = os.path.join(
     OPPIA_TOOLS_DIR, 'redis-cli-%s' % REDIS_CLI_VERSION, 'src', 'redis-cli'
 )
-# Directory for storing/fetching data related to the Cloud Datastore emulator.
-CLOUD_DATASTORE_EMULATOR_DATA_DIR = os.path.join(
-    CURR_DIR, os.pardir, 'cloud_datastore_emulator_cache'
-)
 # Directory for storing/fetching data related to the Firebase emulator.
 FIREBASE_EMULATOR_CACHE_DIR = os.path.join(
     CURR_DIR, os.pardir, 'firebase_emulator_cache'

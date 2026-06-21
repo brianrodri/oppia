@@ -367,13 +367,19 @@ def managed_elasticsearch_dev_server() -> Iterator[psutil.Process]:
 
 @contextlib.contextmanager
 def managed_cloud_datastore_emulator(
-    clear_datastore: bool = False,
+    clear_datastore: bool = False,  # pylint: disable=unused-argument
 ) -> Iterator[psutil.Process]:
     """Returns a context manager for the Cloud Datastore emulator.
 
+    This runs the Firestore emulator in Datastore mode, which replaces the
+    deprecated standalone Cloud Datastore emulator. See
+    https://cloud.google.com/datastore/docs/emulator.
+
     Args:
-        clear_datastore: bool. Whether to delete the datastore's config and data
-            before starting the emulator.
+        clear_datastore: bool. Retained for API compatibility. The Firestore
+            emulator in Datastore mode is ephemeral -- it does not persist data
+            to disk -- so the datastore always starts empty regardless of this
+            flag.
 
     Yields:
         psutil.Process. The emulator process.
@@ -384,34 +390,16 @@ def managed_cloud_datastore_emulator(
     )
     emulator_args = [
         common.GCLOUD_PATH,
-        'beta',
         'emulators',
-        'datastore',
+        'firestore',
         'start',
-        '--project',
-        common.DEV_PROJECT_ID,
-        '--data-dir',
-        common.CLOUD_DATASTORE_EMULATOR_DATA_DIR,
+        '--database-mode=datastore-mode',
         '--host-port',
         emulator_hostport,
-        '--consistency=1.0',
         '--quiet',
     ]
 
-    if clear_datastore:
-        emulator_args.append('--no-store-on-disk')
-
     with contextlib.ExitStack() as stack:
-        data_dir_exists = os.path.exists(
-            common.CLOUD_DATASTORE_EMULATOR_DATA_DIR
-        )
-        if clear_datastore and data_dir_exists:
-            # Replace it with an empty directory.
-            shutil.rmtree(common.CLOUD_DATASTORE_EMULATOR_DATA_DIR)
-            os.makedirs(common.CLOUD_DATASTORE_EMULATOR_DATA_DIR)
-        elif not data_dir_exists:
-            os.makedirs(common.CLOUD_DATASTORE_EMULATOR_DATA_DIR)
-
         # OK to use shell=True here because we are passing string literals and
         # constants, so there is no risk of a shell-injection attack.
         #

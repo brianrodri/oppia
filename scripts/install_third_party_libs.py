@@ -274,7 +274,7 @@ def install_gcloud_sdk() -> None:
                 'components',
                 'install',
                 'beta',
-                'cloud-datastore-emulator',
+                'cloud-firestore-emulator',
                 'app-engine-python',
                 'app-engine-python-extras',
                 '--quiet',

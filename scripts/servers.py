@@ -53,6 +53,7 @@ def managed_process(
     shell: bool = False,
     timeout_secs: int = 60,
     raise_on_nonzero_exit: bool = True,
+    graceful_shutdown_signal: Optional[int] = None,
     **popen_kwargs: Any,
 ) -> Iterator[psutil.Process]:
     """Context manager for starting and stopping a process gracefully.
@@ -76,6 +77,11 @@ def managed_process(
         raise_on_nonzero_exit: bool. If True, raise an Exception when the
             managed process has a nonzero exit code. If False, no Exception is
             raised, and it is the caller's responsibility to handle the error.
+        graceful_shutdown_signal: int|None. If provided, this signal (e.g.
+            signal.SIGINT) is sent to the process first, giving it a chance to
+            shut down cleanly before the manager falls back to terminating and
+            then killing it. Used for processes -- such as emulators -- whose
+            documented clean shutdown is Ctrl-C rather than SIGTERM.
         **popen_kwargs: dict(str: *). Same kwargs as `subprocess.Popen`.
 
     Yields:
@@ -109,6 +115,23 @@ def managed_process(
         def log_proc_ended(proc: psutil.Process) -> None:
             """Logs that a process has ended (wait_procs callback)."""
             logging.info('%s has already ended.' % get_proc_info(proc))
+
+        if graceful_shutdown_signal is not None and popen_proc.is_running():
+            # Give the process a chance to shut down cleanly in response to its
+            # preferred signal (e.g. SIGINT) before we terminate/kill it.
+            try:
+                popen_proc.send_signal(graceful_shutdown_signal)
+            except OSError:
+                # The process has already shut down.
+                pass
+            else:
+                try:
+                    popen_proc.wait(timeout=timeout_secs)
+                except psutil.TimeoutExpired:
+                    logging.error(
+                        '%s did not shut down after the graceful shutdown '
+                        'signal; escalating to terminate/kill.' % proc_name
+                    )
 
         try:
             if popen_proc.is_running():
@@ -277,8 +300,16 @@ def managed_firebase_auth_emulator(
 
     # OK to use shell=True here because we are passing string literals and
     # constants, so there is no risk of a shell-injection attack.
+    #
+    # The Firebase CLI only performs a clean shutdown (which is what flushes
+    # `--export-on-exit`) when it receives a single SIGINT (CTRL-C). Letting
+    # managed_process send SIGTERM to the CLI's children first can corrupt the
+    # export and block the port, so we ask it to shut down with SIGINT instead.
     proc_context = managed_process(
-        emulator_args, human_readable_name='Firebase Emulator', shell=True
+        emulator_args,
+        human_readable_name='Firebase Emulator',
+        shell=True,
+        graceful_shutdown_signal=signal.SIGINT,
     )
     with proc_context as proc:
         # Verify that the emulator is actually responding to HTTP requests, not
@@ -287,33 +318,7 @@ def managed_firebase_auth_emulator(
         common.wait_for_firebase_emulator_to_be_ready(
             feconf.FIREBASE_EMULATOR_PORT
         )
-        try:
-            yield proc
-        finally:
-            # The Firebase CLI only performs a clean shutdown (which is what
-            # flushes `--export-on-exit`) when it receives a single SIGINT
-            # (CTRL-C). Letting managed_process send SIGTERM to the CLI's
-            # children first can corrupt the export and block the port, so we
-            # send SIGINT here and give the emulator time to export before
-            # falling back to terminate()/kill().
-            try:
-                proc.send_signal(signal.SIGINT)
-            except OSError:
-                # Raised when the process has already shut down, in which case
-                # we can return immediately.
-                return  # pylint: disable=lost-exception
-            else:
-                # Give the emulator 15 seconds to export and shut down after
-                # sending CTRL-C (SIGINT); the export can take a few seconds.
-                try:
-                    proc.wait(timeout=15)
-                except psutil.TimeoutExpired:
-                    # If the emulator fails to shut down, allow proc_context to
-                    # end it by calling terminate() and/or kill().
-                    logging.error(
-                        'Firebase emulator failed to shut down after 15 '
-                        'seconds.'
-                    )
+        yield proc
 
 
 @contextlib.contextmanager
@@ -409,40 +414,18 @@ def managed_cloud_datastore_emulator(
 
         # OK to use shell=True here because we are passing string literals and
         # constants, so there is no risk of a shell-injection attack.
+        #
+        # The emulator is launched through the gcloud wrapper, which spawns the
+        # actual Java emulator as a child. Its documented shutdown is Ctrl-C
+        # (SIGINT); sending SIGTERM can leave the Java process orphaned.
         proc = stack.enter_context(
             managed_process(
                 emulator_args,
                 human_readable_name='Cloud Datastore Emulator',
                 shell=True,
+                graceful_shutdown_signal=signal.SIGINT,
             )
         )
-
-        def shut_down_with_sigint() -> None:
-            """Stops the emulator with SIGINT, its documented Ctrl-C shutdown.
-
-            The emulator is launched through the gcloud wrapper, which spawns
-            the actual Java emulator as a child. Sending SIGTERM (as
-            managed_process does by default) can leave that Java process
-            orphaned, so we send SIGINT and wait for a clean exit first.
-            """
-            try:
-                proc.send_signal(signal.SIGINT)
-            except OSError:
-                # The process has already shut down.
-                return
-            try:
-                proc.wait(timeout=15)
-            except psutil.TimeoutExpired:
-                logging.error(
-                    'Cloud Datastore emulator failed to shut down after 15 '
-                    'seconds.'
-                )
-
-        # Registered right after the process starts so that -- because
-        # ExitStack unwinds in LIFO order -- this runs after the swap_env
-        # contexts below but before managed_process falls back to
-        # terminate()/kill() on exit.
-        stack.callback(shut_down_with_sigint)
 
         common.wait_for_port_to_be_in_use(feconf.CLOUD_DATASTORE_EMULATOR_PORT)
 
@@ -776,35 +759,17 @@ def managed_portserver() -> Iterator[psutil.Process]:
         common.PORTSERVER_SOCKET_FILEPATH,
     ]
     # OK to use shell=True here because we are passing string literals and
-    # constants, so there is no risk of a shell-injection attack.
+    # constants, so there is no risk of a shell-injection attack. The portserver
+    # is configured to shut down cleanly upon receiving SIGINT.
     proc_context = managed_process(
-        portserver_args, human_readable_name='Portserver', shell=True
+        portserver_args,
+        human_readable_name='Portserver',
+        shell=True,
+        graceful_shutdown_signal=signal.SIGINT,
     )
 
     with proc_context as proc:
-        try:
-            yield proc
-        finally:
-            # Before exiting the proc_context, try to end the process with
-            # SIGINT. The portserver is configured to shut down cleanly upon
-            # receiving this signal.
-            try:
-                proc.send_signal(signal.SIGINT)
-            except OSError:
-                # Raises when the process has already shutdown, in which case we
-                # can just return immediately.
-                return  # pylint: disable=lost-exception
-            else:
-                # Otherwise, give the portserver 10 seconds to shut down after
-                # sending CTRL-C (SIGINT).
-                try:
-                    proc.wait(timeout=10)
-                except psutil.TimeoutExpired:
-                    # If the server fails to shut down, allow proc_context to
-                    # end it by calling terminate() and/or kill().
-                    logging.error(
-                        'Portserver failed to shut down after 10 seconds.'
-                    )
+        yield proc
 
 
 @contextlib.contextmanager

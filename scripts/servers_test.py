@@ -432,6 +432,48 @@ class ManagedProcessTests(test_utils.TestBase):
             msg='Cleanup should not report a failure, but got: %r' % logs,
         )
 
+    def test_sends_graceful_shutdown_signal_before_terminating(self) -> None:
+        self.exit_stack.enter_context(self.swap_popen())
+
+        proc = self.exit_stack.enter_context(
+            servers.managed_process(
+                ['a'],
+                timeout_secs=10,
+                graceful_shutdown_signal=signal.SIGINT,
+            )
+        )
+        # The process exits in response to the signal, so it is gone before the
+        # manager would terminate it.
+        with self.assertRaisesRegex(
+            Exception, 'Process .* exited unexpectedly with exit code 1'
+        ):
+            self.exit_stack.close()
+
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 0)
+        self.assertEqual(proc.kill_count, 0)
+
+    def test_escalates_when_graceful_shutdown_signal_is_ignored(self) -> None:
+        self.exit_stack.enter_context(self.swap_popen(unresponsive=True))
+
+        proc = self.exit_stack.enter_context(
+            servers.managed_process(
+                ['a'],
+                timeout_secs=10,
+                graceful_shutdown_signal=signal.SIGINT,
+            )
+        )
+        # The process ignores the signal, so the manager escalates to
+        # terminate() and finally kill().
+        with self.assertRaisesRegex(
+            Exception, 'Process .* exited unexpectedly with exit code 1'
+        ):
+            self.exit_stack.close()
+
+        self.assertEqual(proc.signals_received, [signal.SIGINT])
+        self.assertEqual(proc.terminate_count, 1)
+        self.assertEqual(proc.kill_count, 1)
+
     def test_raise_when_process_errors(self) -> None:
         self.exit_stack.enter_context(self.swap_popen())
         self.exit_stack.enter_context(

@@ -692,7 +692,7 @@ class Collection:
         # remove the 'id' key from collection_dict because TypeDicts are
         # not compatible with dict comprehensions.
         # Reference:
-        # https://mypy-play.net/?mypy=latest&python=3.10&flags=strict%2Cdisallow-any-expr&gist=3b3315d29c3269b172f29d39052591d7
+        # https://mypy-play.net/?mypy=latest&python=3.14&flags=strict%2Cdisallow-any-expr&gist=3b3315d29c3269b172f29d39052591d7
         del collection_dict['id']  # type: ignore[misc]
 
         return utils.yaml_from_dict(collection_dict)

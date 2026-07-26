@@ -3027,9 +3027,9 @@ class QuoteConventionChecker(
                 continue
 
             try:
-                delimiter = string_utils._get_quote_delimiter(
+                delimiter = string_utils._get_quote_delimiter(  # pylint: disable=protected-access
                     token
-                )  # pylint: disable=protected-access
+                )
             except ValueError:
                 continue
 
@@ -3040,16 +3040,16 @@ class QuoteConventionChecker(
                         line=position[0],
                         args=(delimiter * 3,),
                     )
-            elif string_utils._is_long_string(
+            elif string_utils._is_long_string(  # pylint: disable=protected-access
                 token
-            ):  # pylint: disable=protected-access
+            ):
                 if delimiter != '"':
                     self.add_message(
                         'invalid-triple-quote',
                         line=position[0],
                         args=(delimiter * 3,),
                     )
-            elif delimiter != "'":
+            elif delimiter != '\'':
                 self.add_message(
                     'invalid-string-quote',
                     line=position[0],

@@ -5005,7 +5005,7 @@ class QuoteConventionCheckerTests(unittest.TestCase):
             )
 
     def test_single_quoted_short_string_is_allowed(self) -> None:
-        self._assert_messages("x = 'single'\n")
+        self._assert_messages('x = \'single\'\n')
 
     def test_double_quoted_short_string_is_flagged(self) -> None:
         self._assert_messages(
@@ -5028,7 +5028,7 @@ class QuoteConventionCheckerTests(unittest.TestCase):
         )
 
     def test_single_quoted_string_with_escaped_quote_is_allowed(self) -> None:
-        self._assert_messages("x = 'it\\'s'\n")
+        self._assert_messages('x = \'it\\\'s\'\n')
 
     def test_prefixed_double_quoted_string_is_flagged(self) -> None:
         self._assert_messages(
@@ -5043,9 +5043,9 @@ class QuoteConventionCheckerTests(unittest.TestCase):
 
     def test_single_quoted_triple_string_is_flagged(self) -> None:
         self._assert_messages(
-            "x = '''triple'''\n",
+            'x = \'\'\'triple\'\'\'\n',
             testutils.MessageTest(
-                msg_id='invalid-triple-quote', line=1, args=("'''",)
+                msg_id='invalid-triple-quote', line=1, args=('\'\'\'',)
             ),
         )
 
@@ -5064,9 +5064,9 @@ class QuoteConventionCheckerTests(unittest.TestCase):
 
     def test_single_quoted_module_docstring_is_flagged(self) -> None:
         self._assert_messages(
-            "'''Module docstring.'''\n",
+            '\'\'\'Module docstring.\'\'\'\n',
             testutils.MessageTest(
-                msg_id='invalid-docstring-quote', line=1, args=("'''",)
+                msg_id='invalid-docstring-quote', line=1, args=('\'\'\'',)
             ),
         )
 
@@ -5093,21 +5093,23 @@ class QuoteConventionCheckerTests(unittest.TestCase):
             '#\n'
             '# Copyright 2018 The Oppia Authors.\n'
             '\n'
-            "'''File overview docstring.'''\n"
+            '\'\'\'File overview docstring.\'\'\'\n'
             '\n'
             'import os\n',
             testutils.MessageTest(
-                msg_id='invalid-docstring-quote', line=5, args=("'''",)
+                msg_id='invalid-docstring-quote', line=5, args=('\'\'\'',)
             ),
         )
 
     def test_single_quoted_function_docstring_is_flagged(self) -> None:
         self._assert_messages(
-            'def foo():\n'
-            "    '''Function docstring.'''\n"
-            '    return None\n',
+            (
+                'def foo():\n'
+                '    \'\'\'Function docstring.\'\'\'\n'
+                '    return None\n'
+            ),
             testutils.MessageTest(
-                msg_id='invalid-docstring-quote', line=2, args=("'''",)
+                msg_id='invalid-docstring-quote', line=2, args=('\'\'\'',)
             ),
         )
 
@@ -5117,20 +5119,24 @@ class QuoteConventionCheckerTests(unittest.TestCase):
         # A triple-quoted string that is not the first statement is a plain
         # triple-quoted string, not a docstring.
         self._assert_messages(
-            'def foo():\n' '    x = 1\n' "    return '''not a docstring'''\n",
+            (
+                'def foo():\n'
+                '    x = 1\n'
+                '    return \'\'\'not a docstring\'\'\'\n'
+            ),
             testutils.MessageTest(
-                msg_id='invalid-triple-quote', line=3, args=("'''",)
+                msg_id='invalid-triple-quote', line=3, args=('\'\'\'',)
             ),
         )
 
     def test_multiple_violations_are_all_reported(self) -> None:
         self._assert_messages(
-            'x = "double"\n' "y = '''triple'''\n",
+            'x = "double"\ny = \'\'\'triple\'\'\'\n',
             testutils.MessageTest(
                 msg_id='invalid-string-quote', line=1, args=('"',)
             ),
             testutils.MessageTest(
-                msg_id='invalid-triple-quote', line=2, args=("'''",)
+                msg_id='invalid-triple-quote', line=2, args=('\'\'\'',)
             ),
         )
 

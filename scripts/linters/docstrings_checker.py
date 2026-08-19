@@ -44,7 +44,7 @@ def get_setters_property_name(
     """Get the name of the property that the given node is a setter for.
 
     Args:
-        node: astroid.nodes.FunctionDef. The node with the property name.
+        node: astroid.nodes.FunctionDef. The node to get the property name for.
 
     Returns:
         str|None. The name of the property that the node is a setter for,
@@ -68,11 +68,11 @@ def get_setters_property(
     """Get the property node for the given setter node.
 
     Args:
-        node: astroid.nodes.FunctionDef. The node with the property.
+        node: astroid.nodes.FunctionDef. The node to get the property for.
 
     Returns:
-        astroid.nodes.FunctionDef|None. The node relating to the property
-        of the given setter node, or None if one could not be found.
+        astroid.nodes.FunctionDef|None. The node relating to the property of
+        the given setter node, or None if one could not be found.
     """
     setters_property = None
 
@@ -172,8 +172,8 @@ def docstringify(
     as defined in the pylint library.
 
     Args:
-        docstring: astroid.nodes.Const | None. Docstring for a particular
-            class or function.
+        docstring: astroid.nodes.Const | None. Docstring for a particular class
+            or function.
 
     Returns:
         Docstring. Pylint Docstring class instance representing

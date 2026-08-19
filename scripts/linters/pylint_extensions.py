@@ -511,9 +511,7 @@ class DocstringParameterChecker(checkers.BaseChecker):
     def check_typeinfo(
         self,
         node: astroid.nodes.FunctionDef,
-        node_doc: (
-            _check_docs_utils.Docstring | _check_docs_utils.GoogleDocstring
-        ),
+        node_doc: _check_docs_utils.Docstring,
     ) -> None:
         """Checks whether all parameters in a function definition are
         properly formatted.
@@ -521,8 +519,8 @@ class DocstringParameterChecker(checkers.BaseChecker):
         Args:
             node: astroid.nodes.FunctionDef. Node for a function or
                 method definition in the AST.
-            node_doc: Docstring|GoogleDocstring. Pylint Docstring class instance
-                representing a node's docstring.
+            node_doc: Docstring. Pylint Docstring class instance representing
+                a node's docstring.
         """
         # The regexes are taken from the pylint codebase and are modified
         # according to our needs. Link: https://github.com/PyCQA/pylint/blob/

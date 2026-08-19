@@ -380,7 +380,7 @@ class ExplorationSummaryQueriesUnitTests(ExplorationServicesUnitTests):
 
     def test_get_exploration_summaries_with_no_query(self) -> None:
         # An empty query should return all explorations.
-        (exp_ids, search_offset) = (
+        exp_ids, search_offset = (
             exp_services.get_exploration_ids_matching_query('', [], [])
         )
         self.assertEqual(
@@ -541,7 +541,7 @@ class ExplorationSummaryQueriesUnitTests(ExplorationServicesUnitTests):
             found_exp_ids = []
 
             # Page 1: 3 initial explorations.
-            (exp_ids, search_offset) = (
+            exp_ids, search_offset = (
                 exp_services.get_exploration_ids_matching_query('', [], [])
             )
             self.assertEqual(len(exp_ids), 3)
@@ -549,7 +549,7 @@ class ExplorationSummaryQueriesUnitTests(ExplorationServicesUnitTests):
             found_exp_ids += exp_ids
 
             # Page 2: 3 more explorations.
-            (exp_ids, search_offset) = (
+            exp_ids, search_offset = (
                 exp_services.get_exploration_ids_matching_query(
                     '', [], [], offset=search_offset
                 )
@@ -559,7 +559,7 @@ class ExplorationSummaryQueriesUnitTests(ExplorationServicesUnitTests):
             found_exp_ids += exp_ids
 
             # Page 3: 1 final exploration.
-            (exp_ids, search_offset) = (
+            exp_ids, search_offset = (
                 exp_services.get_exploration_ids_matching_query(
                     '', [], [], offset=search_offset
                 )
@@ -615,7 +615,7 @@ class ExplorationSummaryQueriesUnitTests(ExplorationServicesUnitTests):
             exp_services.delete_exploration(self.owner_id, self.EXP_ID_1)
 
         with logging_swap, search_results_page_size_swap, max_iterations_swap:
-            (exp_ids, _) = exp_services.get_exploration_ids_matching_query(
+            exp_ids, _ = exp_services.get_exploration_ids_matching_query(
                 '', [], []
             )
 
@@ -2281,8 +2281,7 @@ class ExplorationYamlImportingTests(test_utils.GenericTestBase):
 
     def test_cannot_load_yaml_with_no_schema_version(self) -> None:
         yaml_with_no_schema_version = (
-            (
-                """
+            ("""
         author_notes: ''
         auto_tts_enabled: true
         blurb: ''
@@ -2385,8 +2384,7 @@ class ExplorationYamlImportingTests(test_utils.GenericTestBase):
         states_schema_version: 18
         tags: []
         title: Title
-        """
-            )
+        """)
             % (
                 self.INTRO_AUDIO_FILE,
                 self.ANSWER_GROUP_AUDIO_FILE,
@@ -3032,8 +3030,7 @@ class ZipFileExportUnitTests(ExplorationServicesUnitTests):
         'caption-with-value="&quot;&quot;"\n        filepath-with-value="'
         '&quot;abc.png&quot;"></oppia-noninteractive-image>'
     )
-    SAMPLE_YAML_CONTENT: str = (
-        """author_notes: ''
+    SAMPLE_YAML_CONTENT: str = """author_notes: ''
 auto_tts_enabled: false
 blurb: ''
 category: Algebra
@@ -3120,15 +3117,13 @@ states_schema_version: %d
 tags: []
 title: A title
 version: 2
-"""
-        % (
-            feconf.DEFAULT_INIT_STATE_NAME,
-            exp_domain.Exploration.CURRENT_EXP_SCHEMA_VERSION,
-            feconf.DEFAULT_INIT_STATE_NAME,
-            feconf.DEFAULT_INIT_STATE_NAME,
-            DUMMY_IMAGE_TAG,
-            feconf.CURRENT_STATE_SCHEMA_VERSION,
-        )
+""" % (
+        feconf.DEFAULT_INIT_STATE_NAME,
+        exp_domain.Exploration.CURRENT_EXP_SCHEMA_VERSION,
+        feconf.DEFAULT_INIT_STATE_NAME,
+        feconf.DEFAULT_INIT_STATE_NAME,
+        DUMMY_IMAGE_TAG,
+        feconf.CURRENT_STATE_SCHEMA_VERSION,
     )
 
     UPDATED_YAML_CONTENT = """author_notes: ''
@@ -3676,9 +3671,7 @@ class YAMLExportUnitTests(ExplorationServicesUnitTests):
     contents.
     """
 
-    _SAMPLE_INIT_STATE_CONTENT: str = (
-        (
-            """card_is_checkpoint: true
+    _SAMPLE_INIT_STATE_CONTENT: str = ("""card_is_checkpoint: true
 classifier_model_id: null
 content:
   content_id: content_0
@@ -3712,10 +3705,7 @@ interaction:
 linked_skill_id: null
 param_changes: []
 solicit_answer_details: false
-"""
-        )
-        % (feconf.DEFAULT_INIT_STATE_NAME)
-    )
+""") % (feconf.DEFAULT_INIT_STATE_NAME)
 
     SAMPLE_EXPORTED_DICT: Final = {
         feconf.DEFAULT_INIT_STATE_NAME: _SAMPLE_INIT_STATE_CONTENT,
@@ -7985,8 +7975,7 @@ class ExplorationConversionPipelineTests(ExplorationServicesUnitTests):
     NEW_EXP_ID: Final = 'exp_id1'
 
     UPGRADED_EXP_YAML: Final = (
-        (
-            """author_notes: ''
+        ("""author_notes: ''
 auto_tts_enabled: true
 blurb: ''
 category: category
@@ -8060,8 +8049,7 @@ states:
 states_schema_version: %d
 tags: []
 title: Old Title
-"""
-        )
+""")
         % (
             feconf.DEFAULT_INIT_STATE_NAME.encode('utf-8'),
             exp_domain.Exploration.CURRENT_EXP_SCHEMA_VERSION,

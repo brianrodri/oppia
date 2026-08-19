@@ -262,7 +262,9 @@ class DocstringsCheckerTest(test_utils.GenericTestBase):
         node_ignores_exception_swap = self.swap(
             utils,
             'node_ignores_exception',
-            lambda _, __: (_ for _ in ()).throw(astroid.nodes.InferenceError()),
+            lambda _, __: (_ for _ in ()).throw(
+                astroid.exceptions.InferenceError()
+            ),
         )
 
         with node_ignores_exception_swap:

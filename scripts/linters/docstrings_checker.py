@@ -139,7 +139,7 @@ def possible_exc_types(node: astroid.nodes.Raise) -> Set[str]:
                 if (
                     val
                     and isinstance(
-                        val, (astroid.nodes.Instance, astroid.nodes.ClassDef)
+                        val, (astroid.bases.Instance, astroid.nodes.ClassDef)
                     )
                     and utils.inherit_from_std_ex(val)
                 ):
@@ -154,14 +154,14 @@ def possible_exc_types(node: astroid.nodes.Raise) -> Set[str]:
             excs = [
                 exc.name
                 for exc in inferred_excs
-                if exc is not astroid.nodes.Uninferable
+                if exc is not astroid.util.Uninferable
             ]
 
     try:
         return set(
             exc for exc in excs if not utils.node_ignores_exception(node, exc)
         )
-    except astroid.nodes.InferenceError:
+    except astroid.exceptions.InferenceError:
         return set()
 
 

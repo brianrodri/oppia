@@ -1355,7 +1355,7 @@ class ImportOnlyModulesChecker(checkers.BaseChecker):
 
         try:
             imported_module = node.do_import_module(node.modname)
-        except astroid.nodes.AstroidBuildingError:
+        except astroid.exceptions.AstroidBuildingError:
             return
 
         if node.modname in self.EXCLUDED_IMPORT_MODULES:
@@ -1365,7 +1365,7 @@ class ImportOnlyModulesChecker(checkers.BaseChecker):
         for name, _ in node.names:
             try:
                 imported_module.import_module(name, True)
-            except astroid.nodes.AstroidImportError:
+            except astroid.exceptions.AstroidImportError:
                 self.add_message(
                     'import-only-modules',
                     node=node,
@@ -2915,13 +2915,13 @@ class PreventStringConcatenationChecker(checkers.BaseChecker):
             try:
                 left_inferred = next(node.left.infer())
                 right_inferred = next(node.right.infer())
-            except astroid.nodes.InferenceError:
+            except astroid.exceptions.InferenceError:
                 return
             # Ignore operation if either side is inferred to be a datetime obj.
             if any(
                 isinstance(
                     inferred,
-                    (astroid.nodes.Instance, astroid.nodes.Const),
+                    (astroid.bases.Instance, astroid.nodes.Const),
                 )
                 and isinstance(inferred.pytype(), str)
                 and 'datetime.datetime' in inferred.pytype()

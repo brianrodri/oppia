@@ -132,14 +132,7 @@ class ResultsToJobRunResults(beam.PTransform):  # type: ignore[misc]
 
     # This is needed because the Beam annotations validator doesn't properly
     # work with result.Result.
-    # TODO(#15613): Here we use MyPy ignore because the decorator
-    # no_annotations is not type annotated yet in apache_beam library,
-    # which causes MyPy to throw untyped decorator error. So to silent
-    # the error, we used ignore here.
-    # Here we use type Any because this method is a generalized method which
-    # converts transform_results to a job_run_results. So, to allow all types
-    # of transform results, we used Any type here.
-    @beam.typehints.no_annotations  # type: ignore[misc]
+    @beam.typehints.no_annotations
     def _transform_result_to_job_run_result(
         self, result_item: result.Result[Any, Any]
     ) -> job_run_result.JobRunResult:
@@ -184,14 +177,7 @@ class ResultsToJobRunResults(beam.PTransform):  # type: ignore[misc]
 
     # This is needed because the Beam annotations validator doesn't properly
     # work with result.Result.
-    # TODO(#15613): Here we use MyPy ignore because the decorator
-    # no_annotations is not type annotated yet in apache_beam library,
-    # which causes MyPy to throw untyped decorator error. So to silent
-    # the error, we used ignore here.
-    # Here we use type Any because this method can accept any kind of
-    # Pcollection results to return the unique JobRunResult objects
-    # with count.
-    @beam.typehints.no_annotations  # type: ignore[misc]
+    @beam.typehints.no_annotations
     def expand(
         self, results: beam.PCollection[result.Result[Any, Any]]
     ) -> beam.PCollection[job_run_result.JobRunResult]:

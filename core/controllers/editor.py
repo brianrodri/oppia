@@ -194,10 +194,7 @@ class ExplorationHandler(
             exploration_data['show_state_translation_tutorial_on_load'] = bool(
                 self.user_id and not has_seen_translation_tutorial
             )
-            # Here we use MyPy ignore because here we are defining a new
-            # 'exploration_is_linked_to_story' key on a well defined TypedDict
-            # dictionary.
-            exploration_data['exploration_is_linked_to_story'] = (  # type: ignore[typeddict-item]
+            exploration_data['exploration_is_linked_to_story'] = (
                 exp_services.get_story_id_linked_to_exploration(exploration_id)
                 is not None
             )
@@ -279,10 +276,7 @@ class ExplorationHandler(
         exploration_data = exp_services.get_user_exploration_data(
             self.user_id, exploration_id
         )
-        # Here we use MyPy ignore because here we are defining a new
-        # 'exploration_is_linked_to_story' key on a well defined TypedDict
-        # dictionary.
-        exploration_data['exploration_is_linked_to_story'] = (  # type: ignore[typeddict-item]
+        exploration_data['exploration_is_linked_to_story'] = (
             exp_services.get_story_id_linked_to_exploration(exploration_id)
             is not None
         )

@@ -190,9 +190,6 @@ class LibraryIndexHandler(
             preferred_language_codes = user_settings.preferred_language_codes
 
         if top_rated_activity_summary_dicts:
-            # Here we use MyPy ignore because here we are adding a new
-            # 'protractor_id' key on a TypedDict dictionary, and addition
-            # of any new key on typedDict is prohibited by MyPy.
             summary_dicts_by_category.insert(
                 0,
                 {
@@ -203,7 +200,7 @@ class LibraryIndexHandler(
                     ),
                     'has_full_results_page': True,
                     'full_results_url': feconf.LIBRARY_TOP_RATED_URL,
-                    'protractor_id': 'top-rated',  # type: ignore[typeddict-item]
+                    'protractor_id': 'top-rated',
                 },
             )
         if featured_activity_summary_dicts:

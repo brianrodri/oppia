@@ -6143,12 +6143,7 @@ class Exploration(translation_domain.BaseTranslatableObject):
             str. The YAML representation of this exploration.
         """
         exp_dict = self.to_dict()
-        # Here we use MyPy ignore because the dictionary returned by `to_dict()`
-        # method is ExplorationDict and ExplorationDict does not contain
-        # `schema_version` key, but here we are defining a `schema_version` key
-        # which causes MyPy to throw error 'TypedDict has no key schema_version'
-        # thus to silence the error, we used ignore here.
-        exp_dict['schema_version'] = self.CURRENT_EXP_SCHEMA_VERSION  # type: ignore[typeddict-item]
+        exp_dict['schema_version'] = self.CURRENT_EXP_SCHEMA_VERSION
 
         # The ID is the only property which should not be stored within the
         # YAML representation.

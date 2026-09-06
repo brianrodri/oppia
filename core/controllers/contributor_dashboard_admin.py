@@ -762,7 +762,7 @@ def get_translation_coordinator_frontend_dict(
     stats_dicts = [stats.to_dict() for stats in backend_stats]
 
     for stats_dict in stats_dicts:
-        coordinator_activity_list = []
+        stats_dict['coordinator_activity_list'] = []
         stats_dict['translators_count'] = (
             contribution_stats_services.get_translator_counts(
                 stats_dict['language_id']
@@ -785,14 +785,12 @@ def get_translation_coordinator_frontend_dict(
                 (utils.get_current_local_datetime() - last_activity).days
             )
 
-            coordinator_activity_list.append(
+            stats_dict['coordinator_activity_list'].append(
                 {
                     'translation_coordinator': user_setting.username,
                     'last_activity_days': last_activity_days,
                 }
             )
-
-        stats_dict['coordinator_activity_list'] = coordinator_activity_list
 
         # Here we use MyPy ignore because MyPy doesn't allow key deletion
         # from TypedDict.

@@ -24,7 +24,7 @@ import re
 from core import feconf, utils
 from core.constants import constants
 
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, List, NotRequired, Optional, TypedDict
 
 
 # TODO(#15105): Refactor UserSettings to limit the number of Optional
@@ -1783,6 +1783,16 @@ class TranslationCoordinatorStatsDict(TypedDict):
     language_id: str
     coordinator_ids: List[str]
     coordinators_count: int
+    translators_count: NotRequired[int]
+    reviewers_count: NotRequired[int]
+    coordinator_activity_list: NotRequired[List[CoordinatorActivity]]
+
+
+class CoordinatorActivity(TypedDict):
+    """Dict representation for coordinator activities."""
+
+    translation_coordinator: str | None
+    last_activity_days: int
 
 
 class TranslationCoordinatorStats:

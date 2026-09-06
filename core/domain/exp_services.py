@@ -136,7 +136,7 @@ class UserExplorationDataDict(TypedDict):
     show_state_editor_tutorial_on_load: bool
     show_state_translation_tutorial_on_load: bool
     is_version_of_draft_valid: Optional[bool]
-    draft_changes: Dict[str, str]
+    draft_changes: List[Dict[str, str]]
     email_preferences: user_domain.UserExplorationPrefsDict
     next_content_id_index: int
     exploration_metadata: exp_domain.ExplorationMetadataDict
@@ -3378,10 +3378,10 @@ def get_user_exploration_data(
     for state_name in exploration.states:
         state_dict = exploration.states[state_name].to_dict()
         states[state_name] = state_dict
-    draft_changes = (
+    draft_changes: List[Dict[str, str]] = (
         exp_user_data.draft_change_list
         if exp_user_data and exp_user_data.draft_change_list
-        else None
+        else []
     )
     draft_change_list_id = (
         exp_user_data.draft_change_list_id if exp_user_data else 0

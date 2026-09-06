@@ -414,13 +414,11 @@ class InteractionUnitTests(test_utils.GenericTestBase):
         # In the following part, we generate the html_field_types_to_rule_specs
         # dict based on the values in the rule_descriptions.json file.
         generated_html_field_types_dict: Dict[
-            str, Dict[str, Dict[str, Dict[str, Dict[str, Set[str]]]]]
+            str, Dict[str, Dict[str, Dict[str, Set[str]]]]
         ] = collections.defaultdict(
             lambda: collections.defaultdict(
                 lambda: collections.defaultdict(
-                    lambda: collections.defaultdict(
-                        lambda: collections.defaultdict(set)
-                    )
+                    lambda: collections.defaultdict(set)
                 )
             )
         )
@@ -492,7 +490,7 @@ class InteractionUnitTests(test_utils.GenericTestBase):
                     html_type_dict['interactionId'] = interaction_id
                     html_type_dict['ruleTypes'][rule_type][
                         'htmlInputVariables'
-                    ] = sorted(input_variables)
+                    ] = input_variables
 
         self.assertEqual(
             html_field_types_to_rule_specs_dict,

@@ -771,9 +771,7 @@ def get_translation_coordinator_frontend_dict(
 
         community_stats = suggestion_services.get_community_contribution_stats()
 
-        # Here we use MyPy ignore because MyPy doesn't allow key addition
-        # to TypedDict.
-        stats_dict['reviewers_count'] = (  # type: ignore[typeddict-item]
+        stats_dict['reviewers_count'] = (
             community_stats.translation_reviewer_counts_by_lang_code.get(
                 stats_dict['language_id'], 0
             )

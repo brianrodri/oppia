@@ -1617,10 +1617,10 @@ class VersioningIntegrationTest(BaseEditorControllerTests):
             self.assertNotIn('Hi, welcome to Oppia!', init_content)
 
         # May not revert to any version that's not convertible to int.
-        for rev_version in ('abc', ()):
+        for bad_rev_version in ('abc', ()):
             response_dict = self.post_json(
                 '/createhandler/revert/%s' % self.EXP_ID,
-                {'current_version': 2, 'revert_to_version': rev_version},
+                {'current_version': 2, 'revert_to_version': bad_rev_version},
                 csrf_token=csrf_token,
                 expected_status_int=400,
             )

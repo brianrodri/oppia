@@ -59,7 +59,9 @@ class Registry:
             # which became a real class in Python 3.11+ and is imported at
             # module level in extensions/objects/models/objects.py). Skip
             # them instead of asserting, since they are not object types.
-            if 'BaseObject' not in ancestor_names:
+            if 'BaseObject' not in ancestor_names or not issubclass(
+                clazz, objects.BaseObject
+            ):
                 continue
             cls.objects_dict[clazz.__name__] = clazz
 

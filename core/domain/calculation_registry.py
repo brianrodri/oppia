@@ -46,7 +46,9 @@ class Registry:
             ancestor_names = [
                 base_class.__name__ for base_class in inspect.getmro(clazz)
             ]
-            if 'BaseCalculation' in ancestor_names:
+            if 'BaseCalculation' in ancestor_names and issubclass(
+                clazz, models.BaseCalculation
+            ):
                 cls._calculations_dict[clazz.__name__] = clazz
 
     @overload

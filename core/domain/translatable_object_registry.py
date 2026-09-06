@@ -20,21 +20,7 @@ import inspect
 
 from extensions.objects.models import objects
 
-from typing import Dict, List, Literal, Type, Union, overload
-
-TranslatableObjectNames = Literal[
-    'TranslatableHtml',
-    'TranslatableUnicodeString',
-    'TranslatableSetOfUnicodeString',
-    'TranslatableSetOfNormalizedString',
-]
-
-TranslatableObjectClasses = Union[
-    Type[objects.TranslatableHtml],
-    Type[objects.TranslatableUnicodeString],
-    Type[objects.TranslatableSetOfUnicodeString],
-    Type[objects.TranslatableSetOfNormalizedString],
-]
+from typing import Dict, List, Literal, Type, overload
 
 
 class Registry:
@@ -42,7 +28,7 @@ class Registry:
 
     # Dict mapping object class names to their classes.
     _translatable_objects_dict: Dict[
-        TranslatableObjectNames, TranslatableObjectClasses
+        str, type[objects.BaseTranslatableObject]
     ] = {}
 
     @classmethod
@@ -66,11 +52,13 @@ class Registry:
             # subclasses of BaseTranslatableObject, despite starting with the
             # string 'Translatable'. So we need to do verification based on the
             # class's ancestors.
-            if 'BaseTranslatableObject' in ancestor_names:
+            if 'BaseTranslatableObject' in ancestor_names and issubclass(
+                clazz, objects.BaseTranslatableObject
+            ):
                 cls._translatable_objects_dict[clazz.__name__] = clazz
 
     @classmethod
-    def get_all_class_names(cls) -> List[TranslatableObjectNames]:
+    def get_all_class_names(cls) -> List[str]:
         """Gets a list of all translatable object class names.
 
         Returns:
@@ -105,8 +93,8 @@ class Registry:
 
     @classmethod
     def get_object_class(
-        cls, obj_type: TranslatableObjectNames
-    ) -> TranslatableObjectClasses:
+        cls, obj_type: str
+    ) -> type[objects.BaseTranslatableObject]:
         """Gets a translatable object class by its type.
 
         Refreshes once if the class is not found; subsequently, throws an

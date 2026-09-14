@@ -82,10 +82,11 @@ class LessonFeedbackDomainTests(test_utils.GenericTestBase):
         self.assertEqual(feedback.to_dict(), expected_dict)
 
     def test_to_summary_dict(self) -> None:
+        truncated_text = 'N' * 97
         expected_dict: general_feedback_domain.LessonFeedbackSummaryDict = {
             'id': 'feedback_id',
-            'feedback_text_preview': f'{"N" * 97}...',
-            'latest_response_preview': f'{"N" * 97}...',
+            'feedback_text_preview': f'{truncated_text}...',
+            'latest_response_preview': f'{truncated_text}...',
             'status': 'open',
             'source': 'lesson',
             'lesson_title': 'exp1',
@@ -176,9 +177,10 @@ class PlatformFeedbackDomainTests(test_utils.GenericTestBase):
         self.assertEqual(feedback.to_dict(), expected_dict)
 
     def test_to_summary_dict(self) -> None:
+        truncated_text = 'N' * 97
         expected_dict: general_feedback_domain.PlatformFeedbackSummaryDict = {
             'id': 'feedback_id',
-            'report_message_preview': f'{"N" * 97}...',
+            'report_message_preview': f'{truncated_text}...',
             'status': 'open',
             'source': 'lesson',
             'category': 'category',

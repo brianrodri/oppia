@@ -425,16 +425,24 @@ class BackfillTranslationOpportunityModelJobBase(base_jobs.JobBase):
                 or 'None'
             )
 
+            match_count = totals.get('match', 0)
+            missing_count = totals.get('missing', 0)
+            discrepancy_count = totals.get('discrepancy', 0)
+            orphaned_count = totals.get('orphaned', 0)
+            exist_content_count = totals.get('exist_content_count', 0)
+            comp_content_count = totals.get('comp_content_count', 0)
             yield job_run_result.JobRunResult.as_stdout(
                 f'Audit Summary:\n'
-                f'- Matches: {totals.get("match", 0)}\n'
-                f'- Missing in Datastore: {totals.get("missing", 0)}\n'
-                f'- Discrepancies: {totals.get("discrepancy", 0)}\n'
-                f'- Orphaned in Datastore: {totals.get("orphaned", 0)}\n'
-                f'- Total Content Count (Existing): {totals.get("exist_content_count", 0)}\n'
-                f'- Total Content Count (Computed): {totals.get("comp_content_count", 0)}\n'
-                f'- Total Translation Counts (Existing): {exist_translation_totals_str}\n'
-                f'- Total Translation Counts (Computed): {comp_translation_totals_str}'
+                f'- Matches: {match_count}\n'
+                f'- Missing in Datastore: {missing_count}\n'
+                f'- Discrepancies: {discrepancy_count}\n'
+                f'- Orphaned in Datastore: {orphaned_count}\n'
+                f'- Total Content Count (Existing): {exist_content_count}\n'
+                f'- Total Content Count (Computed): {comp_content_count}\n'
+                f'- Total Translation Counts (Existing): '
+                f'{exist_translation_totals_str}\n'
+                f'- Total Translation Counts (Computed): '
+                f'{comp_translation_totals_str}'
             )
 
             for detail in error_details:

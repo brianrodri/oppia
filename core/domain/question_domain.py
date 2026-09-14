@@ -433,16 +433,11 @@ class Question(translation_domain.BaseTranslatableObject):
         Returns:
             dict. The converted question_state_dict.
         """
-        # Here we use MyPy ignore because 'content_ids_to_audio_translations'
-        # key existed only in schema v27 and is removed in the latest StateDict.
-        # This migration accesses v27 data, so ignoring is safe.
-        voiceovers_mapping = question_state_dict.pop(  # type: ignore[typeddict-item]
+        voiceovers_mapping = question_state_dict.pop(
             'content_ids_to_audio_translations'
         )
 
-        # Here we use MyPy ignore because the latest schema of state
-        # dict doesn't contains recorded_voiceovers property.
-        question_state_dict['recorded_voiceovers'] = {  # type: ignore[typeddict-item]
+        question_state_dict['recorded_voiceovers'] = {
             'voiceovers_mapping': voiceovers_mapping
         }
         return question_state_dict
@@ -834,7 +829,7 @@ class Question(translation_domain.BaseTranslatableObject):
 
         interaction_id = question_state_dict['interaction']['id']
         if interaction_id is None:
-            question_state_dict['next_content_id_index'] = (  # type: ignore[typeddict-item]
+            question_state_dict['next_content_id_index'] = (
                 max_existing_content_id_index + 1
             )
             return question_state_dict
@@ -1039,9 +1034,7 @@ class Question(translation_domain.BaseTranslatableObject):
                 'interaction', interaction_id, ca_dict, ca_specs
             )
         )
-        # Here we use MyPy ignore because the latest schema of state
-        # dict doesn't contains next_content_id_index property.
-        question_state_dict['next_content_id_index'] = (  # type: ignore[typeddict-item]
+        question_state_dict['next_content_id_index'] = (
             content_id_counter.next_content_id_index
         )
         for new_content_id in content_id_counter.new_content_ids:
@@ -1311,9 +1304,7 @@ class Question(translation_domain.BaseTranslatableObject):
                             'contentId': content_id,
                             'unicodeStrSet': rule_spec_dict['inputs']['x'],  # type: ignore[dict-item]
                         }
-            # Here we use MyPy ignore because the latest schema of state
-            # dict doesn't contains next_content_id_index property.
-            question_state_dict['next_content_id_index'] = (  # type: ignore[typeddict-item]
+            question_state_dict['next_content_id_index'] = (
                 content_id_counter.next_content_id_index
             )
             for new_content_id in content_id_counter.new_content_ids:

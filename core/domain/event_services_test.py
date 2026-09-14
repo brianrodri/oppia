@@ -569,6 +569,7 @@ class EventHandlerNameTests(test_utils.GenericTestBase):
                 if (
                     'BaseEventHandler' in all_base_classes
                     and name != 'BaseEventHandler'
+                    and issubclass(clazz, event_services.BaseEventHandler)
                 ):
                     # Event handler class should specify an event type.
                     self.assertIsNotNone(clazz.EVENT_TYPE)

@@ -65,16 +65,20 @@ class IdentifyExplorationsWithDuplicateContentIdsJob(base_jobs.JobBase):
             >> beam.Filter(lambda result: result is not None)
         )
 
+        def create_job_run_result(
+            result: Dict[str, Union[str, int, Dict[str, List[str]]]],
+        ) -> job_run_result.JobRunResult:
+            exp_id = result['exp_id']
+            version = result['version']
+            duplicates = result['duplicates']
+            return job_run_result.JobRunResult.as_stdout(
+                f'Exploration {exp_id} (version {version}) '
+                f'has duplicate content IDs: {duplicates}'
+            )
+
         return (
             explorations_with_duplicates
-            | 'Create job run results'
-            >> beam.Map(
-                lambda result: job_run_result.JobRunResult.as_stdout(
-                    f'Exploration {result["exp_id"]} '
-                    f'(version {result["version"]}) '
-                    f'has duplicate content IDs: {result["duplicates"]}'
-                )
-            )
+            | 'Create job run results' >> beam.Map(create_job_run_result)
         )
 
     @staticmethod
@@ -162,12 +166,21 @@ class FixExplorationsWithDuplicateContentIdsJob(base_jobs.JobBase):
                 | 'Put fixed models' >> ndb_io.PutModels()
             )
 
-        return fixed_explorations | 'Create job run results' >> beam.Map(
-            lambda result: job_run_result.JobRunResult.as_stdout(
-                f'Fixed exploration {result["exp_id"]} '
-                f'(version {result["version"]}) - '
-                f'regenerated content IDs: {result["fixed_content_ids"]}'
+        def create_job_run_result(
+            result: Dict[
+                str, Union[str, int, List[str], 'exp_models.ExplorationModel']
+            ],
+        ) -> job_run_result.JobRunResult:
+            exp_id = result['exp_id']
+            version = result['version']
+            fixed_content_ids = result['fixed_content_ids']
+            return job_run_result.JobRunResult.as_stdout(
+                f'Fixed exploration {exp_id} (version {version}) - '
+                f'regenerated content IDs: {fixed_content_ids}'
             )
+
+        return fixed_explorations | 'Create job run results' >> beam.Map(
+            create_job_run_result
         )
 
     @staticmethod

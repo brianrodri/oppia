@@ -709,11 +709,8 @@ def _apply_study_guide_change(
 
             # For the subtopic page. (To be deprecated once study guides
             # become standard.)
-            heading_html = (
-                '<p><strong>'
-                f'{section_dict["heading"]["unicode_str"]}'
-                '</strong></p>'
-            )
+            heading = section_dict['heading']['unicode_str']
+            heading_html = f'<p><strong>{heading}</strong></p>'
             concatenated_html_parts.append(heading_html)
             concatenated_html_parts.append(section_dict['content']['html'])
 

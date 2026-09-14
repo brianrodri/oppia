@@ -2648,11 +2648,13 @@ def update_translation_suggestion(
             f'{count} {name}' for name, _, count in discrepancy_components
         ]
 
+        original_summary_str = ', '.join(original_summary)
+        updated_summary_str = ', '.join(updated_summary)
         original_summary_text = (
-            f'Components in original text: {", ".join(original_summary)}.'
+            f'Components in original text: {original_summary_str}.'
         )
         updated_summary_text = (
-            f'Components in translated text: {", ".join(updated_summary)}.'
+            f'Components in translated text: {updated_summary_str}.'
         )
 
         # Get truncated versions of both original and translated

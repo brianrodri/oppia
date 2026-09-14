@@ -32,7 +32,7 @@ from scripts import (
     servers,
 )
 
-from typing import ContextManager, List, Optional, Tuple
+from typing import ContextManager, Iterator, List, Optional, Tuple
 
 
 class PopenErrorReturn:
@@ -44,34 +44,6 @@ class PopenErrorReturn:
     def communicate(self) -> Tuple[str, bytes]:
         """Returns some error."""
         return '', 'Some error'.encode('utf-8')
-
-
-def mock_managed_long_lived_process(
-    *unused_args: str, **unused_kwargs: str
-) -> ContextManager[scripts_test_utils.PopenStub]:
-    """Mock method for replacing the managed_process() functions to simulate a
-    long-lived process. This process stays alive for 10 poll() calls, and
-    then terminates thereafter.
-
-    Returns:
-        Context manager. A context manager that always yields a mock
-        process.
-    """
-    stub = scripts_test_utils.PopenStub(alive=True)
-
-    def mock_poll(stub: scripts_test_utils.PopenStub) -> Optional[int]:
-        stub.poll_count += 1
-        if stub.poll_count >= 10:
-            stub.alive = False
-        return None if stub.alive else stub.returncode
-
-    # Here we use MyPy ignore because we are assigning a None value
-    # where instance of 'PlatformParameter' is expected, and this is
-    # done to Replace the stored instance with None in order to
-    # trigger the unexpected exception during update.
-    stub.poll = lambda: mock_poll(stub)  # type: ignore[assignment]
-
-    return contextlib.nullcontext(enter_result=stub)
 
 
 def mock_managed_process(
@@ -835,7 +807,7 @@ class RunAcceptanceTestsTests(test_utils.GenericTestBase):
             self.swap_with_checks(
                 servers,
                 'managed_acceptance_tests_server',
-                mock_managed_long_lived_process,
+                self._mock_managed_long_lived_process,
                 expected_kwargs=[
                     {
                         'suite_name': 'testSuite',
@@ -860,3 +832,26 @@ class RunAcceptanceTestsTests(test_utils.GenericTestBase):
                 json_load_swap
             ):
                 run_acceptance_tests.main(args=['--suite', 'testSuite'])
+
+    @contextlib.contextmanager
+    def _mock_managed_long_lived_process(
+        self, *unused_args: str, **unused_kwargs: str
+    ) -> Iterator[scripts_test_utils.PopenStub]:
+        """Mock method for replacing the managed_process() functions to simulate a
+        long-lived process. This process stays alive for 10 poll() calls, and
+        then terminates thereafter.
+
+        Yields:
+            Context manager. A context manager that always yields a mock
+            process.
+        """
+        stub = scripts_test_utils.PopenStub(alive=True)
+
+        def mock_poll(stub: scripts_test_utils.PopenStub) -> Optional[int]:
+            stub.poll_count += 1
+            if stub.poll_count >= 10:
+                stub.alive = False
+            return None if stub.alive else stub.returncode
+
+        with self.swap(stub, 'poll', mock_poll):
+            yield stub

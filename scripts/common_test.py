@@ -795,16 +795,16 @@ class CommonTests(test_utils.GenericTestBase):
     def test_print_each_string_after_two_new_lines(self) -> None:
         @contextlib.contextmanager
         def _redirect_stdout(
-            new_target: io.TextIOWrapper,
-        ) -> Generator[io.TextIOWrapper, None, None]:
+            new_target: io.TextIOBase,
+        ) -> Generator[io.TextIOBase, None, None]:
             """Redirect stdout to the new target.
 
             Args:
-                new_target: TextIOWrapper. The new target to which stdout is
+                new_target: TextIOBase. The new target to which stdout is
                     redirected.
 
             Yields:
-                TextIOWrapper. The new target.
+                TextIOBase. The new target.
             """
             old_target = sys.stdout
             sys.stdout = new_target

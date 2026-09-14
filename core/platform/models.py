@@ -24,7 +24,7 @@ from types import ModuleType  # pylint: disable=import-only-modules
 from core import feconf
 from core.constants import constants
 
-from typing import List, Tuple, Type
+from typing import List, Sequence, Tuple, Type
 
 MYPY = False
 if MYPY:  # pragma: no cover
@@ -63,7 +63,7 @@ class Platform:
 
     @classmethod
     def import_models(
-        cls, unused_model_names: List[Names]
+        cls, unused_model_names: Sequence[Names]
     ) -> Tuple[ModuleType, ...]:
         """An abstract method that should be implemented on inherited
         classes.
@@ -86,7 +86,9 @@ class _Gae(Platform):
     # doesn't match with BaseModel.delete_multi().
     # https://mypy.readthedocs.io/en/stable/error_code_list.html#check-validity-of-overrides-override
     @classmethod
-    def import_models(cls, model_names: List[Names]) -> Tuple[ModuleType, ...]:
+    def import_models(
+        cls, model_names: Sequence[Names]
+    ) -> Tuple[ModuleType, ...]:
         """Imports and returns the storage modules listed in model_names.
 
         Args:
@@ -269,7 +271,7 @@ class _Gae(Platform):
 
     @classmethod
     def get_storage_model_classes(
-        cls, model_names: List[Names]
+        cls, model_names: Sequence[Names]
     ) -> List[Type[base_models.BaseModel]]:
         """Get the storage model classes that are in the modules listed in
         model_names.
@@ -570,7 +572,9 @@ class Registry:
         return klass
 
     @classmethod
-    def import_models(cls, model_names: List[Names]) -> Tuple[ModuleType, ...]:
+    def import_models(
+        cls, model_names: Sequence[Names]
+    ) -> Tuple[ModuleType, ...]:
         """Imports and returns the storage modules listed in model_names.
 
         Args:
@@ -583,7 +587,7 @@ class Registry:
 
     @classmethod
     def get_storage_model_classes(
-        cls, model_names: List[Names]
+        cls, model_names: Sequence[Names]
     ) -> List[Type[base_models.BaseModel]]:
         """Get the storage model classes that are in the modules listed in
         model_names.
@@ -597,7 +601,9 @@ class Registry:
         return cls._get().get_storage_model_classes(model_names)
 
     @classmethod
-    def get_all_storage_model_classes(cls) -> List[Type[base_models.BaseModel]]:
+    def get_all_storage_model_classes(
+        cls,
+    ) -> List[Type[base_models.BaseModel]]:
         """Get all model classes that are saved in the storage, NOT model
         classes that are just inherited from (BaseModel,
         BaseCommitLogEntryModel, etc.).

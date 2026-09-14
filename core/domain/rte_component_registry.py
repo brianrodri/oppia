@@ -25,14 +25,9 @@ import os
 import pkgutil
 
 from core import constants, feconf, utils
+from extensions.rich_text_components import components
 
 from typing import Any, Dict, List, Type, TypedDict, Union
-
-MYPY = False
-if MYPY:  # pragma: no cover
-    # Here, we are importing 'components' from rich_text_components only
-    # for type checking.
-    from extensions.rich_text_components import components
 
 
 class CustomizationArgSpecDict(TypedDict):
@@ -143,7 +138,11 @@ class Registry:
         component_names = list(cls.get_all_rte_components().keys())
         for component_name in component_names:
             for name, obj in inspect.getmembers(module):
-                if inspect.isclass(obj) and name == component_name:
+                if (
+                    inspect.isclass(obj)
+                    and name == component_name
+                    and issubclass(obj, components.BaseRteComponent)
+                ):
                     component_types_to_component_classes[
                         'oppia-noninteractive-%s' % component_name.lower()
                     ] = obj

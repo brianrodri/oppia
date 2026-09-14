@@ -431,7 +431,26 @@ class ExplorationChange(change_domain.BaseChange):
                 'translation_html',
                 'data_format',
             ],
-            'optional_attribute_names': [],
+            'optional_attribute_names': [
+                # Auto-generation metadata fields. When a translation
+                # suggestion is created manually (without AI), BaseChange
+                # sets each of these to None upon initialization (since
+                # change_dict.get() returns None for absent keys). As a
+                # result, manual suggestions serialize all three keys with
+                # None values rather than omitting them entirely.
+                #
+                # Contract for downstream consumers
+                # (suggestion_services, backend handlers, frontend models):
+                #   - was_auto_generated is None  → manual suggestion
+                #   - was_auto_generated is True   → AI-generated suggestion
+                #   - was_auto_generated is False  → should not occur;
+                #     treat the same as None (manual) for safety.
+                # auto_generation_provider and was_edited are only
+                # meaningful when was_auto_generated is True.
+                'was_auto_generated',
+                'auto_generation_provider',
+                'was_edited',
+            ],
             'user_id_attribute_names': [],
             'allowed_values': {},
             'deprecated_values': {},
@@ -1610,13 +1629,6 @@ class Exploration(translation_domain.BaseTranslatableObject):
                     translation_domain.ContentType.METADATA,
                     translation_domain.TranslatableContentFormat.UNICODE_STRING,
                     self.objective,
-                )
-            if self.category:
-                translatable_contents_collection.add_translatable_field(
-                    feconf.EXPLORATION_CATEGORY_CONTENT_ID,
-                    translation_domain.ContentType.METADATA,
-                    translation_domain.TranslatableContentFormat.UNICODE_STRING,
-                    self.category,
                 )
             for idx, tag in enumerate(self.tags):
                 translatable_contents_collection.add_translatable_field(
@@ -6143,12 +6155,7 @@ class Exploration(translation_domain.BaseTranslatableObject):
             str. The YAML representation of this exploration.
         """
         exp_dict = self.to_dict()
-        # Here we use MyPy ignore because the dictionary returned by `to_dict()`
-        # method is ExplorationDict and ExplorationDict does not contain
-        # `schema_version` key, but here we are defining a `schema_version` key
-        # which causes MyPy to throw error 'TypedDict has no key schema_version'
-        # thus to silence the error, we used ignore here.
-        exp_dict['schema_version'] = self.CURRENT_EXP_SCHEMA_VERSION  # type: ignore[typeddict-item]
+        exp_dict['schema_version'] = self.CURRENT_EXP_SCHEMA_VERSION
 
         # The ID is the only property which should not be stored within the
         # YAML representation.

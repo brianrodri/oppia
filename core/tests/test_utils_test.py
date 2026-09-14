@@ -38,7 +38,7 @@ from core.tests import test_utils
 
 import elasticsearch
 import webapp2
-from typing import Callable, Dict, Final, List, OrderedDict, Tuple, Union
+from typing import Callable, Dict, Final, List, Tuple, Union
 
 email_services = models.Registry.import_email_services()
 
@@ -130,7 +130,7 @@ class FunctionWrapperTests(test_utils.GenericTestBase):
 
         class MockWrapper(test_utils.FunctionWrapper):
 
-            def pre_call_hook(self, args: OrderedDict[str, str]) -> None:
+            def pre_call_hook(self, args: dict[str, str]) -> None:
                 """Mock pre call hook.
 
                 Args:
@@ -146,9 +146,7 @@ class FunctionWrapperTests(test_utils.GenericTestBase):
                 testcase.assertEqual(args.get('posarg'), 'foo')
                 testcase.assertEqual(args.get('kwarg'), 'bar')
 
-            def post_call_hook(
-                self, args: OrderedDict[str, str], result: str
-            ) -> None:
+            def post_call_hook(self, args: dict[str, str], result: str) -> None:
                 """Mock post call hook.
 
                 Args:

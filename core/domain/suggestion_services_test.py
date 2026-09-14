@@ -269,8 +269,9 @@ class SuggestionServicesUnitTests(test_utils.GenericTestBase):
         observed_suggestion = suggestion_services.get_suggestion_by_id(
             self.suggestion_id
         )
-        self.assertDictContainsSubset(
-            expected_suggestion_dict, observed_suggestion.to_dict()
+        self.assertEqual(
+            observed_suggestion.to_dict(),
+            observed_suggestion.to_dict() | expected_suggestion_dict,
         )
 
     def test_cannot_create_suggestion_with_invalid_suggestion_type(
@@ -2011,10 +2012,8 @@ class SuggestionServicesUnitTests(test_utils.GenericTestBase):
         )
         # Ruling out the possibility of any other type for mypy type checking.
         assert isinstance(updated_suggestion.change_cmd.question_dict, dict)
-        # Here we use MyPy ignore because mypy cannot verify that the
-        # dict returned matches the stricter QuestionDict type.
         question_dict: question_domain.QuestionDict = (
-            updated_suggestion.change_cmd.question_dict  # type: ignore[assignment]
+            updated_suggestion.change_cmd.question_dict
         )
         new_question_state_data = question_dict['question_state_data']
 
@@ -2358,8 +2357,10 @@ class SuggestionServicesUnitTests(test_utils.GenericTestBase):
         self.assertTrue(truncated_updated.endswith('Extra text.'))
 
     def test_update_translation_suggestion_with_long_text(self) -> None:
-        original = f'{"A" * 50}DIFFERENT{"B" * 50}'
-        updated = f'{"A" * 50}CHANGED{"B" * 50}'
+        prefix = 'A' * 50
+        suffix = 'B' * 50
+        original = f'{prefix}DIFFERENT{suffix}'
+        updated = f'{prefix}CHANGED{suffix}'
 
         suggestion = self.create_translation_suggestion(original, original)
 
@@ -2493,15 +2494,17 @@ class SuggestionServicesUnitTests(test_utils.GenericTestBase):
         truncation_limit = (
             suggestion_services.MAX_CONTENT_LENGTH_WITHOUT_TRUNCATION
         )
+        long_original_text = 'a' * 250
         long_original_html = (
-            f'<p>{"a" * 250}</p>'
+            f'<p>{long_original_text}</p>'
             '<oppia-noninteractive-image '
             'alt-with-value="Original Alt" '
             'caption-with-value="Original Caption" '
             'filepath-with-value="original.svg">'
             '</oppia-noninteractive-image>'
         )
-        long_updated_html = f'<p>{"b" * 250}</p>'
+        long_updated_text = 'b' * 250
+        long_updated_html = f'<p>{long_updated_text}</p>'
         suggestion = self.create_translation_suggestion(
             long_original_html, long_original_html
         )

@@ -1957,44 +1957,22 @@ class DraftUpgradeUtilUnitTests(test_utils.GenericTestBase):
                     'property_name': 'written_translations',
                     'new_value': {
                         'translations_mapping': {
-                            # Here we use MyPy ignore because we are testing convert
-                            # function and in convert function we are working with
-                            # previous versions of the domain object and in previous
-                            # versions of the domain object there are some fields
-                            # (eg: html) that are discontinued in the latest domain
-                            # object. So, while defining these old keys MyPy throw
-                            # an error. To avoid the error, we used ignore here.
                             'content1': {
-                                'en': {  # type: ignore[typeddict-item]
+                                'en': {
                                     'html': html_content,
                                     'needs_update': True,
                                 },
-                                # Here we use MyPy ignore because here we are
-                                # defining 'html' key that was deprecated from
-                                # the latest domain object and causing MyPy to
-                                # throw an error. Thus, to silence the error,
-                                # we used ignore here.
-                                'hi': {  # type: ignore[typeddict-item]
+                                'hi': {
                                     'html': 'Hey!',
                                     'needs_update': False,
                                 },
                             },
                             'feedback_1': {
-                                # Here we use MyPy ignore because here we are
-                                # defining 'html' key that was deprecated from
-                                # the latest domain object and causing MyPy to
-                                # throw an error. Thus, to silence the error,
-                                # we used ignore here.
-                                'hi': {  # type: ignore[typeddict-item]
+                                'hi': {
                                     'html': html_content,
                                     'needs_update': False,
                                 },
-                                # Here we use MyPy ignore because here we are
-                                # defining 'html' key that was deprecated from
-                                # the latest domain object and causing MyPy to
-                                # throw an error. Thus, to silence the error,
-                                # we used ignore here.
-                                'en': {  # type: ignore[typeddict-item]
+                                'en': {
                                     'html': 'hello!',
                                     'needs_update': False,
                                 },
@@ -2204,44 +2182,22 @@ class DraftUpgradeUtilUnitTests(test_utils.GenericTestBase):
                     'property_name': 'written_translations',
                     'new_value': {
                         'translations_mapping': {
-                            # Here we use MyPy ignore because we are testing convert
-                            # function and in convert function we are working with
-                            # previous versions of the domain object and in previous
-                            # versions of the domain object there are some fields
-                            # (eg: html) that are discontinued in the latest domain
-                            # object. So, while defining these old keys MyPy throw
-                            # an error. To avoid the error, we used ignore here.
                             'content1': {
-                                'en': {  # type: ignore[typeddict-item]
+                                'en': {
                                     'html': expected_html_content,
                                     'needs_update': True,
                                 },
-                                # Here we use MyPy ignore because here we are
-                                # defining 'html' key that was deprecated from
-                                # the latest domain object and causing MyPy to
-                                # throw an error. Thus, to silence the error,
-                                # we used ignore here.
-                                'hi': {  # type: ignore[typeddict-item]
+                                'hi': {
                                     'html': 'Hey!',
                                     'needs_update': False,
                                 },
                             },
                             'feedback_1': {
-                                # Here we use MyPy ignore because here we are
-                                # defining 'html' key that was deprecated from
-                                # the latest domain object and causing MyPy to
-                                # throw an error. Thus, to silence the error,
-                                # we used ignore here.
-                                'hi': {  # type: ignore[typeddict-item]
+                                'hi': {
                                     'html': expected_html_content,
                                     'needs_update': False,
                                 },
-                                # Here we use MyPy ignore because here we are
-                                # defining 'html' key that was deprecated from
-                                # the latest domain object and causing MyPy to
-                                # throw an error. Thus, to silence the error,
-                                # we used ignore here.
-                                'en': {  # type: ignore[typeddict-item]
+                                'en': {
                                     'html': 'hello!',
                                     'needs_update': False,
                                 },

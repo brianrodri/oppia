@@ -98,7 +98,6 @@ from typing import (
     Literal,
     Mapping,
     Optional,
-    OrderedDict,
     Pattern,
     Sequence,
     Set,
@@ -3392,8 +3391,7 @@ version: 1
             data: *. To be put in the body of the request. If params is an
                 iterator, it will be urlencoded. If it is a string, it will not
                 be encoded, but placed in the body directly. Can be a
-                collections.OrderedDict with webtest.forms.Upload fields
-                included.
+                dict with webtest.forms.Upload fields included.
             expect_errors: bool. Whether errors are expected.
             expected_status_int: int. The expected status code.
             upload_files: list(tuple). List of
@@ -4927,23 +4925,23 @@ class FunctionWrapper:
 
     # Here we use type Any because argument 'args' can accept arbitrary number
     # of function's arguments and these arguments can be of any type.
-    def pre_call_hook(self, args: OrderedDict[str, Any]) -> None:
+    def pre_call_hook(self, args: dict[str, Any]) -> None:
         """Override this to do tasks that should be executed before the actual
         function call.
 
         Args:
-            args: OrderedDict. Set of arguments that the function accepts.
+            args: dict. Set of arguments that the function accepts.
         """
         pass
 
     # Here we use type Any because argument 'args' can accept arbitrary number
     # of function's arguments and these arguments can be of any type.
-    def post_call_hook(self, args: OrderedDict[str, Any], result: str) -> None:
+    def post_call_hook(self, args: dict[str, Any], result: str) -> None:
         """Override this to do tasks that should be executed after the actual
         function call.
 
         Args:
-            args: OrderedDict. Set of arguments that the function accepts.
+            args: dict. Set of arguments that the function accepts.
             result: *. Result returned from the function.
         """
         pass
@@ -4977,13 +4975,13 @@ class CallCounter(FunctionWrapper):
 
     # Here we use type Any because argument 'args' can accept arbitrary number
     # of function's arguments and these arguments can be of any type.
-    def pre_call_hook(self, args: OrderedDict[str, Any]) -> None:
+    def pre_call_hook(self, args: dict[str, Any]) -> None:
         """Method that is called before each function call to increment the
         counter tracking the number of times a function is called. This will
         also be called even when the function raises an exception.
 
         Args:
-            args: OrderedDict. Set of arguments that the function accepts.
+            args: dict. Set of arguments that the function accepts.
         """
         self._times_called += 1
 
@@ -5035,13 +5033,13 @@ class FailingFunction(FunctionWrapper):
 
     # Here we use type Any because argument 'args' can accept arbitrary number
     # of function's arguments and these arguments can be of any type.
-    def pre_call_hook(self, args: OrderedDict[str, Any]) -> None:
+    def pre_call_hook(self, args: dict[str, Any]) -> None:
         """Method that is called each time before the actual function call to
         check if the exception is to be raised based on the number of tries
         before success.
 
         Args:
-            args: OrderedDict. Set of arguments that the function accepts.
+            args: dict. Set of arguments that the function accepts.
         """
         self._times_called += 1
         call_should_fail = (

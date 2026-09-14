@@ -46,7 +46,9 @@ class Registry:
             ancestor_names = [
                 base_class.__name__ for base_class in inspect.getmro(clazz)
             ]
-            if 'BaseVisualization' in ancestor_names:
+            if 'BaseVisualization' in ancestor_names and issubclass(
+                clazz, models.BaseVisualization
+            ):
                 cls.visualizations_dict[clazz.__name__] = clazz
 
     @classmethod

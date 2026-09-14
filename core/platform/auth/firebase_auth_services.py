@@ -68,7 +68,7 @@ import firebase_admin
 import webapp2
 from firebase_admin import auth as firebase_auth
 from firebase_admin import exceptions as firebase_exceptions
-from typing import List, Optional, TypedDict
+from typing import List, Optional, Sequence, TypedDict
 
 MYPY = False
 if MYPY:  # pragma: no cover
@@ -315,12 +315,12 @@ def get_auth_id_from_user_id(
 
 
 def get_multi_auth_ids_from_user_ids(
-    user_ids: List[str],
+    user_ids: Sequence[str],
 ) -> List[Optional[str]]:
     """Returns the auth IDs associated with the given user IDs.
 
     Args:
-        user_ids: list(str). The user IDs.
+        user_ids: Sequence(str). The user IDs.
 
     Returns:
         list(str|None). The auth IDs associated with each of the given user IDs,
@@ -359,12 +359,12 @@ def get_user_id_from_auth_id(
 
 
 def get_multi_user_ids_from_auth_ids(
-    auth_ids: List[str],
+    auth_ids: Sequence[str],
 ) -> List[Optional[str]]:
     """Returns the user IDs associated with the given auth IDs.
 
     Args:
-        auth_ids: list(str). The auth IDs.
+        auth_ids: Sequence(str). The auth IDs.
 
     Returns:
         list(str|None). The user IDs associated with each of the given auth IDs,

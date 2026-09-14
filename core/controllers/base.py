@@ -558,10 +558,7 @@ class BaseHandler(
         # error, we used type ignore here.
         self.normalized_request = normalized_request  # type: ignore[assignment]
 
-        # Here we use MyPy ignore because here we assigning RaiseErrorOnGet's
-        # instance to a 'get' method, and according to MyPy assignment to a
-        # method is not allowed.
-        self.request.get = RaiseErrorOnGet(  # type: ignore[assignment]
+        self.request.get = RaiseErrorOnGet(
             'Use self.normalized_request instead of self.request.'
         ).get
         self.payload = RaiseErrorOnGet(

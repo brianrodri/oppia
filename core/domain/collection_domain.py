@@ -755,10 +755,7 @@ class Collection:
         # functions, we can ignore some MyPy errors as we work with the previous
         # versions of the domain objects.
         collection_dict['skills'] = new_collection_dict['skills']  # type: ignore[typeddict-item]
-        # Here we use MyPy ignore because 'next_skill_id' key is
-        # deprecated from the latest domain object and while accessing
-        # this key MyPy throws an error.
-        collection_dict['next_skill_id'] = (  # type: ignore[typeddict-item]
+        collection_dict['next_skill_id'] = (
             # Here we use MyPy ignore because 'next_skill_id' key is
             # deprecated from the latest domain object and while accessing
             # this key MyPy throws an error.
@@ -944,13 +941,8 @@ class Collection:
             name: '%s%s' % (_SKILL_ID_PREFIX, str(index))
             for index, name in enumerate(sorted(skill_names))
         }
-        # Here we use MyPy ignore because collection_contents['nodes']
-        # can accept list of CollectionNodeDicts, but here we are providing
-        # a list of older version dict of CollectionNode domain object instead
-        # of CollectionNodeDict, which causes MyPy to throw an error. Thus to
-        # avoid the error, we used ignore here.
         collection_contents['nodes'] = [
-            {  # type: ignore[typeddict-item]
+            {
                 'exploration_id': node['exploration_id'],
                 'prerequisite_skill_ids': [
                     skill_names_to_ids[prerequisite_skill_name]
@@ -964,19 +956,12 @@ class Collection:
             for node in collection_contents['nodes']
         ]
 
-        # Here we use MyPy ignore because CollectionDict is defined to match
-        # the current version of Collection domain object and here in _convert_*
-        # functions, we can ignore some MyPy errors as we work with the previous
-        # versions of the domain objects.
-        collection_contents['skills'] = {  # type: ignore[typeddict-item]
+        collection_contents['skills'] = {
             skill_id: {'name': skill_name, 'question_ids': []}
             for skill_name, skill_id in skill_names_to_ids.items()
         }
 
-        # Here we use MyPy ignore because 'next_skill_id' key is
-        # deprecated from the latest domain object and while accessing
-        # this key MyPy throw an error.
-        collection_contents['next_skill_id'] = len(skill_names)  # type: ignore[typeddict-item]
+        collection_contents['next_skill_id'] = len(skill_names)
 
         return collection_contents
 
@@ -996,10 +981,7 @@ class Collection:
         Returns:
             dict. The updated collection_contents dict.
         """
-        # Here we use MyPy ignore because 'next_skill_index' key is
-        # deprecated from the latest domain object and while accessing
-        # this key MyPy throw an error.
-        collection_contents['next_skill_index'] = collection_contents[  # type: ignore[typeddict-item]
+        collection_contents['next_skill_index'] = collection_contents[
             # Here we use MyPy ignore because 'next_skill_id' key is
             # deprecated from the latest domain object and while accessing
             # this key MyPy throw an error.
